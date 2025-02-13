@@ -1,10 +1,8 @@
 # FilaMan - Filament Management System
 
-A comprehensive filament management system combining ESP32-based hardware for weight measurement and NFC tag reading/writing with a web interface for managing filament spools in conjunction with Bambu Lab AMS and Spoolman.
-
-## Project Overview
-
-FilaMan is designed to streamline the management of filament spools for 3D printing. The system consists of an ESP32 microcontroller that handles weight measurement and NFC tag operations, and a web interface that allows users to manage filament spools, monitor AMS (Automatic Material System) status, and interact with Spoolman and Bambu Lab printers.
+FilaMan is a filament management system for 3D printing. It uses ESP32 hardware for weight measurement and NFC tag management. 
+Users can manage filament spools, monitor the status of the Automatic Material System (AMS) and make settings via a web interface. 
+The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D printers and [Spoolman](https://github.com/Donkie/Spoolman) filament management as well as the [Openspool](https://github.com/spuder/OpenSpool) NFC-TAG format.
 
 ### ESP32 Hardware Features
 - **Weight Measurement:** Using a load cell with HX711 amplifier for precise weight tracking.
@@ -12,13 +10,15 @@ FilaMan is designed to streamline the management of filament spools for 3D print
 - **OLED Display:** Shows current weight, connection status (WiFi, Bambu Lab, Spoolman).
 - **WiFi Connectivity:** WiFiManager for easy network configuration.
 - **MQTT Integration:** Connects to Bambu Lab printer for AMS control.
-- **Data Persistence:** Stores calibration data in EEPROM.
-- **Watchdog Timer:** Ensures system stability.
+- **NFC-Tag NTAG215:** Use NTAG215 because of enaught space on the Tag
 
 ### Web Interface Features
 - **Real-time Updates:** WebSocket connection for live data updates.
-- **NFC Tag Management:** Write filament data to NFC tags.
-- **AMS Integration:** 
+- **NFC Tag Management:** 
+	- Write filament data to NFC tags.
+	- uses NFC-Tag Format of [Openspool](https://github.com/spuder/OpenSpool)
+	- so you can use it with automatic Spool detection in AMS
+- **Bambulab AMS Integration:** 
   - Display current AMS tray contents.
   - Assign filaments to AMS slots.
   - Support for external spool holder.
@@ -27,6 +27,9 @@ FilaMan is designed to streamline the management of filament spools for 3D print
   - Filter and select filaments.
   - Update spool weights automatically.
   - Track NFC tag assignments.
+
+### If you want to support my work, i would be happy to get a coffe
+<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ## Detailed Functionality
 
@@ -39,49 +42,19 @@ FilaMan is designed to streamline the management of filament spools for 3D print
 - **User Interactions:** The web interface allows users to interact with the system, select filaments, write NFC tags, and monitor AMS status.
 - **UI Elements:** Includes dropdowns for selecting manufacturers and filaments, buttons for writing NFC tags, and real-time status indicators.
 
-## Installation
-
-### Prerequisites
-- **Software:**
-  - [PlatformIO](https://platformio.org/) in VS Code
-  - [Spoolman](https://github.com/Donkie/Spoolman) instance
-  - Bambu Lab printer (optional for AMS integration)
-- **Hardware:**
-  - ESP32 Development Board
-  - HX711 Load Cell Amplifier
-  - Load Cell (weight sensor)
-  - OLED Display (128x64 SSD1306)
-  - PN532 NFC Module
-  - Connecting wires
-
-### Step-by-Step Installation
-1. **Clone the Repository:**
-    ```bash
-    git clone https://github.com/yourusername/FilaMan.git
-    cd FilaMan
-    ```
-2. **Install Dependencies:**
-    ```bash
-    pio lib install
-    ```
-3. **Flash the ESP32:**
-    ```bash
-    pio run --target upload
-    ```
-4. **Initial Setup:**
-    - Connect to the "FilaMan" WiFi access point.
-    - Configure WiFi settings through the captive portal.
-    - Access the web interface at `http://filaman.local` or the IP address.
-
 ## Hardware Requirements
 
 ### Components
 - **ESP32 Development Board:** Any ESP32 variant.
+[https://amzn.eu/d/aXThslf](url)
 - **HX711 Load Cell Amplifier:** For weight measurement.
-- **Load Cell:** Weight sensor.
+[https://amzn.eu/d/1wZ4v0x](url)
 - **OLED Display:** 128x64 SSD1306.
+[https://amzn.eu/d/dozAYDU](url)
 - **PN532 NFC Module:** For NFC tag operations.
-- **Connecting Wires:** For connections.
+[https://amzn.eu/d/8205DDh](url)
+- **NFC-Tag:** [https://amzn.eu/d/fywy4c4](url)
+
 
 ### Pin Configuration
 | Component          | ESP32 Pin |
@@ -108,31 +81,39 @@ FilaMan is designed to streamline the management of filament spools for 3D print
 - `Adafruit_SSD1306`: OLED display control
 - `HX711`: Load cell communication
 
-### External Services
-- **Bambu Lab Printer:** For AMS integration.
-- **Spoolman:** For filament management.
+## Installation
 
-## API Communication
+### Prerequisites
+- **Software:**
+  - [PlatformIO](https://platformio.org/) in VS Code
+  - [Spoolman](https://github.com/Donkie/Spoolman) instance
+- **Hardware:**
+  - ESP32 Development Board
+  - HX711 Load Cell Amplifier
+  - Load Cell (weight sensor)
+  - OLED Display (128x64 SSD1306)
+  - PN532 NFC Module
+  - Connecting wires
 
-### Spoolman Integration
-The system communicates with Spoolman using its REST API for:
-- Fetching spool information.
-- Updating spool weights.
-- Managing NFC tag assignments.
+### Step-by-Step Installation
+1. **Clone the Repository:**
+    ```bash
+    git clone https://github.com/ManuelW77/Filaman.git
+    cd FilaMan
+    ```
+2. **Install Dependencies:**
+    ```bash
+    pio lib install
+    ```
+3. **Flash the ESP32:**
+    ```bash
+    pio run --target upload
+    ```
+4. **Initial Setup:**
+    - Connect to the "FilaMan" WiFi access point.
+    - Configure WiFi settings through the captive portal.
+    - Access the web interface at `http://filaman.local` or the IP address.
 
-### Data Format
-```json
-{
-  "version": "2.0",
-  "protocol": "openspool",
-  "color_hex": "FFFFFF",
-  "type": "PLA",
-  "min_temp": 200,
-  "max_temp": 220,
-  "brand": "Vendor",
-  "sm_id": "1234"
-}
-```
 
 ## Documentation
 
@@ -163,4 +144,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Availability
 
-The code can be tested and the application can be downloaded from the [GitHub repository](https://github.com/yourusername/FilaMan).
+The code can be tested and the application can be downloaded from the [GitHub repository](https://github.com/ManuelW77/Filaman).
+
+### If you want to support my work, i would be happy to get a coffe
+<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
