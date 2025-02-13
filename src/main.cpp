@@ -74,6 +74,10 @@ void setup() {
 
 unsigned long lastWeightReadTime = 0;
 const unsigned long weightReadInterval = 1000; // 1 second
+
+unsigned long lastAmsSendTime = 0;
+const unsigned long amsSendInterval = 60000; // 1 minute
+
 uint8_t weightSend = 0;
 int16_t lastWeight = 0;
 uint8_t wifiErrorCounter = 0;
@@ -94,6 +98,12 @@ void loop() {
 
   // Falls WifiManager im nicht blockenden Modus ist
   //if(wm_nonblocking) wm.process();
+
+  // Send AMS Data min every Minute
+  if (currentMillis - lastAmsSendTime >= amsSendInterval) {
+    lastAmsSendTime = currentMillis;
+    sendAmsData(nullptr);
+  }
 
   // Ausgabe der Waage auf Display
   if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0)

@@ -283,15 +283,6 @@ void setupWebserver(AsyncWebServer &server) {
         Serial.println("style.css gesendet");
     });
 
-    server.on("/style2.css", HTTP_GET, [](AsyncWebServerRequest *request){
-        Serial.println("Lade style2.css");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/style2.css.gz", "text/css");
-        response->addHeader("Content-Encoding", "gzip");
-        response->addHeader("Cache-Control", CACHE_CONTROL);
-        request->send(response);
-        Serial.println("style2.css gesendet");
-    });
-
     // Route für das Logo
     server.on("/logo.png", HTTP_GET, [](AsyncWebServerRequest *request){
         AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/logo.png.gz", "image/png");
