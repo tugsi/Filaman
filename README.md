@@ -4,6 +4,8 @@ FilaMan is a filament management system for 3D printing. It uses ESP32 hardware 
 Users can manage filament spools, monitor the status of the Automatic Material System (AMS) and make settings via a web interface. 
 The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D printers and [Spoolman](https://github.com/Donkie/Spoolman) filament management as well as the [Openspool](https://github.com/spuder/OpenSpool) NFC-TAG format.
 
+![Scale](./img/scale_trans.png)
+
 ### ESP32 Hardware Features
 - **Weight Measurement:** Using a load cell with HX711 amplifier for precise weight tracking.
 - **NFC Tag Reading/Writing:** PN532 module for reading and writing filament data to NFC tags.
