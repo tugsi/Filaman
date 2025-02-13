@@ -213,9 +213,16 @@ void setupWebserver(AsyncWebServer &server) {
 
         JsonDocument doc;
         if (loadJsonValue("/bambu_credentials.json", doc) && doc.containsKey("bambu_ip")) {
-            html.replace("{{bambuIp}}", doc["bambu_ip"].as<String>() ? doc["bambu_ip"].as<String>() : "");            
-            html.replace("{{bambuSerial}}", doc["bambu_serialnr"].as<String>() ? doc["bambu_serialnr"].as<String>() : "");
-            html.replace("{{bambuCode}}", doc["bambu_accesscode"].as<String>() ? doc["bambu_accesscode"].as<String>() : "");
+            String bambuIp = doc["bambu_ip"].as<String>();
+            String bambuSerial = doc["bambu_serialnr"].as<String>();
+            String bambuCode = doc["bambu_accesscode"].as<String>();
+            bambuIp.trim();
+            bambuSerial.trim();
+            bambuCode.trim();
+
+            html.replace("{{bambuIp}}", bambuIp ? bambuIp : "");            
+            html.replace("{{bambuSerial}}", bambuSerial ? bambuSerial : "");
+            html.replace("{{bambuCode}}", bambuCode ? bambuCode : "");
         }   
 
         request->send(200, "text/html", html);
@@ -250,6 +257,11 @@ void setupWebserver(AsyncWebServer &server) {
         bambu_ip.trim();
         bambu_serialnr.trim();
         bambu_accesscode.trim();
+
+        if (bambu_ip.length() == 0 || bambu_serialnr.length() == 0 || bambu_accesscode.length() == 0) {
+            request->send(400, "application/json", "{\"success\": false, \"error\": \"Empty parameter\"}");
+            return;
+        }
 
         bool success = saveBambuCredentials(bambu_ip, bambu_serialnr, bambu_accesscode);
 

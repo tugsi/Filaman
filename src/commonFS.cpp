@@ -7,12 +7,13 @@ bool saveJsonValue(const char* filename, const JsonDocument& doc) {
         Serial.println(filename);
         return false;
     }
-    return true;
+
     if (serializeJson(doc, file) == 0) {
         Serial.println("Fehler beim Serialisieren von JSON.");
         file.close();
         return false;
     }
+
     file.close();
     return true;
 }

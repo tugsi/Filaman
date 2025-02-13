@@ -30,16 +30,25 @@ int ams_count = 0;
 String amsJsonData;  // Speichert das fertige JSON für WebSocket-Clients
 AMSData ams_data[MAX_AMS];  // Definition des Arrays
 
-bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, const String& bambu_accesscode) {
+bool saveBambuCredentials(const String& ip, const String& serialnr, const String& accesscode) {
+    if (BambuMqttTask) {
+        vTaskDelete(BambuMqttTask);
+    }
+    
     JsonDocument doc;
-    doc["bambu_ip"] = bambu_ip;
-    doc["bambu_accesscode"] = bambu_accesscode;
-    doc["bambu_serialnr"] = bambu_serialnr;
+    doc["bambu_ip"] = ip;
+    doc["bambu_accesscode"] = accesscode;
+    doc["bambu_serialnr"] = serialnr;
 
     if (!saveJsonValue("/bambu_credentials.json", doc)) {
         Serial.println("Fehler beim Speichern der Bambu-Credentials.");
         return false;
     }
+
+    // Dynamische Speicherallokation für die globalen Pointer
+    bambu_ip = ip.c_str();
+    bambu_accesscode = accesscode.c_str();
+    bambu_serialnr = serialnr.c_str();
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
     if (!setupMqtt()) return false;

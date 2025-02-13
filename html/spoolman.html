@@ -32,12 +32,6 @@
                 .then(data => {
                     if (data.healthy) {
                         document.getElementById('bambuStatusMessage').innerText = 'Bambu Credentials saved!';
-                        // Erstelle und zeige den Reboot-Button
-                        const rebootBtn = document.createElement('button');
-                        rebootBtn.innerText = 'Reboot now';
-                        rebootBtn.className = 'reboot-button';
-                        rebootBtn.onclick = () => window.location.href = '/reboot';
-                        document.getElementById('bambuStatusMessage').appendChild(rebootBtn);
                     } else {
                         document.getElementById('bambuStatusMessage').innerText = 'Error while saving Bambu Credentials.';
                     }
