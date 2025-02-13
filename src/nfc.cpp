@@ -379,6 +379,8 @@ void scanRfidTask(void * parameter) {
     // Wenn geschrieben wird Schleife aussetzen
     if (hasReadRfidTag != 3)
     {
+      yield();
+
       uint8_t success;
       uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
       uint8_t uidLength;

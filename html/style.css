@@ -255,7 +255,7 @@ button:hover {
 
 p {
     font-size: 1rem;
-    color: #555;
+    color: #ffffff;
 }
 
 a {
@@ -323,6 +323,13 @@ a:hover {
 .nfc-status {
     font-weight: bold;
     margin-top: 10px;
+}
+
+.nfc-card-data {
+    padding-left: 20px !important;
+    color: white !important;
+    font-weight: bold !important;
+    margin: 0 auto !important;
 }
 
 .nfc-success {

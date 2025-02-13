@@ -422,9 +422,6 @@ void reconnect() {
 }
 
 void mqtt_loop(void * parameter) {
-    oledShowMessage("Bambu Connected");
-    bambu_connected = true;
-    oledShowTopRow();
     for(;;) {
         if (pauseBambuMqttTask) {
             vTaskDelay(10000);
@@ -452,13 +449,16 @@ bool setupMqtt() {
         return false;
     }
 
-    if (success && bambu_ip != "" && bambu_accesscode != "" && bambu_serialnr != "") {
+    if (success && bambu_ip != "" && bambu_accesscode != "" && bambu_serialnr != "") 
+    {
         sslClient.setCACert(root_ca);
         sslClient.setInsecure();
         client.setServer(bambu_ip, 8883);
 
         // Verbinden mit dem MQTT-Server
-        if (client.connect(bambu_serialnr, bambu_username, bambu_accesscode)) {
+        bool connected = true;
+        if (client.connect(bambu_serialnr, bambu_username, bambu_accesscode)) 
+        {
             client.setCallback(mqtt_callback);
             client.setBufferSize(5120);
             // Optional: Topic abonnieren
@@ -467,24 +467,31 @@ bool setupMqtt() {
             Serial.println("MQTT-Client initialisiert");
 
             oledShowTopRow();
-
-            xTaskCreatePinnedToCore(
-                mqtt_loop, /* Function to implement the task */
-                "BambuMqtt", /* Name of the task */
-                10000,  /* Stack size in words */
-                NULL,  /* Task input parameter */
-                mqttTaskPrio,  /* Priority of the task */
-                &BambuMqttTask,  /* Task handle. */
-                mqttTaskCore); /* Core where the task should run */
-
-        } else {
+            oledShowMessage("Bambu Connected");
+            bambu_connected = true;
+        } 
+        else 
+        {
             Serial.println("Fehler: Konnte sich nicht beim MQTT-Server anmelden");
             oledShowMessage("Bambu Connection Failed");
             oledShowTopRow();
             vTaskDelay(2000 / portTICK_PERIOD_MS);
-            return false;
+            connected = false;
         }
-    } else {
+
+        xTaskCreatePinnedToCore(
+            mqtt_loop, /* Function to implement the task */
+            "BambuMqtt", /* Name of the task */
+            10000,  /* Stack size in words */
+            NULL,  /* Task input parameter */
+            mqttTaskPrio,  /* Priority of the task */
+            &BambuMqttTask,  /* Task handle. */
+            mqttTaskCore); /* Core where the task should run */
+
+        if (!connected) return false;
+    } 
+    else 
+    {
         Serial.println("Fehler: Keine MQTT-Daten vorhanden");
         oledShowMessage("Bambu Credentials Missing");
         oledShowTopRow();

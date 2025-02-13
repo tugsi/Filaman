@@ -448,7 +448,7 @@ function updateNfcData(data) {
 
     // HTML für die Datenanzeige erstellen
     let html = `
-        <div style="margin-top: 10px;">
+        <div class="nfc-card-data" style="margin-top: 10px;">
             <p><strong>Brand:</strong> ${data.brand || 'N/A'}</p>
             <p><strong>Type:</strong> ${data.type || 'N/A'} ${data.color_hex ? `<span style="
                 background-color: #${data.color_hex}; 

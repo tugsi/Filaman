@@ -25,7 +25,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         sendAmsData(client);
         sendNfcData(client);
         foundNfcTag(client, hasReadRfidTag);
-        sendWriteResult(client, 0);
+        sendWriteResult(client, 3);
     } else if (type == WS_EVT_DISCONNECT) {
         Serial.println("Client getrennt.");
     } else if (type == WS_EVT_DATA) {
