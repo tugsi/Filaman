@@ -247,7 +247,7 @@ function displayAmsData(amsData) {
             if (!hasAnyContent) {
                 return `
                     <div class="tray">
-                        <p><b>Tray ${tray.id}</b></p>
+                        <p class="tray-head">Tray ${tray.id}</p>
                         <p>Empty</p>
                     </div>
                     <hr>`;
@@ -256,7 +256,7 @@ function displayAmsData(amsData) {
             // Nur für nicht-leere Trays den Button-HTML erstellen
             const buttonHtml = `
                 <button class="spool-button" onclick="handleSpoolIn(${ams.ams_id}, ${tray.id})" 
-                        style="position: absolute; top: 5px; left: 5px; 
+                        style="position: absolute; top: -35px; left: -15px; 
                                background: none; border: none; padding: 0; 
                                cursor: pointer; display: none;">
                     <img src="spool_in.png" alt="Spool In" style="width: 48px; height: 48px;">
@@ -304,13 +304,12 @@ function displayAmsData(amsData) {
                 <div class="tray" ${tray.tray_color ? `style="border-left: 4px solid #${tray.tray_color};"` : 'style="border-left: 4px solid #007bff;"'}>
                     <div style="position: relative;">
                         ${buttonHtml}
-                        <p><b>${trayDisplayName}</b></p>
+                        <p class="tray-head">${trayDisplayName}</p>
                         ${typeWithColor}
                         ${trayDetails}
                         ${tempHTML}
                     </div>
-                </div>
-                <hr>`;
+                </div>`;
         }).join('');
 
         const amsInfo = `

@@ -6,39 +6,22 @@
     <title>FilaMan - Filament Management Tool</title>
     <link rel="icon" type="image/png" href="/favicon.ico">
     <link rel="stylesheet" href="style.css">
-    <style>
-        .status-container {
-            float: right;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-right: 10px;
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-        }
-        .status-item {
-            display: flex;
-            align-items: center;
-            font-size: 0.8em;
-            color: #fff;
-        }
-        .online { background-color: #2ecc71; }
-        .offline { background-color: #e74c3c; }
-        .ram-status { color: #fff; font-size: 0.8em; }
-    </style>
 </head>
 <body>
     <div class="navbar">
-        <img src="/logo.png" alt="FilaMan Logo" class="logo">
-        <a href="/">Start</a>
-        <a href="/waage">Scale</a>
-        <a href="/spoolman">Spoolman/Bambu</a>
-        <a href="/about">About</a>
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <img src="/logo.png" alt="FilaMan Logo" class="logo">
+            <div class="logo-text">
+                <h1>FilaMan</h1>
+                <h4>Filament Management Tool</h4>
+            </div>
+        </div>
+        <nav style="display: flex; gap: 1rem;">
+            <a href="/">Start</a>
+            <a href="/waage">Scale</a>
+            <a href="/spoolman">Spoolman/Bambu</a>
+            <a href="/rfid">RFID</a>
+        </nav>
         <div class="status-container">
             <div class="status-item">
                 <span class="status-dot" id="bambuDot"></span>B
