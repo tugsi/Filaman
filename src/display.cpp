@@ -32,7 +32,7 @@ void oledclearline() {
             display.drawPixel(x, y, BLACK);
         }
     }
-    display.display();
+    //display.display();
 }
 
 void oledcleardata() {
@@ -42,7 +42,7 @@ void oledcleardata() {
             display.drawPixel(x, y, BLACK);
         }
     }
-    display.display();
+    //display.display();
 }
 
 int oled_center_h(String text) {
