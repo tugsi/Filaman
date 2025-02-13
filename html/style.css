@@ -845,20 +845,6 @@ input[type="submit"]:disabled,
     animation: dots 1s steps(3, end) infinite;
 }
 
-.reboot-button {
-    background-color: #ff0000;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    margin-left: 10px;
-    cursor: pointer;
-}
-
-.reboot-button:hover {
-    background-color: #cc0000;
-}
-
 /* Bambu Settings Erweiterung */
 .bambu-settings {
     background: white;
@@ -880,7 +866,7 @@ input[type="submit"]:disabled,
 }
 
 .bambu-settings .input-group input {
-    width: 100%;
+    width: 95%;
 }
 
 #bambuStatusMessage {
