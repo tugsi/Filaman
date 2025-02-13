@@ -92,6 +92,10 @@ FilaMan is designed to streamline the management of filament spools for 3D print
 | OLED SCL          | 22        |
 | PN532 IRQ         | 32        |
 | PN532 RESET       | 33        |
+| PN532 SCK  	    | 14        |
+| PN532 MOSI    	| 13        |
+| PN532 MISO       	| 12        |
+| PN532 CS/SS       | 15        |
 
 ## Software Dependencies
 
