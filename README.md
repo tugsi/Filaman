@@ -6,6 +6,8 @@ The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D 
 
 ![Scale](./img/scale_trans.png)
 
+[FilaMan Website](https://www.filaman.app)
+
 ### ESP32 Hardware Features
 - **Weight Measurement:** Using a load cell with HX711 amplifier for precise weight tracking.
 - **NFC Tag Reading/Writing:** PN532 module for reading and writing filament data to NFC tags.
