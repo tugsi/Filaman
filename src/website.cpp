@@ -24,7 +24,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         // Sende die AMS-Daten an den neuen Client
         sendAmsData(client);
         sendNfcData(client);
-        foundNfcTag(client, hasReadRfidTag);
+        foundNfcTag(client, 0);
         sendWriteResult(client, 3);
     } else if (type == WS_EVT_DISCONNECT) {
         Serial.println("Client getrennt.");
@@ -281,6 +281,15 @@ void setupWebserver(AsyncWebServer &server) {
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
         Serial.println("style.css gesendet");
+    });
+
+    server.on("/style2.css", HTTP_GET, [](AsyncWebServerRequest *request){
+        Serial.println("Lade style2.css");
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/style2.css.gz", "text/css");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
+        Serial.println("style2.css gesendet");
     });
 
     // Route für das Logo
