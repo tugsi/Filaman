@@ -31,7 +31,7 @@ The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D 
   - Track NFC tag assignments.
 
 ### If you want to support my work, i would be happy to get a coffe
-<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
 
 ## Detailed Functionality
 
@@ -149,4 +149,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 The code can be tested and the application can be downloaded from the [GitHub repository](https://github.com/ManuelW77/Filaman).
 
 ### If you want to support my work, i would be happy to get a coffe
-<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
