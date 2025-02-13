@@ -244,23 +244,38 @@ function displayAmsData(amsData) {
                 tray[field] !== 'null'
             );
 
-            if (!hasAnyContent) {
-                return `
-                    <div class="tray">
-                        <p class="tray-head">Tray ${tray.id}</p>
-                        <p>Empty</p>
-                    </div>
-                    <hr>`;
-            }
+            // Bestimme den Anzeigenamen für das Tray
+            const trayDisplayName = (ams.ams_id === 255) ? 'External' : `Tray ${tray.id}`;
 
             // Nur für nicht-leere Trays den Button-HTML erstellen
             const buttonHtml = `
                 <button class="spool-button" onclick="handleSpoolIn(${ams.ams_id}, ${tray.id})" 
-                        style="position: absolute; top: -35px; left: -15px; 
+                        style="position: absolute; top: -30px; left: -15px; 
                                background: none; border: none; padding: 0; 
                                cursor: pointer; display: none;">
                     <img src="spool_in.png" alt="Spool In" style="width: 48px; height: 48px;">
                 </button>`;
+            
+                        // Nur für nicht-leere Trays den Button-HTML erstellen
+            const outButtonHtml = `
+                <button class="spool-button" onclick="handleSpoolOut()" 
+                        style="position: absolute; top: -35px; right: -15px; 
+                               background: none; border: none; padding: 0; 
+                               cursor: pointer; display: block;">
+                    <img src="spool_in.png" alt="Spool In" style="width: 48px; height: 48px; transform: rotate(180deg) scaleX(-1);">
+                </button>`;
+
+            if (!hasAnyContent) {
+                return `
+                    <div class="tray">
+                        <p class="tray-head">${trayDisplayName}</p>
+                        <p>
+                            ${(ams.ams_id === 255 && tray.tray_type === '') ? buttonHtml : ''}
+                            Empty
+                        </p>
+                    </div>
+                    <hr>`;
+            }
 
             // Generiere den Type mit Color-Box zusammen
             const typeWithColor = tray.tray_type ? 
@@ -297,9 +312,6 @@ function displayAmsData(amsData) {
                 ? `<p>Nozzle Temp: ${tray.nozzle_temp_min}°C - ${tray.nozzle_temp_max}°C</p>`
                 : '';
 
-            // Bestimme den Anzeigenamen für das Tray
-            const trayDisplayName = (ams.ams_id === 255) ? 'External' : `Tray ${tray.id}`;
-
             return `
                 <div class="tray" ${tray.tray_color ? `style="border-left: 4px solid #${tray.tray_color};"` : 'style="border-left: 4px solid #007bff;"'}>
                     <div style="position: relative;">
@@ -308,7 +320,9 @@ function displayAmsData(amsData) {
                         ${typeWithColor}
                         ${trayDetails}
                         ${tempHTML}
+                        ${(ams.ams_id === 255 && tray.tray_type !== '') ? outButtonHtml : ''}
                     </div>
+                    
                 </div>`;
         }).join('');
 
@@ -330,6 +344,30 @@ function updateSpoolButtons(show) {
     spoolButtons.forEach(button => {
         button.style.display = show ? 'block' : 'none';
     });
+}
+
+function handleSpoolOut() {
+    // Erstelle Payload
+    const payload = {
+        type: 'setBambuSpool',
+        payload: {
+            amsId: 255,
+            trayId: 254,
+            color: "FFFFFF",
+            nozzle_temp_min: 0,
+            nozzle_temp_max: 0,
+            type: "",
+            brand: ""
+        }
+    };
+
+    try {
+        socket.send(JSON.stringify(payload));
+        showNotification(`External Spool removed. Pls wait`, true);
+    } catch (error) {
+        console.error("Fehler beim Senden der WebSocket Nachricht:", error);
+        showNotification("Error while sending!", false);
+    }
 }
 
 // Neue Funktion zum Behandeln des Spool-In-Klicks
@@ -361,13 +399,13 @@ function handleSpoolIn(amsId, trayId) {
     // Temperaturwerte extrahieren
     let minTemp = "175";
     let maxTemp = "275";
-    
+
     if (Array.isArray(selectedSpool.filament.nozzle_temperature) && 
         selectedSpool.filament.nozzle_temperature.length >= 2) {
         minTemp = selectedSpool.filament.nozzle_temperature[0];
         maxTemp = selectedSpool.filament.nozzle_temperature[1];
     }
-
+    
     // Erstelle Payload
     const payload = {
         type: 'setBambuSpool',
@@ -390,7 +428,7 @@ function handleSpoolIn(amsId, trayId) {
         showNotification(`Spool set in AMS ${amsId} Tray ${trayId}. Pls wait`, true);
     } catch (error) {
         console.error("Fehler beim Senden der WebSocket Nachricht:", error);
-        showNotification("Fehler beim Senden der Daten", false);
+        showNotification("Error while sending", false);
     }
 }
 

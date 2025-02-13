@@ -192,7 +192,7 @@ bool setBambuSpool(String payload) {
     int maxTemp = doc["nozzle_temp_max"];
     String type = doc["type"].as<String>();
     String brand = doc["brand"].as<String>();
-    String tray_info_idx = findFilamentIdx(brand, type);
+    String tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
 
     doc.clear();
 
@@ -330,7 +330,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         //Serial.println();
 
         // Sende die aktualisierten AMS-Daten an alle WebSocket-Clients
-        sendAmsData(nullptr);
+        //sendAmsData(nullptr);
 
         // Verarbeite erst die normalen AMS-Daten
         for (int i = 0; i < amsArray.size() && i < 16; i++) {
@@ -366,7 +366,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         // Sende die aktualisierten AMS-Daten
-        sendAmsData(nullptr);
+        //sendAmsData(nullptr);
 
         // Erstelle JSON für WebSocket-Clients
         JsonDocument wsDoc;
