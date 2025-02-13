@@ -6,6 +6,8 @@ The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D 
 
 ![Scale](./img/scale_trans.png)
 
+
+More Images can be found in the [img Folder](/img/) or my website:
 [FilaMan Website](https://www.filaman.app)
 
 ### ESP32 Hardware Features
