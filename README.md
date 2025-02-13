@@ -52,14 +52,15 @@ More Images can be found in the [img Folder](/img/) or my website:
 
 ### Components
 - **ESP32 Development Board:** Any ESP32 variant.
-[https://amzn.eu/d/aXThslf](url)
+[Amazon Link](https://amzn.eu/d/aXThslf)
 - **HX711 Load Cell Amplifier:** For weight measurement.
-[https://amzn.eu/d/1wZ4v0x](url)
+[Amazon Link](https://amzn.eu/d/1wZ4v0x)
 - **OLED Display:** 128x64 SSD1306.
-[https://amzn.eu/d/dozAYDU](url)
+[Amazon Link](https://amzn.eu/d/dozAYDU)
 - **PN532 NFC Module:** For NFC tag operations.
-[https://amzn.eu/d/8205DDh](url)
-- **NFC-Tag:** [https://amzn.eu/d/fywy4c4](url)
+[Amazon Link](https://amzn.eu/d/8205DDh)
+- **NFC-Tag:** NTAG215
+[Amazon Link](https://amzn.eu/d/fywy4c4)
 
 
 ### Pin Configuration
