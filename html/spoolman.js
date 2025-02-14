@@ -61,9 +61,6 @@ function populateVendorDropdown(data, selectedSmId = null) {
             totalLength += spool.remaining_length;
         }
 
-        console.log("Länge gesamt: " + spool.remaining_length);
-        console.log("Gewicht gesamt" + spool.remaining_weight);
-
         const vendor = spool.filament.vendor;
         
         const hasValidNfcId = spool.extra && 
@@ -88,6 +85,17 @@ function populateVendorDropdown(data, selectedSmId = null) {
         }
     });
 
+    // Nach der Schleife: Formatierung der Gesamtlänge
+    const formattedLength = totalLength > 1000 
+        ? (totalLength / 1000).toFixed(2) + " km" 
+        : totalLength.toFixed(2) + " m";
+
+    // Formatierung des Gesamtgewichts (von g zu kg zu t)
+    const weightInKg = totalWeight / 1000;  // erst in kg umrechnen
+    const formattedWeight = weightInKg > 1000 
+        ? (weightInKg / 1000).toFixed(2) + " t" 
+        : weightInKg.toFixed(2) + " kg";
+
     // Dropdown mit gefilterten Herstellern befüllen
     Object.entries(filteredVendors).forEach(([id, name]) => {
         const option = document.createElement("option");
@@ -102,8 +110,8 @@ function populateVendorDropdown(data, selectedSmId = null) {
     document.getElementById("totalVendors").textContent = Object.keys(allVendors).length;
     
     // Neue Statistiken hinzufügen
-    document.getElementById("totalWeight").textContent = (totalWeight / 1000).toFixed(2);
-    document.getElementById("totalLength").textContent = (totalLength / 1000).toFixed(2);
+    document.getElementById("totalWeight").textContent = formattedWeight;
+    document.getElementById("totalLength").textContent = formattedLength;
 
     // Material-Statistiken zum DOM hinzufügen
     const materialsList = document.getElementById("materialsList");
@@ -112,7 +120,7 @@ function populateVendorDropdown(data, selectedSmId = null) {
         .sort(([,a], [,b]) => b - a) // Sortiere nach Anzahl absteigend
         .forEach(([material, count]) => {
             const li = document.createElement("li");
-            li.textContent = `${material}: ${count} ${count === 1 ? 'Spule' : 'Spulen'}`;
+            li.textContent = `${material}: ${count} ${count === 1 ? 'Spool' : 'Spools'}`;
             materialsList.appendChild(li);
         });
 
