@@ -463,7 +463,7 @@ bool setupMqtt() {
         client.setServer(bambu_ip, 8883);
 
         // Verbinden mit dem MQTT-Server
-        bool connected = true;
+        bool connected = false;
         if (client.connect(bambu_serialnr, bambu_username, bambu_accesscode)) 
         {
             client.setCallback(mqtt_callback);
@@ -473,7 +473,6 @@ bool setupMqtt() {
             //client.subscribe(request_topic.c_str());
             Serial.println("MQTT-Client initialisiert");
 
-            oledShowTopRow();
             oledShowMessage("Bambu Connected");
             bambu_connected = true;
             oledShowTopRow();
@@ -484,19 +483,8 @@ bool setupMqtt() {
             oledShowMessage("Bambu Connection Failed");
             oledShowTopRow();
             vTaskDelay(2000 / portTICK_PERIOD_MS);
-            connected = false;
+            return false;
         }
-
-        xTaskCreatePinnedToCore(
-            mqtt_loop, /* Function to implement the task */
-            "BambuMqtt", /* Name of the task */
-            10000,  /* Stack size in words */
-            NULL,  /* Task input parameter */
-            mqttTaskPrio,  /* Priority of the task */
-            &BambuMqttTask,  /* Task handle. */
-            mqttTaskCore); /* Core where the task should run */
-
-        if (!connected) return false;
     } 
     else 
     {
