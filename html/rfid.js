@@ -292,7 +292,7 @@ function displayAmsData(amsData) {
             // Array mit restlichen Tray-Eigenschaften
             const trayProperties = [
                 { key: 'tray_sub_brands', label: 'Sub Brands' },
-                { key: 'tray_info_idx', label: 'Filament Index' },
+                { key: 'tray_info_idx', label: 'Filament IDX' },
                 { key: 'setting_id', label: 'Setting ID' }
             ];
 
