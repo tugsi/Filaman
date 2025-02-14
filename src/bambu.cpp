@@ -425,7 +425,8 @@ void reconnect() {
             bambu_connected = false;
             oledShowTopRow();
             // Wait 5 seconds before retrying
-            delay(5000);
+            yield();
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
         }
     }
 }
