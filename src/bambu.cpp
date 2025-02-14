@@ -198,8 +198,8 @@ bool setBambuSpool(String payload) {
 
     doc["print"]["sequence_id"] = 0;
     doc["print"]["command"] = "ams_filament_setting";
-    doc["print"]["ams_id"] = amsId < 200 ? amsId-1 : 255;
-    doc["print"]["tray_id"] = trayId < 200 ? trayId-1 : 254;
+    doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
+    doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
     doc["print"]["tray_color"] = color.length() == 8 ? color : color+"FF";
     doc["print"]["nozzle_temp_min"] = minTemp;
     doc["print"]["nozzle_temp_max"] = maxTemp;
@@ -302,6 +302,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
             if (!foundExternal) hasChanges = true;
         }
 
+        // Wenn Bambu connection changed
+        if (bambu_connected != doc["print"]["bambu_connected"].as<bool>()) {
+            hasChanges = true;
+        }
+
         if (!hasChanges) return;
 
         // Fortfahren mit der bestehenden Verarbeitung, da Änderungen gefunden wurden
@@ -401,6 +406,8 @@ void reconnect() {
     // Loop until we're reconnected
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
+        bambu_connected = false;
+        oledShowTopRow();
 
         // Attempt to connect
         if (client.connect(bambu_serialnr, bambu_username, bambu_accesscode)) {
@@ -469,6 +476,7 @@ bool setupMqtt() {
             oledShowTopRow();
             oledShowMessage("Bambu Connected");
             bambu_connected = true;
+            oledShowTopRow();
         } 
         else 
         {
