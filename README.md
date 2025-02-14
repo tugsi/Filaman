@@ -9,6 +9,7 @@ The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D 
 
 More Images can be found in the [img Folder](/img/) or my website:
 [FilaMan Website](https://www.filaman.app)
+german explanatory video [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)
 
 ### ESP32 Hardware Features
 - **Weight Measurement:** Using a load cell with HX711 amplifier for precise weight tracking.
