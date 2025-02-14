@@ -405,7 +405,7 @@ function handleSpoolIn(amsId, trayId) {
         minTemp = selectedSpool.filament.nozzle_temperature[0];
         maxTemp = selectedSpool.filament.nozzle_temperature[1];
     }
-    
+
     // Erstelle Payload
     const payload = {
         type: 'setBambuSpool',
@@ -416,7 +416,8 @@ function handleSpoolIn(amsId, trayId) {
             nozzle_temp_min: parseInt(minTemp),
             nozzle_temp_max: parseInt(maxTemp),
             type: selectedSpool.filament.material,
-            brand: selectedSpool.filament.vendor.name
+            brand: selectedSpool.filament.vendor.name,
+            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim()
         }
     };
 

@@ -174,6 +174,7 @@ bool setBambuSpool(String payload) {
     */
 
     Serial.println("Setting spool");
+    Serial.println(payload);
 
     // Parse the JSON
     JsonDocument doc;
@@ -192,7 +193,8 @@ bool setBambuSpool(String payload) {
     int maxTemp = doc["nozzle_temp_max"];
     String type = doc["type"].as<String>();
     String brand = doc["brand"].as<String>();
-    String tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
+    String tray_info_idx = doc["tray_info_idx"].as<String>();
+    if (tray_info_idx == "") tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
 
     doc.clear();
 
@@ -441,6 +443,8 @@ void mqtt_loop(void * parameter) {
             vTaskDelay(100);
         }
         client.loop();
+        yield();
+        vTaskDelay(100);
     }
 }
 
