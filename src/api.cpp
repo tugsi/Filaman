@@ -279,7 +279,10 @@ bool checkSpoolmanExtraFields() {
         "price_meter",
         "price_gramm",
         "bambu_setting_id",
-        "bambu_idx"
+        "bambu_idx",
+        "bambu_k",
+        "bambu_flow_ratio",
+        "bambu_max_volspeed"
     };
 
     String spoolExtraFields[] = {
@@ -311,7 +314,21 @@ bool checkSpoolmanExtraFields() {
 
         "{\"name\": \"Bambu IDX\","
         "\"field_type\": \"text\","
-        "\"key\": \"bambu_idx\"}"
+        "\"key\": \"bambu_idx\"}",
+
+        "{\"name\": \"Bambu k\","
+        "\"field_type\": \"float\","
+        "\"key\": \"bambu_k\"}",
+
+        "{\"name\": \"Bambu Flow Ratio\","
+        "\"field_type\": \"float\","
+        "\"key\": \"bambu_flow_ratio\"}",
+
+        "{\"name\": \"Bambu Max Vol. Speed\","
+        "\"unit\": \"mm3/s\","
+        "\"field_type\": \"integer\","
+        "\"default_value\": \"12\","
+        "\"key\": \"bambu_max_volspeed\"}"
     };
 
     Serial.println("Überprüfe Extrafelder...");
@@ -374,8 +391,10 @@ bool checkSpoolmanExtraFields() {
                             Serial.println("Fehler beim Senden der Anfrage: " + String(http.errorToString(httpCode)));
                             return false;
                         }
-                        http.end();
+                        //http.end();
                     }
+                    yield();
+                    vTaskDelay(100 / portTICK_PERIOD_MS);
                 }
             }
         }
