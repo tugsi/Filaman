@@ -195,6 +195,7 @@ bool setBambuSpool(String payload) {
     String brand = doc["brand"].as<String>();
     String tray_info_idx = doc["tray_info_idx"].as<String>();
     if (tray_info_idx == "") tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
+    String setting_id = doc["cali_idx"].as<String>();
 
     doc.clear();
 
@@ -206,7 +207,7 @@ bool setBambuSpool(String payload) {
     doc["print"]["nozzle_temp_min"] = minTemp;
     doc["print"]["nozzle_temp_max"] = maxTemp;
     doc["print"]["tray_type"] = type;
-    doc["print"]["setting_id"] = "";
+    doc["print"]["setting_id"] = (setting_id != "") ? setting_id : "";
     doc["print"]["tray_info_idx"] = tray_info_idx;
 
     // Serialize the JSON
@@ -330,7 +331,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 ams_data[i].trays[j].tray_color = trayObj["tray_color"].as<String>();
                 ams_data[i].trays[j].nozzle_temp_min = trayObj["nozzle_temp_min"].as<int>();
                 ams_data[i].trays[j].nozzle_temp_max = trayObj["nozzle_temp_max"].as<int>();
-                ams_data[i].trays[j].setting_id = trayObj["setting_id"].as<String>();
+                ams_data[i].trays[j].setting_id = trayObj["cali_idx"].as<String>();
             }
         }
         //Serial.println("----------------");
@@ -368,7 +369,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
             ams_data[extIdx].trays[0].tray_color = vtTray["tray_color"].as<String>();
             ams_data[extIdx].trays[0].nozzle_temp_min = vtTray["nozzle_temp_min"].as<int>();
             ams_data[extIdx].trays[0].nozzle_temp_max = vtTray["nozzle_temp_max"].as<int>();
-            ams_data[extIdx].trays[0].setting_id = vtTray["setting_id"].as<String>();
+            ams_data[extIdx].trays[0].setting_id = vtTray["cali_idx"].as<String>();
             ams_count++;  // Erhöhe ams_count für die externe Spule
         }
 
@@ -395,7 +396,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 trayObj["tray_color"] = ams_data[i].trays[j].tray_color;
                 trayObj["nozzle_temp_min"] = ams_data[i].trays[j].nozzle_temp_min;
                 trayObj["nozzle_temp_max"] = ams_data[i].trays[j].nozzle_temp_max;
-                trayObj["setting_id"] = ams_data[i].trays[j].setting_id;
+                trayObj["cali_idx"] = ams_data[i].trays[j].setting_id;
             }
         }
 

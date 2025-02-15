@@ -293,7 +293,8 @@ function displayAmsData(amsData) {
             const trayProperties = [
                 { key: 'tray_sub_brands', label: 'Sub Brands' },
                 { key: 'tray_info_idx', label: 'Filament IDX' },
-                { key: 'setting_id', label: 'Setting ID' }
+                { key: 'setting_id', label: 'Setting ID' },
+                { key: 'cali_idx', label: 'Calibration IDX' }  // Add new property
             ];
 
             // Nur gültige Felder anzeigen
@@ -417,7 +418,8 @@ function handleSpoolIn(amsId, trayId) {
             nozzle_temp_max: parseInt(maxTemp),
             type: selectedSpool.filament.material,
             brand: selectedSpool.filament.vendor.name,
-            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim()
+            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim(),
+            cali_idx: selectedSpool.filament.extra.bambu_setting_id.replace(/['"]+/g, '').trim()
         }
     };
 
