@@ -266,7 +266,7 @@ function displayAmsData(amsData) {
         
         const trayHTML = ams.tray.map(tray => {
             // Prüfe ob überhaupt Daten vorhanden sind
-            const relevantFields = ['tray_type', 'tray_sub_brands', 'tray_info_idx', 'setting_id'];
+            const relevantFields = ['tray_type', 'tray_sub_brands', 'tray_info_idx', 'setting_id', 'cali_idx'];
             const hasAnyContent = relevantFields.some(field => 
                 tray[field] !== null && 
                 tray[field] !== undefined && 
@@ -324,7 +324,7 @@ function displayAmsData(amsData) {
                 { key: 'tray_sub_brands', label: 'Sub Brands' },
                 { key: 'tray_info_idx', label: 'Filament IDX' },
                 { key: 'setting_id', label: 'Setting ID' },
-                { key: 'cali_idx', label: 'Calibration IDX' }  // Add new property
+                { key: 'cali_idx', label: 'Calibration IDX' }
             ];
 
             // Nur gültige Felder anzeigen
@@ -454,16 +454,22 @@ function handleSpoolIn(amsId, trayId) {
             nozzle_temp_max: parseInt(maxTemp),
             type: selectedSpool.filament.material,
             brand: selectedSpool.filament.vendor.name,
-            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim()
+            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim(),
+            cali_idx: "-1"  // Default-Wert setzen
         }
     };
 
+    // Prüfe, ob der Key cali_idx vorhanden ist und setze ihn
+    if (selectedSpool.filament.extra.bambu_cali_id) {
+        payload.payload.cali_idx = selectedSpool.filament.extra.bambu_cali_id.replace(/['"]+/g, '').trim();
+    }
+
     // Prüfe, ob der Key bambu_setting_id vorhanden ist
     if (selectedSpool.filament.extra.bambu_setting_id) {
-        payload.payload.cali_idx = selectedSpool.filament.extra.bambu_setting_id.replace(/['"]+/g, '').trim();
-    } else {
-        payload.payload.cali_idx = "-1";
+        payload.payload.bambu_setting_id = selectedSpool.filament.extra.bambu_setting_id.replace(/['"]+/g, '').trim();
     }
+
+    console.log("Spool-In Payload:", payload);
 
     try {
         socket.send(JSON.stringify(payload));

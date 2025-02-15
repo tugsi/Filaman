@@ -137,43 +137,7 @@ bool sendMqttMessage(String payload) {
 }
 
 bool setBambuSpool(String payload) {
-    /* payload
-    //// set Spool
-    {
-        "print": {
-            "sequence_id": 0,
-            "command": "ams_filament_setting",
-            "ams_id": 0, // AMS ID 0-3 oder externe Spule 255
-            "tray_id": 0, // Tray ID 0-3 oder externe Spule 254
-            "tray_color": "000000FF",
-            "nozzle_temp_min": 170,
-            "nozzle_temp_max": 200,
-            "tray_type": "PETG",
-            "setting_id": "",
-            "tray_info_idx": "GFG99"
-        }
-    }
-
-
-
-    //// Remove Spool
-    {
-        "print":{
-            "ams_id":255,
-            "command":"ams_filament_setting",
-            "nozzle_temp_max": 0,
-            "nozzle_temp_min": 0,
-            "sequence_id": 0,
-            "setting_id": "",
-            "tray_color": "FFFFFFFF",
-            "tray_id": 254,
-            "tray_info_idx": "",
-            "tray_type": "",
-        }
-    }
-    */
-
-    Serial.println("Setting spool");
+    Serial.println("Spool settings in");
     Serial.println(payload);
 
     // Parse the JSON
@@ -195,7 +159,8 @@ bool setBambuSpool(String payload) {
     String brand = doc["brand"].as<String>();
     String tray_info_idx = (doc["tray_info_idx"].as<String>() != "-1") ? doc["tray_info_idx"].as<String>() : "";
     if (tray_info_idx == "") tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
-    String setting_id = doc["cali_idx"].as<String>();
+    String setting_id = doc["bambu_setting_id"].as<String>();
+    String cali_idx = doc["cali_idx"].as<String>();
 
     doc.clear();
 
@@ -207,13 +172,14 @@ bool setBambuSpool(String payload) {
     doc["print"]["nozzle_temp_min"] = minTemp;
     doc["print"]["nozzle_temp_max"] = maxTemp;
     doc["print"]["tray_type"] = type;
-    doc["print"]["setting_id"] = (setting_id != "") ? setting_id : "";
+    doc["print"]["cali_idx"] = (cali_idx != "") ? cali_idx : "";
     doc["print"]["tray_info_idx"] = tray_info_idx;
+    doc["print"]["setting_id"] = setting_id;
 
     // Serialize the JSON
     String output;
     serializeJson(doc, output);
-    
+
     if (sendMqttMessage(output)) {
         Serial.println("Spool successfully set");
     }
@@ -224,31 +190,65 @@ bool setBambuSpool(String payload) {
     }
     
     doc.clear();
+    yield();
 
-    if (setting_id != "") {
+    if (cali_idx != "") {
+        yield();
         doc["print"]["sequence_id"] = 0;
         doc["print"]["command"] = "extrusion_cali_sel";
-        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
-        doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
         doc["print"]["filament_id"] = tray_info_idx;
         doc["print"]["nozzle_diameter"] = "0.4";
-        doc["print"]["cali_idx"] = setting_id.toInt();
+        doc["print"]["cali_idx"] = cali_idx.toInt();
+        doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
+        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
 
         // Serialize the JSON
         String output;
         serializeJson(doc, output);
-        
+
         if (sendMqttMessage(output)) {
-            Serial.println("Setting ID successfully set");
+            Serial.println("Extrusion calibration successfully set");
         }
         else
         {
-            Serial.println("Failed to set setting ID");
+            Serial.println("Failed to set extrusion calibration");
             return false;
         }
 
         doc.clear();
+        yield();
     }
+/*
+    if (setting_id != "") {
+        yield();
+        doc["print"]["sequence_id"] = 0;
+        doc["print"]["command"] = "ams_filament_setting";
+        doc["print"]["nozzle_temp_min"] = minTemp;
+        doc["print"]["nozzle_temp_max"] = maxTemp;
+        doc["print"]["setting_id"] = setting_id;
+        doc["print"]["tray_color"] = color.length() == 8 ? color : color+"FF";
+        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
+        doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
+        doc["print"]["tray_info_idx"] = tray_info_idx;
+        doc["print"]["tray_type"] = type;
+
+        // Serialize the JSON
+        String output;
+        serializeJson(doc, output);
+
+        if (sendMqttMessage(output)) {
+            Serial.println("Filament Setting successfully set");
+        }
+        else
+        {
+            Serial.println("Failed to set Filament setting");
+            return false;
+        }
+
+        doc.clear();
+        yield();
+    }
+*/
 
     return true;
 }
@@ -306,7 +306,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 JsonObject trayObj = trayArray[j];
                 if (trayObj["tray_info_idx"].as<String>() != ams_data[storedIndex].trays[j].tray_info_idx ||
                     trayObj["tray_type"].as<String>() != ams_data[storedIndex].trays[j].tray_type ||
-                    trayObj["tray_color"].as<String>() != ams_data[storedIndex].trays[j].tray_color) {
+                    trayObj["tray_color"].as<String>() != ams_data[storedIndex].trays[j].tray_color ||
+                    trayObj["cali_idx"].as<String>() != ams_data[storedIndex].trays[j].cali_idx) {
                     hasChanges = true;
                     break;
                 }
@@ -323,7 +324,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                     foundExternal = true;
                     if (vtTray["tray_info_idx"].as<String>() != ams_data[i].trays[0].tray_info_idx ||
                         vtTray["tray_type"].as<String>() != ams_data[i].trays[0].tray_type ||
-                        vtTray["tray_color"].as<String>() != ams_data[i].trays[0].tray_color) {
+                        vtTray["tray_color"].as<String>() != ams_data[i].trays[0].tray_color ||
+                        vtTray["cali_idx"].as<String>() != ams_data[i].trays[0].cali_idx) {
                         hasChanges = true;
                     }
                     break;
@@ -353,7 +355,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 ams_data[i].trays[j].tray_color = trayObj["tray_color"].as<String>();
                 ams_data[i].trays[j].nozzle_temp_min = trayObj["nozzle_temp_min"].as<int>();
                 ams_data[i].trays[j].nozzle_temp_max = trayObj["nozzle_temp_max"].as<int>();
-                ams_data[i].trays[j].setting_id = trayObj["cali_idx"].as<String>();
+                ams_data[i].trays[j].setting_id = trayObj["setting_id"].as<String>();
+                ams_data[i].trays[j].cali_idx = trayObj["cali_idx"].as<String>();
             }
         }
         //Serial.println("----------------");
@@ -391,7 +394,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
             ams_data[extIdx].trays[0].tray_color = vtTray["tray_color"].as<String>();
             ams_data[extIdx].trays[0].nozzle_temp_min = vtTray["nozzle_temp_min"].as<int>();
             ams_data[extIdx].trays[0].nozzle_temp_max = vtTray["nozzle_temp_max"].as<int>();
-            ams_data[extIdx].trays[0].setting_id = vtTray["cali_idx"].as<String>();
+            ams_data[extIdx].trays[0].setting_id = vtTray["setting_id"].as<String>();
+            ams_data[extIdx].trays[0].cali_idx = vtTray["cali_idx"].as<String>();
             ams_count++;  // Erhöhe ams_count für die externe Spule
         }
 
@@ -418,12 +422,60 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 trayObj["tray_color"] = ams_data[i].trays[j].tray_color;
                 trayObj["nozzle_temp_min"] = ams_data[i].trays[j].nozzle_temp_min;
                 trayObj["nozzle_temp_max"] = ams_data[i].trays[j].nozzle_temp_max;
-                trayObj["cali_idx"] = ams_data[i].trays[j].setting_id;
+                trayObj["setting_id"] = ams_data[i].trays[j].setting_id;
+                trayObj["cali_idx"] = ams_data[i].trays[j].cali_idx;
             }
         }
 
         serializeJson(wsArray, amsJsonData);
         sendAmsData(nullptr);
+    }
+    // Neue Bedingung für ams_filament_setting
+    else if (doc["print"]["command"] == "ams_filament_setting") {
+        int amsId = doc["print"]["ams_id"].as<int>();
+        int trayId = doc["print"]["tray_id"].as<int>();
+        String settingId = doc["print"]["setting_id"].as<String>();
+        
+        // Finde das entsprechende AMS und Tray
+        for (int i = 0; i < ams_count; i++) {
+            if (ams_data[i].ams_id == amsId) {
+                // Update setting_id im entsprechenden Tray
+                ams_data[i].trays[trayId].setting_id = settingId;
+                
+                // Erstelle neues JSON für WebSocket-Clients
+                JsonDocument wsDoc;
+                JsonArray wsArray = wsDoc.to<JsonArray>();
+
+                for (int j = 0; j < ams_count; j++) {
+                    JsonObject amsObj = wsArray.createNestedObject();
+                    amsObj["ams_id"] = ams_data[j].ams_id;
+
+                    JsonArray trays = amsObj.createNestedArray("tray");
+                    int maxTrays = (ams_data[j].ams_id == 255) ? 1 : 4;
+                    
+                    for (int k = 0; k < maxTrays; k++) {
+                        JsonObject trayObj = trays.createNestedObject();
+                        trayObj["id"] = ams_data[j].trays[k].id;
+                        trayObj["tray_info_idx"] = ams_data[j].trays[k].tray_info_idx;
+                        trayObj["tray_type"] = ams_data[j].trays[k].tray_type;
+                        trayObj["tray_sub_brands"] = ams_data[j].trays[k].tray_sub_brands;
+                        trayObj["tray_color"] = ams_data[j].trays[k].tray_color;
+                        trayObj["nozzle_temp_min"] = ams_data[j].trays[k].nozzle_temp_min;
+                        trayObj["nozzle_temp_max"] = ams_data[j].trays[k].nozzle_temp_max;
+                        trayObj["setting_id"] = ams_data[j].trays[k].setting_id;
+                        trayObj["cali_idx"] = ams_data[j].trays[k].cali_idx;
+                    }
+                }
+
+                // Aktualisiere das globale amsJsonData
+                amsJsonData = "";
+                serializeJson(wsArray, amsJsonData);
+                
+                // Sende an WebSocket Clients
+                sendAmsData(nullptr);
+                break;
+            }
+        }
     }
 }
 

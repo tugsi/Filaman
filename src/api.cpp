@@ -279,6 +279,7 @@ bool checkSpoolmanExtraFields() {
         "price_meter",
         "price_gramm",
         "bambu_setting_id",
+        "bambu_cali_id",
         "bambu_idx",
         "bambu_k",
         "bambu_flow_ratio",
@@ -312,7 +313,11 @@ bool checkSpoolmanExtraFields() {
         "\"field_type\": \"text\","
         "\"key\": \"bambu_setting_id\"}",
 
-        "{\"name\": \"Bambu IDX\","
+        "{\"name\": \"Bambu Cali ID\","
+        "\"field_type\": \"text\","
+        "\"key\": \"bambu_cali_id\"}",
+
+        "{\"name\": \"Bambu Filament IDX\","
         "\"field_type\": \"text\","
         "\"key\": \"bambu_idx\"}",
 

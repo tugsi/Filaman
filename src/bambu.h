@@ -13,6 +13,7 @@ struct TrayData {
     int nozzle_temp_min;
     int nozzle_temp_max;
     String setting_id;
+    String cali_idx;
 };
 
 #define MAX_AMS 17  // 16 normale AMS + 1 externe Spule
