@@ -337,7 +337,7 @@ function displayAmsData(amsData) {
                 )
                 .map(prop => {
                     // Spezielle Behandlung für setting_id
-                    if (prop.key === 'setting_id' && tray[prop.key] === '-1') {
+                    if (prop.key === 'cali_idx' && tray[prop.key] === '-1') {
                         return `<p>${prop.label}: not calibrated</p>`;
                     }
                     return `<p>${prop.label}: ${tray[prop.key]}</p>`;
