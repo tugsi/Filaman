@@ -69,6 +69,16 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
             }
         }
 
+        else if (doc["type"] == "reconnect") {
+            if (doc["payload"] == "bambu") {
+                bambu_restart();
+            }
+
+            if (doc["payload"] == "spoolman") {
+                initSpoolman();
+            }
+        }
+
         else if (doc["type"] == "setBambuSpool") {
             Serial.println(doc["payload"].as<String>());
             setBambuSpool(doc["payload"]);

@@ -112,9 +112,39 @@ function initWebSocket() {
                 
                 if (bambuDot) {
                     bambuDot.className = 'status-dot ' + (data.bambu_connected ? 'online' : 'offline');
+                    // Add click handler only when offline
+                    if (!data.bambu_connected) {
+                        bambuDot.style.cursor = 'pointer';
+                        bambuDot.onclick = function() {
+                            if (socket && socket.readyState === WebSocket.OPEN) {
+                                socket.send(JSON.stringify({
+                                    type: 'reconnect',
+                                    payload: 'bambu'
+                                }));
+                            }
+                        };
+                    } else {
+                        bambuDot.style.cursor = 'default';
+                        bambuDot.onclick = null;
+                    }
                 }
                 if (spoolmanDot) {
                     spoolmanDot.className = 'status-dot ' + (data.spoolman_connected ? 'online' : 'offline');
+                    // Add click handler only when offline
+                    if (!data.spoolman_connected) {
+                        spoolmanDot.style.cursor = 'pointer';
+                        spoolmanDot.onclick = function() {
+                            if (socket && socket.readyState === WebSocket.OPEN) {
+                                socket.send(JSON.stringify({
+                                    type: 'reconnect',
+                                    payload: 'spoolman'
+                                }));
+                            }
+                        };
+                    } else {
+                        spoolmanDot.style.cursor = 'default';
+                        spoolmanDot.onclick = null;
+                    }
                 }
                 if (ramStatus) {
                     ramStatus.textContent = `${data.freeHeap}k`;
@@ -305,7 +335,13 @@ function displayAmsData(amsData) {
                     tray[prop.key] !== '' &&
                     tray[prop.key] !== 'null'
                 )
-                .map(prop => `<p>${prop.label}: ${tray[prop.key]}</p>`)
+                .map(prop => {
+                    // Spezielle Behandlung für setting_id
+                    if (prop.key === 'setting_id' && tray[prop.key] === '-1') {
+                        return `<p>${prop.label}: not calibrated</p>`;
+                    }
+                    return `<p>${prop.label}: ${tray[prop.key]}</p>`;
+                })
                 .join('');
 
             // Temperaturen nur anzeigen, wenn beide nicht 0 sind
@@ -418,13 +454,16 @@ function handleSpoolIn(amsId, trayId) {
             nozzle_temp_max: parseInt(maxTemp),
             type: selectedSpool.filament.material,
             brand: selectedSpool.filament.vendor.name,
-            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim(),
-            cali_idx: selectedSpool.filament.extra.bambu_setting_id.replace(/['"]+/g, '').trim()
+            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim()
         }
     };
 
-    // Debug logging
-    console.log("Sende WebSocket Nachricht:", payload);
+    // Prüfe, ob der Key bambu_setting_id vorhanden ist
+    if (selectedSpool.filament.extra.bambu_setting_id) {
+        payload.payload.cali_idx = selectedSpool.filament.extra.bambu_setting_id.replace(/['"]+/g, '').trim();
+    } else {
+        payload.payload.cali_idx = "-1";
+    }
 
     try {
         socket.send(JSON.stringify(payload));
