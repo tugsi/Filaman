@@ -193,7 +193,7 @@ bool setBambuSpool(String payload) {
     int maxTemp = doc["nozzle_temp_max"];
     String type = doc["type"].as<String>();
     String brand = doc["brand"].as<String>();
-    String tray_info_idx = doc["tray_info_idx"].as<String>();
+    String tray_info_idx = (doc["tray_info_idx"].as<String>() != "-1") ? doc["tray_info_idx"].as<String>() : "";
     if (tray_info_idx == "") tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
     String setting_id = doc["cali_idx"].as<String>();
 
@@ -223,6 +223,33 @@ bool setBambuSpool(String payload) {
         return false;
     }
     
+    doc.clear();
+
+    if (setting_id != "") {
+        doc["print"]["sequence_id"] = 0;
+        doc["print"]["command"] = "extrusion_cali_sel";
+        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
+        doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
+        doc["print"]["filament_id"] = tray_info_idx;
+        doc["print"]["nozzle_diameter"] = "0.4";
+        doc["print"]["cali_idx"] = setting_id.toInt();
+
+        // Serialize the JSON
+        String output;
+        serializeJson(doc, output);
+        
+        if (sendMqttMessage(output)) {
+            Serial.println("Setting ID successfully set");
+        }
+        else
+        {
+            Serial.println("Failed to set setting ID");
+            return false;
+        }
+
+        doc.clear();
+    }
+
     return true;
 }
 
@@ -303,11 +330,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 }
             }
             if (!foundExternal) hasChanges = true;
-        }
-
-        // Wenn Bambu connection changed
-        if (bambu_connected != doc["print"]["bambu_connected"].as<bool>()) {
-            hasChanges = true;
         }
 
         if (!hasChanges) return;
@@ -512,4 +534,11 @@ bool setupMqtt() {
         return false;
     }
     return true;
+}
+
+void bambu_restart() {
+    if (BambuMqttTask) {
+        vTaskDelete(BambuMqttTask);
+    }
+    setupMqtt();
 }

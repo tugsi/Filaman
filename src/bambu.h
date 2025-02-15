@@ -33,5 +33,6 @@ bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, 
 bool setupMqtt();
 void mqtt_loop(void * parameter);
 bool setBambuSpool(String payload);
+void bambu_restart();
 
 #endif
