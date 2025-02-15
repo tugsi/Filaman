@@ -339,7 +339,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         // Fortfahren mit der bestehenden Verarbeitung, da Änderungen gefunden wurden
         ams_count = amsArray.size();
         
-        // Restlicher bestehender Code...
         for (int i = 0; i < ams_count && i < 16; i++) {
             JsonObject amsObj = amsArray[i];
             JsonArray trayArray = amsObj["tray"].as<JsonArray>();
@@ -357,25 +356,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 ams_data[i].trays[j].nozzle_temp_max = trayObj["nozzle_temp_max"].as<int>();
                 ams_data[i].trays[j].setting_id = trayObj["setting_id"].as<String>();
                 ams_data[i].trays[j].cali_idx = trayObj["cali_idx"].as<String>();
-            }
-        }
-        //Serial.println("----------------");
-        //Serial.println();
-
-        // Sende die aktualisierten AMS-Daten an alle WebSocket-Clients
-        //sendAmsData(nullptr);
-
-        // Verarbeite erst die normalen AMS-Daten
-        for (int i = 0; i < amsArray.size() && i < 16; i++) {
-            JsonObject amsObj = amsArray[i];
-            JsonArray trayArray = amsObj["tray"].as<JsonArray>();
-
-            ams_data[i].ams_id = amsObj["id"].as<uint8_t>();
-            for (int j = 0; j < trayArray.size() && j < 4; j++) {
-                JsonObject trayObj = trayArray[j];
-                ams_data[i].trays[j].id = trayObj["id"].as<uint8_t>();
-                ams_data[i].trays[j].tray_info_idx = trayObj["tray_info_idx"].as<String>();
-                // ... weitere Tray-Daten ...
             }
         }
         
