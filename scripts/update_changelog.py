@@ -64,6 +64,31 @@ def get_changes_from_git():
     
     return changes
 
+def push_changes(version):
+    """Push changes to upstream"""
+    try:
+        # Stage the CHANGELOG.md
+        subprocess.run(['git', 'add', 'CHANGELOG.md'], check=True)
+        
+        # Commit the changelog
+        commit_msg = f"docs: update changelog for version {version}"
+        subprocess.run(['git', 'commit', '-m', commit_msg], check=True)
+        
+        # Push to origin (local)
+        subprocess.run(['git', 'push', 'origin'], check=True)
+        print("Successfully pushed to origin")
+        
+        # Ask for upstream push
+        response = input("Do you want to push to GitHub (upstream)? (y/n): ").lower()
+        if response == 'y':
+            subprocess.run(['git', 'push', 'upstream'], check=True)
+            print("Successfully pushed to upstream")
+            
+    except subprocess.CalledProcessError as e:
+        print(f"Error during git operations: {e}")
+        return False
+    return True
+
 def update_changelog():
     version = get_version()
     today = datetime.now().strftime('%Y-%m-%d')
@@ -90,6 +115,7 @@ def update_changelog():
     if not os.path.exists(changelog_path):
         with open(changelog_path, 'w') as f:
             f.write(f"# Changelog\n\n{changelog_entry}")
+        push_changes(version)
     else:
         with open(changelog_path, 'r') as f:
             content = f.read()
@@ -98,6 +124,7 @@ def update_changelog():
             updated_content = content.replace("# Changelog\n", f"# Changelog\n\n{changelog_entry}")
             with open(changelog_path, 'w') as f:
                 f.write(updated_content)
+            push_changes(version)
         else:
             print(f"Version {version} already exists in changelog")
 
