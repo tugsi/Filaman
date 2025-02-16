@@ -1007,3 +1007,10 @@ input[type="submit"]:disabled,
 .spool-button:hover {
     opacity: 0.8;
 }
+
+.version {
+    font-size: 0.4em;
+    color: #000;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}

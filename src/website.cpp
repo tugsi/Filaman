@@ -92,23 +92,15 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 
 // Funktion zum Laden und Ersetzen des Headers in einer HTML-Datei
 String loadHtmlWithHeader(const char* filename) {
-    if (!SPIFFS.exists(filename) || !SPIFFS.exists("/header.html")) {
+    Serial.println("Lade HTML-Datei: " + String(filename));
+    if (!SPIFFS.exists(filename)) {
         Serial.println("Fehler: Datei nicht gefunden!");
         return "Fehler: Datei nicht gefunden!";
     }
 
-    // Lade den Header
-    File headerFile = SPIFFS.open("/header.html", "r");
-    String header = headerFile.readString();
-    headerFile.close();
-
-    // Lade die Hauptdatei
     File file = SPIFFS.open(filename, "r");
     String html = file.readString();
     file.close();
-
-    // Ersetze den Platzhalter mit dem Header
-    html.replace("{{header}}", header);
 
     return html;
 }
@@ -169,25 +161,31 @@ void setupWebserver(AsyncWebServer &server) {
     Serial.print("Geladene Spoolman-URL: ");
     Serial.println(spoolmanUrl);
 
-    // Route für die Startseite
+    // Route für about
     server.on("/about", HTTP_GET, [](AsyncWebServerRequest *request){
-        Serial.println("Anfrage für / erhalten");
-        String html = loadHtmlWithHeader("/index.html");
-        request->send(200, "text/html", html);
+        Serial.println("Anfrage für /about erhalten");
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/about.html.gz", "text/html");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
     });
 
     // Route für Waage
     server.on("/waage", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /waage erhalten");
-        String html = loadHtmlWithHeader("/waage.html");
-        request->send(200, "text/html", html);
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/waage.html.gz", "text/html");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
     });
 
     // Route für RFID
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /rfid erhalten");
-        String html = loadHtmlWithHeader("/rfid.html");
-        request->send(200, "text/html", html);
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/rfid.html.gz", "text/html");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
         Serial.println("RFID-Seite gesendet");
     });
 
@@ -211,8 +209,10 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für WiFi
     server.on("/wifi", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /wifi erhalten");
-        String html = loadHtmlWithHeader("/wifi.html");
-        request->send(200, "text/html", html);
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/wifi.html.gz", "text/html");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
     });
 
     // Route für Spoolman Setting
