@@ -218,31 +218,8 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für Spoolman Setting
     server.on("/spoolman", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /spoolman erhalten");
-        
-        // Zuerst die gz-Datei laden
-        if (!SPIFFS.exists("/spoolman.html.gz")) {
-            request->send(404, "text/plain", "File not found");
-            return;
-        }
-
-        // Datei öffnen und in einen Puffer laden
-        File file = SPIFFS.open("/spoolman.html.gz", "r");
-        size_t fileSize = file.size();
-        uint8_t *gzippedContent = new uint8_t[fileSize];
-        file.read(gzippedContent, fileSize);
-        file.close();
-
-        // Entpacken des gzippedContent in einen String
-        String html;
-        // TODO: Hier muss der gzippedContent entpackt werden
-        // Dies erfordert eine zusätzliche Bibliothek wie zlib
-        
-        // Ersetzungen vornehmen
-        String urlToReplace = spoolmanUrl;
-        if (urlToReplace.length() == 0) {
-            urlToReplace = "";
-        }
-        html.replace("{{spoolmanUrl}}", urlToReplace);
+        String html = loadHtmlWithHeader("/spoolman.html");
+        html.replace("{{spoolmanUrl}}", spoolmanUrl);
 
         JsonDocument doc;
         if (loadJsonValue("/bambu_credentials.json", doc) && doc.containsKey("bambu_ip")) {
@@ -258,14 +235,7 @@ void setupWebserver(AsyncWebServer &server) {
             html.replace("{{bambuCode}}", bambuCode ? bambuCode : "");
         }   
 
-        // Komprimierte Antwort senden
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", html.c_str());
-        response->addHeader("Content-Encoding", "gzip");
-        response->addHeader("Cache-Control", CACHE_CONTROL);
-        request->send(response);
-
-        // Speicher freigeben
-        delete[] gzippedContent;
+        request->send(200, "text/html", html);
     });
 
     // Route für das Überprüfen der Spoolman-Instanz
