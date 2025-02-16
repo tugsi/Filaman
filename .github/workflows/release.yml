@@ -6,11 +6,16 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: write        # for creating releases and uploading assets
+  discussions: write     # if you want to allow release discussions
+  packages: write       # if you're publishing packages
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Add permissions at job level as well
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
     
