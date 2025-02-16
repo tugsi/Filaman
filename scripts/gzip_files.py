@@ -14,7 +14,7 @@ def copy_file(input_file, output_file):
 
 def should_compress(file):
     # Komprimiere nur bestimmte Dateitypen
-    return file.endswith(('.js', '.png', '.css'))
+    return file.endswith(('.js', '.png', '.css', '.html'))
 
 def main(source_dir, target_dir):
     for root, dirs, files in os.walk(source_dir):

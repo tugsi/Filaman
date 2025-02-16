@@ -1,0 +1,33 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Get version from tag
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+      
+    - name: Read CHANGELOG.md
+      id: changelog
+      run: |
+        CHANGELOG=$(awk "/## \[${{ steps.get_version.outputs.VERSION }}\]/{p=1;print;next} /## \[/{p=0} p" CHANGELOG.md)
+        echo "::set-output name=CHANGES::$CHANGELOG"
+      
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.changelog.outputs.CHANGES }}
+        draft: false
+        prerelease: false
