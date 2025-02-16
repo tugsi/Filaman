@@ -239,16 +239,6 @@ function updateNfcInfo() {
         `${spool.id} | ${spool.filament.name} (${spool.filament.material})` === selectedText
     );
 
-    if (selectedSpool && selectedSpool.extra.nfc_id) {
-        nfcInfo.textContent = "NFC Tag assigned";
-        nfcInfo.classList.add("nfc-success");
-        nfcInfo.classList.remove("nfc-error");
-    } else {
-        nfcInfo.textContent = "No NFC-Tag assigned";
-        nfcInfo.classList.add("nfc-error");
-        nfcInfo.classList.remove("nfc-success");
-    }
-
     if (selectedSpool) {
         writeButton.classList.remove("hidden");
     } else {
@@ -526,7 +516,7 @@ function updateNfcData(data) {
             }
 
         } else {
-            nfcDataDiv.innerHTML = '<div style="margin-top: 10px;"></div>';
+            nfcDataDiv.innerHTML = '<div class="info-message-inner" style="margin-top: 10px;"></div>';
         }
         nfcStatusContainer.appendChild(nfcDataDiv);
         return;
