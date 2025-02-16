@@ -68,6 +68,6 @@ jobs:
         gh release create ${{ github.ref_name }} \
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          .pio/build/esp32dev/filaman.bin \
+          ".pio/build/esp32dev/filaman.bin#filaman-${{ steps.get_version.outputs.VERSION }}.bin" \
           --draft false \
           --prerelease false
