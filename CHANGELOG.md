@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5] - 2025-02-16
+### Added
+- update version to 1.0.5 and enhance changelog update process with automatic git push
+- update changelog script to categorize commits and handle new changelog creation
+- improve changelog update script to handle absolute paths and create new changelog if missing
+
+
 ## [1.0.4] - 2025-02-16
 ### Added
 - improve changelog update script to handle absolute paths and create new changelog if missing
