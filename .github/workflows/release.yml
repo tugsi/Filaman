@@ -44,7 +44,7 @@ jobs:
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o .pio/build/esp32dev/merged_firmware.bin \
+          -o .pio/build/esp32dev/filaman.bin \
           0x10000 .pio/build/esp32dev/firmware.bin \
           0x290000 .pio/build/esp32dev/spiffs.bin
     
@@ -60,44 +60,14 @@ jobs:
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
     
-    - name: Create Release
-      uses: actions/create-release@v1
-      id: create_release
+    - name: Create Release and Upload Assets
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.VERSION }}
-        body: ${{ steps.changelog.outputs.CHANGES }}
-        draft: false
-        prerelease: false
-        
-    - name: Upload Firmware Assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: .pio/build/esp32dev/firmware.bin
-        asset_name: firmware.bin
-        asset_content_type: application/octet-stream
-        
-    - name: Upload SPIFFS Assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: .pio/build/esp32dev/spiffs.bin
-        asset_name: spiffs.bin
-        asset_content_type: application/octet-stream
-        
-    - name: Upload Merged Firmware
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: .pio/build/esp32dev/merged_firmware.bin
-        asset_name: merged_firmware.bin
-        asset_content_type: application/octet-stream
+      run: |
+        # Create release
+        gh release create ${{ github.ref_name }} \
+          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+          --notes "${{ steps.changelog.outputs.CHANGES }}" \
+          .pio/build/esp32dev/filaman.bin \
+          --draft false \
+          --prerelease false
