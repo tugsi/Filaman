@@ -78,19 +78,15 @@ def push_changes(version):
         subprocess.run(['git', 'push', 'origin'], check=True)
         print("Successfully pushed to origin")
         
-        # Ask for upstream push
-        response = input("Do you want to push to GitHub (upstream)? (y/n): ").lower()
-        if response == 'y':
-            subprocess.run(['git', 'push', 'upstream'], check=True)
-            print("Successfully pushed to upstream")
-            
     except subprocess.CalledProcessError as e:
         print(f"Error during git operations: {e}")
         return False
     return True
 
 def update_changelog():
+    print("Starting changelog update...")  # Add this line
     version = get_version()
+    print(f"Current version: {version}")   # Add this line
     today = datetime.now().strftime('%Y-%m-%d')
     
     script_dir = os.path.dirname(os.path.abspath(__file__))

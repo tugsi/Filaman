@@ -1,10 +1,5 @@
 # Changelog
 
-## [1.1.0] - 2025-02-16
-### Fixed
-- correct version number in nav bar
-
-
 ## [1.0.5] - 2025-02-16
 ### Added
 - update version to 1.0.5 and enhance changelog update process with automatic git push
