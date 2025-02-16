@@ -6,16 +6,11 @@ on:
       - 'v*'
 
 permissions:
-  contents: write        # for creating releases and uploading assets
-  discussions: write     # if you want to allow release discussions
-  packages: write       # if you're publishing packages
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Add permissions at job level as well
-    permissions:
-      contents: write
     steps:
     - uses: actions/checkout@v4
     
@@ -60,23 +55,16 @@ jobs:
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
     
-    - name: Install GitHub CLI
+    - name: Install and Configure GitHub CLI
       run: |
-        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-        && sudo apt update \
-        && sudo apt install gh -y
-
-    - name: Create Release and Upload Assets
+        sudo apt update
+        sudo apt install gh -y
+        
+    - name: Create Release with GitHub CLI
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Create release
-        gh release create ${{ github.ref_name }} \
+        gh release create "${{ github.ref_name }}" \
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          ".pio/build/esp32dev/filaman.bin#filaman-${{ steps.get_version.outputs.VERSION }}.bin" \
-          --draft false \
-          --prerelease false
+          ".pio/build/esp32dev/filaman.bin#filaman.bin"
