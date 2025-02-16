@@ -5,24 +5,59 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    
+    - name: Build Firmware
+      run: |
+        pio run -t buildfs  # Build SPIFFS
+        pio run            # Build firmware
+        
+    - name: Install esptool
+      run: |
+        pip install esptool
+        
+    - name: Merge firmware and SPIFFS
+      run: |
+        esptool.py --chip esp32 merge_bin \
+          --flash_mode dio \
+          --flash_freq 40m \
+          --flash_size 4MB \
+          -o .pio/build/esp32dev/merged_firmware.bin \
+          0x10000 .pio/build/esp32dev/firmware.bin \
+          0x290000 .pio/build/esp32dev/spiffs.bin
     
     - name: Get version from tag
       id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       
     - name: Read CHANGELOG.md
       id: changelog
       run: |
-        CHANGELOG=$(awk "/## \[${{ steps.get_version.outputs.VERSION }}\]/{p=1;print;next} /## \[/{p=0} p" CHANGELOG.md)
-        echo "::set-output name=CHANGES::$CHANGELOG"
-      
+        CHANGELOG=$(awk "/## \\[${{ steps.get_version.outputs.VERSION }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
+        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
     - name: Create Release
       uses: actions/create-release@v1
+      id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -31,3 +66,33 @@ jobs:
         body: ${{ steps.changelog.outputs.CHANGES }}
         draft: false
         prerelease: false
+        
+    - name: Upload Firmware Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: .pio/build/esp32dev/firmware.bin
+        asset_name: firmware.bin
+        asset_content_type: application/octet-stream
+        
+    - name: Upload SPIFFS Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: .pio/build/esp32dev/spiffs.bin
+        asset_name: spiffs.bin
+        asset_content_type: application/octet-stream
+        
+    - name: Upload Merged Firmware
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: .pio/build/esp32dev/merged_firmware.bin
+        asset_name: merged_firmware.bin
+        asset_content_type: application/octet-stream
