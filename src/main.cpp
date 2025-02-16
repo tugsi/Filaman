@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <DNSServer.h>
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
@@ -168,6 +169,8 @@ void loop() {
 // ##### Funktionen für Konfiguration #####
 void initWiFi() {
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+
+  esp_wifi_set_max_tx_power(72); // Setze maximale Sendeleistung auf 20dBm
 
   if(wm_nonblocking) wm.setConfigPortalBlocking(false);
   wm.setConfigPortalTimeout(320); // Portal nach 5min schließen
