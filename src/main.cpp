@@ -128,6 +128,7 @@ void loop() {
       weightSend = 0;
     }
   }
+
   // reset weight counter after writing tag
   if (currentMillis - lastWeightReadTime >= weightReadInterval && hasReadRfidTag > 1)
   {
@@ -137,7 +138,7 @@ void loop() {
   lastWeight = weight;
 
   // Wenn ein Tag mit SM id erkannte wurde und der Waage Counter anspricht an SM Senden
-  if (spoolId != "" && weigthCouterToApi > 5 && weightSend == 0 && hasReadRfidTag == 1) {
+  if (spoolId != "" && weigthCouterToApi > 3 && weightSend == 0 && hasReadRfidTag == 1) {
     oledShowIcon("loading");
     if (updateSpoolWeight(spoolId, weight)) 
     {

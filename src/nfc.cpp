@@ -6,6 +6,7 @@
 #include "website.h"
 #include "api.h"
 #include "esp_task_wdt.h"
+#include "scale.h"
 
 //Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
@@ -283,6 +284,7 @@ void writeJsonToTag(void *parameter) {
         // aktualisieren der Website wenn sich der Status ändert
         sendNfcData(nullptr);
         pauseBambuMqttTask = false;
+        
         if (updateSpoolTagId(uidString, payload)) {
           uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
           uint8_t uidLength;
@@ -291,6 +293,7 @@ void writeJsonToTag(void *parameter) {
             yield();
           }
         }
+          
         vTaskResume(RfidReaderTask);
         vTaskDelay(500 / portTICK_PERIOD_MS);        
     } 
@@ -360,7 +363,7 @@ void scanRfidTask(void * parameter) {
         hasReadRfidTag = 6;
 
         oledShowIcon("transfer");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
 
         if (uidLength == 7)
         {
