@@ -7,6 +7,7 @@
 #include "nfc.h"
 #include "scale.h"
 #include "esp_task_wdt.h"
+#include "ota.h"
 
 // Cache-Control Header definieren
 #define CACHE_CONTROL "max-age=31536000" // Cache für 1 Jahr
@@ -159,6 +160,8 @@ void setupWebserver(AsyncWebServer &server) {
     spoolmanUrl = loadSpoolmanUrl();
     Serial.print("Geladene Spoolman-URL: ");
     Serial.println(spoolmanUrl);
+
+    setupOTA(server);
 
     // Route für about
     server.on("/about", HTTP_GET, [](AsyncWebServerRequest *request){

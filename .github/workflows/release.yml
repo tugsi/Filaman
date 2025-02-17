@@ -43,11 +43,16 @@ jobs:
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o .pio/build/esp32dev/filaman.bin \
+          -o .pio/build/esp32dev/filaman_full.bin \
           0x1000 .pio/build/esp32dev/bootloader.bin \
           0x8000 .pio/build/esp32dev/partitions.bin \
           0x10000 .pio/build/esp32dev/firmware.bin \
           0x290000 .pio/build/esp32dev/spiffs.bin
+
+    - name: Prepare OTA firmware
+      run: |
+        # Use PlatformIO to create a proper OTA image
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
     
     - name: Get version from tag
       id: get_version
@@ -71,9 +76,10 @@ jobs:
         
     - name: Create Release with GitHub CLI
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Changed from GITHUB_TOKEN to GH_TOKEN
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create "${{ github.ref_name }}" \
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          ".pio/build/esp32dev/filaman.bin#filaman.bin"
+          ".pio/build/esp32dev/filaman_full.bin#filaman_full.bin" \
+          ".pio/build/esp32dev/filaman_ota.bin#filaman_ota.bin"
