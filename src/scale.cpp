@@ -5,7 +5,6 @@
 #include "HX711.h"
 #include <EEPROM.h>
 #include "display.h"
-#include "nfc.h"
 #include "esp_task_wdt.h"
 
 HX711 scale;
