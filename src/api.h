@@ -17,7 +17,7 @@ bool checkSpoolmanExtraFields(); // Neue Funktion zum Überprüfen der Extrafeld
 JsonDocument fetchSpoolsForWebsite(); // API-Funktion für die Webseite
 JsonDocument fetchAllSpoolsInfo();
 void sendAmsData(AsyncWebSocketClient *client); // Neue Funktion zum Senden von AMS-Daten
-uint8_t updateSpoolTagId(String uidString, const char* payload); // Neue Funktion zum Aktualisieren eines Spools
+bool updateSpoolTagId(String uidString, const char* payload); // Neue Funktion zum Aktualisieren eines Spools
 uint8_t updateSpoolWeight(String spoolId, uint16_t weight); // Neue Funktion zum Aktualisieren des Gewichts
 bool initSpoolman(); // Neue Funktion zum Initialisieren von Spoolman
 

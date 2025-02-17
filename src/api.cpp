@@ -175,20 +175,20 @@ void sendToApi(void *parameter) {
     vTaskDelete(NULL);
 }
 
-uint8_t updateSpoolTagId(String uidString, const char* payload) {
+bool updateSpoolTagId(String uidString, const char* payload) {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload);
     
     if (error) {
         Serial.print("Fehler beim JSON-Parsing: ");
         Serial.println(error.c_str());
-        return 0;
+        return false;
     }
     
     // Überprüfe, ob die erforderlichen Felder vorhanden sind
     if (!doc.containsKey("sm_id") || doc["sm_id"] == "") {
         Serial.println("Keine Spoolman-ID gefunden.");
-        return 0;
+        return false;
     }
 
     String spoolsUrl = spoolmanUrl + apiUrl + "/spool/" + doc["sm_id"].as<String>();
@@ -207,7 +207,7 @@ uint8_t updateSpoolTagId(String uidString, const char* payload) {
     SendToApiParams* params = new SendToApiParams();
     if (params == nullptr) {
         Serial.println("Fehler: Kann Speicher für Task-Parameter nicht allokieren.");
-        return 0;
+        return false;
     }
     params->httpType = "PATCH";
     params->spoolsUrl = spoolsUrl;
@@ -223,7 +223,7 @@ uint8_t updateSpoolTagId(String uidString, const char* payload) {
         NULL                      // Task-Handle (nicht benötigt)
     );
 
-    return 1;
+    return true;
 }
 
 uint8_t updateSpoolWeight(String spoolId, uint16_t weight) {

@@ -93,14 +93,6 @@ bool formatNdefTag() {
   }
 
 uint8_t ntag2xx_WriteNDEF(const char *payload) {
-  /*
-  if (!formatNdefTag()) {
-    Serial.println("Fehler beim Formatieren des NDEF-Tags.");
-    hasReadRfidTag = 2;
-    return 0;
-  }
-  */
-
   uint8_t tagSize = 240; // 144 bytes is maximum for NTAG213
   Serial.print("Tag Size: ");Serial.println(tagSize);
 
@@ -137,9 +129,6 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
     return 0;
   }
 
-  //Serial.println();
-  //Serial.print("Header Size: ");Serial.println(sizeof(pageHeader));
-
   // Kombiniere Header und Payload
   int totalSize = sizeof(pageHeader) + len;
   uint8_t* combinedData = (uint8_t*) malloc(totalSize);
@@ -149,36 +138,9 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
     return 0;
   }
 
-  // Überprüfe die Kombination von Header und Payload
-  /*
-  Serial.print("Header: ");
-  for (int i = 0; i < sizeof(pageHeader); i++) {
-    Serial.print(pageHeader[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  Serial.print("Payload: ");
-  for (int i = 0; i < len; i++) {
-    Serial.print(payload[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-  */
-
   // Kombiniere Header und Payload
   memcpy(combinedData, pageHeader, sizeof(pageHeader));
   memcpy(&combinedData[sizeof(pageHeader)], payload, len);
-
-  // Überprüfe die Kombination von Header und Payload
-  /*
-  Serial.print("Kombinierte Daten: ");
-  for (int i = 0; i < totalSize; i++) {
-    Serial.print(combinedData[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-  */
 
   // Schreibe die Seiten
   uint8_t a = 0;
@@ -188,21 +150,9 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
     int bytesToWrite = (totalSize < 4) ? totalSize : 4;
     memcpy(pageBuffer, combinedData + a, bytesToWrite);
 
-    // Überprüfe die Schreibung der Seiten
-    /*
-    Serial.print("Seite ");
-    Serial.print(i);
-    Serial.print(": ");
-    for (int j = 0; j < bytesToWrite; j++) {
-      Serial.print(pageBuffer[j], HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-    */
-    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-    uint8_t uidLength;
-    nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
-    //Serial.print("Schreibe Seite: ");Serial.println(i);
+    //uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+    //uint8_t uidLength;
+    //nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
 
     if (!(nfc.ntag2xx_WritePage(4+i, pageBuffer))) 
     {
@@ -210,8 +160,6 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
       free(combinedData);
       return 0;
     }
-    
-    //Serial.print("Seite geschrieben: ");Serial.println(i);
 
     yield();
     //esp_task_wdt_reset();
@@ -285,11 +233,15 @@ void writeJsonToTag(void *parameter) {
 
   // Gib die erstellte NDEF-Message aus
   Serial.println("Erstelle NDEF-Message...");
+  Serial.println(payload);
+
   hasReadRfidTag = 3;
   vTaskSuspend(RfidReaderTask);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
   //pauseBambuMqttTask = true;
   // aktualisieren der Website wenn sich der Status ändert
   sendNfcData(nullptr);
+  oledShowMessage("Waiting for NFC-Tag");
 
   // Wait 10sec for tag
   uint8_t success = 0;
@@ -326,13 +278,21 @@ void writeJsonToTag(void *parameter) {
         Serial.println("NDEF-Message erfolgreich auf den Tag geschrieben");
         //oledShowMessage("NFC-Tag written");
         oledShowIcon("success");
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         hasReadRfidTag = 5;
         // aktualisieren der Website wenn sich der Status ändert
         sendNfcData(nullptr);
-        vTaskResume(RfidReaderTask);
         pauseBambuMqttTask = false;
-        updateSpoolTagId(uidString, payload);
+        if (updateSpoolTagId(uidString, payload)) {
+          uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+          uint8_t uidLength;
+          oledShowIcon("success");
+          while (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500)) {
+            yield();
+          }
+        }
+        vTaskResume(RfidReaderTask);
+        vTaskDelay(500 / portTICK_PERIOD_MS);        
     } 
     else 
     {
@@ -361,16 +321,19 @@ void writeJsonToTag(void *parameter) {
 
 void startWriteJsonToTag(const char* payload) {
   char* payloadCopy = strdup(payload);
-    
-  // Erstelle die Task
-  xTaskCreate(
-      writeJsonToTag,        // Task-Funktion
-      "WriteJsonToTagTask",       // Task-Name
-      4096,                        // Stackgröße in Bytes
-      (void*)payloadCopy,         // Parameter
-      rfidWriteTaskPrio,           // Priorität
-      NULL                         // Task-Handle (nicht benötigt)
-  );
+  
+  // Task nicht mehrfach starten
+  if (hasReadRfidTag != 3) {
+    // Erstelle die Task
+    xTaskCreate(
+        writeJsonToTag,        // Task-Funktion
+        "WriteJsonToTagTask",       // Task-Name
+        4096,                        // Stackgröße in Bytes
+        (void*)payloadCopy,         // Parameter
+        rfidWriteTaskPrio,           // Priorität
+        NULL                         // Task-Handle (nicht benötigt)
+    );
+  }
 }
 
 void scanRfidTask(void * parameter) {
