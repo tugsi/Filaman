@@ -1,7 +1,10 @@
 Import("env")
 import os
+import re
 
 def combine_html_files(source, target, env):
+    print("COMBINE HTML FILES")
+    
     html_dir = "./html"
     header_file = os.path.join(html_dir, "header.html")
     
@@ -18,14 +21,14 @@ def combine_html_files(source, target, env):
             with open(file_path, 'r') as f:
                 content = f.read()
             
-            # Replace placeholder with header content
-            if '{{header}}' in content:
-                new_content = content.replace('{{header}}', header_content)
-                
-                # Write back combined content
-                with open(file_path, 'w') as f:
-                    f.write(new_content)
-                print(f"Combined header with {filename}")
+            # Replace content between head comments with header content
+            pattern = r'(<!-- head -->).*?(<!-- head -->)'
+            new_content = re.sub(pattern, r'\1' + header_content + r'\2', content, flags=re.DOTALL)
+            
+            # Write back combined content
+            with open(file_path, 'w') as f:
+                f.write(new_content)
+            print(f"Combined header with {filename}")
 
 # Register the script to run before building SPIFFS
 env.AddPreAction("buildfs", combine_html_files)
