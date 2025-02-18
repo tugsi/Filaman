@@ -6,12 +6,13 @@ on:
       - 'v*'
 
 jobs:
-  detect-and-run:
+  detect:
     runs-on: ubuntu-latest
+    outputs:
+      platform: ${{ steps.platform.outputs.platform }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Determine hosting platform
         id: platform
         run: |
@@ -21,10 +22,12 @@ jobs:
             echo "platform=gitea" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run Release Workflow
-        run: |
-          if [[ "${{ steps.platform.outputs.platform }}" == "github" ]]; then
-            ./.github/workflows/providers/github-release.sh
-          else
-            ./.github/workflows/providers/gitea-release.sh
-          fi
+  gitea-release:
+    needs: detect
+    if: needs.detect.outputs.platform == 'gitea'
+    uses: ./.github/workflows/providers/gitea-release.yml
+
+  github-release:
+    needs: detect
+    if: needs.detect.outputs.platform == 'github'
+    uses: ./.github/workflows/providers/github-release.yml
