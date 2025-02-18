@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.4] - 2025-02-18
+### Added
+- update version to 1.2.4 in HTML files and platformio.ini
+- add GitHub and Gitea release workflows; streamline firmware release process
+
+
 ## [1.2.3] - 2025-02-18
 ### Added
 - update version to 1.2.3; modify HTML files to reflect new version; enhance firmware update process and UI improvements
