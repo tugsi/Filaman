@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.11] - 2025-02-18
+### Added
+- update version to 1.2.11 and enhance GitHub and Gitea release workflows with input validation and improved error handling
+
+
 ## [1.2.10] - 2025-02-18
 ### Added
 - enhance Gitea release workflow with API connection verification and URL validation; update version to 1.2.10
