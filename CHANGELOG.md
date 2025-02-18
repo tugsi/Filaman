@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.12] - 2025-02-19
+### Added
+- update version to 1.2.12 and refactor release workflows for improved provider detection and execution
+
+
 ## [1.2.11] - 2025-02-18
 ### Added
 - update version to 1.2.11 and enhance GitHub and Gitea release workflows with input validation and improved error handling
