@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.9] - 2025-02-18
+### Added
+- update version to 1.2.9 in platformio.ini
+- refactor GitHub and Gitea release workflows for improved version handling and firmware uploads
+
+
 ## [1.2.8] - 2025-02-18
 ### Added
 - update version to 1.2.8 in platformio.ini; refactor Gitea and GitHub release workflows
