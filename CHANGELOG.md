@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.16] - 2025-02-19
+### Added
+- update Gitea release workflow and increment version to 1.2.16
+
+
 ## [1.2.15] - 2025-02-19
 ### Added
 - update version to 1.2.15 and clean up Gitea release workflow
