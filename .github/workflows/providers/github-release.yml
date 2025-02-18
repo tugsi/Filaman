@@ -1,7 +1,14 @@
 name: GitHub Release
 
 on:
-  workflow_call:  # This workflow will only be triggered when called by another workflow
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      changelog:
+        required: true
+        type: string
 
 permissions:
   contents: write      # Required for creating releases
@@ -21,19 +28,15 @@ jobs:
       with:
         python-version: '3.x'
     
-    - name: Install PlatformIO
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install --upgrade platformio
+        pip install --upgrade platformio esptool
     
     - name: Build Firmware
       run: |
         pio run -t buildfs  # Build SPIFFS
         pio run            # Build firmware
-        
-    - name: Install esptool
-      run: |
-        pip install esptool
         
     - name: Merge firmware and SPIFFS
       run: |
@@ -48,36 +51,14 @@ jobs:
           0x290000 .pio/build/esp32dev/spiffs.bin
 
     - name: Prepare OTA firmware
-      run: |
-        # Use PlatformIO to create a proper OTA image
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+      run: cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
     
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
-    - name: Read CHANGELOG.md
-      id: changelog
-      run: |
-        CHANGELOG=$(awk "/## \\[${{ steps.get_version.outputs.VERSION }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-    
-    - name: Install and Configure GitHub CLI
-      run: |
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-        && sudo apt update \
-        && sudo apt install gh -y
-        
-    - name: Create Release with GitHub CLI
+    - name: Create Release
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create "${{ github.ref_name }}" \
-          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
-          --notes "${{ steps.changelog.outputs.CHANGES }}" \
+          --title "Release ${{ inputs.version }}" \
+          --notes "${{ inputs.changelog }}" \
           ".pio/build/esp32dev/filaman_full.bin#filaman_full.bin" \
           ".pio/build/esp32dev/filaman_ota.bin#filaman_ota.bin"

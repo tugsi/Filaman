@@ -1,7 +1,14 @@
 name: Gitea Release
 
 on:
-  workflow_call:  # This workflow will only be triggered when called by another workflow
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      changelog:
+        required: true
+        type: string
 
 permissions:
   contents: write      # Required for creating releases
@@ -21,19 +28,17 @@ jobs:
       with:
         python-version: '3.x'
     
-    - name: Install PlatformIO
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install --upgrade platformio
+        pip install --upgrade platformio esptool
+        sudo apt-get update
+        sudo apt-get install -y jq
     
     - name: Build Firmware
       run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
-        
-    - name: Install esptool
-      run: |
-        pip install esptool
+        pio run -t buildfs
+        pio run
         
     - name: Merge firmware and SPIFFS
       run: |
@@ -48,20 +53,7 @@ jobs:
           0x290000 .pio/build/esp32dev/spiffs.bin
 
     - name: Prepare OTA firmware
-      run: |
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
-    
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
-    - name: Read CHANGELOG.md
-      id: changelog
-      run: |
-        CHANGELOG=$(awk "/## \\[${{ steps.get_version.outputs.VERSION }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+      run: cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
     
     - name: Create Release
       env:
@@ -69,33 +61,54 @@ jobs:
         GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
         GITEA_REPOSITORY: ${{ secrets.GITEA_REPOSITORY }}
       run: |
-        # Create release using Gitea API
-        RESPONSE=$(curl -X POST \
-        -H "Authorization: token ${GITEA_TOKEN}" \
-        -H "Content-Type: application/json" \
-        -H "accept: application/json" \
-        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
-        -d '{
-            "tag_name": "${{ github.ref_name }}",
-            "name": "Release ${{ steps.get_version.outputs.VERSION }}",
-            "body": "${{ steps.changelog.outputs.CHANGES }}",
-            "draft": false,
-            "prerelease": false
-        }')
+        # Validate and sanitize API URL
+        if [[ ! "$GITEA_API_URL" =~ ^https?:// ]]; then
+          echo "Error: GITEA_API_URL must start with http:// or https://"
+          exit 1
+        fi
         
-        # Extract release ID from response
-        RELEASE_ID=$(echo $RESPONSE | jq -r .id)
+        # Remove trailing slash and ensure /api/v1
+        GITEA_API_URL="${GITEA_API_URL%/}"
+        if [[ ! "$GITEA_API_URL" =~ /api/v1$ ]]; then
+          GITEA_API_URL="${GITEA_API_URL}/api/v1"
+        fi
         
-        # Upload full firmware
-        curl -X POST \
-        -H "Authorization: token ${GITEA_TOKEN}" \
-        -H "Content-Type: application/octet-stream" \
-        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_full.bin" \
-        --data-binary @.pio/build/esp32dev/filaman_full.bin
+        echo "Creating Gitea release..."
+        RESPONSE=$(curl -sS -X POST \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -H "Accept: application/json" \
+          "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
+          -d @- << EOF
+{
+  "tag_name": "${{ github.ref_name }}",
+  "name": "Release ${{ inputs.version }}",
+  "body": ${{ toJSON(inputs.changelog) }},
+  "draft": false,
+  "prerelease": false
+}
+EOF
+)
         
-        # Upload OTA firmware
-        curl -X POST \
-        -H "Authorization: token ${GITEA_TOKEN}" \
-        -H "Content-Type: application/octet-stream" \
-        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_ota.bin" \
-        --data-binary @.pio/build/esp32dev/filaman_ota.bin
+        # Extract and validate release ID
+        RELEASE_ID=$(echo "$RESPONSE" | jq -r .id)
+        if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+          echo "Error: Failed to get release ID"
+          echo "API Response:"
+          echo "$RESPONSE" | jq .
+          exit 1
+        fi
+        
+        # Upload binary files
+        for file in "filaman_full.bin" "filaman_ota.bin"; do
+          echo "Uploading $file..."
+          if ! curl -sS -X POST \
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=${file}" \
+            --data-binary "@.pio/build/esp32dev/${file}"; then
+            echo "Error: Failed to upload $file"
+            exit 1
+          fi
+          echo "Successfully uploaded $file"
+        done
