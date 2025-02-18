@@ -6,28 +6,126 @@ on:
       - 'v*'
 
 jobs:
-  detect:
+  release:
     runs-on: ubuntu-latest
-    outputs:
-      platform: ${{ steps.platform.outputs.platform }}
     steps:
       - uses: actions/checkout@v4
       
-      - name: Determine hosting platform
-        id: platform
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+    
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+    
+      - name: Build Firmware
+        run: |
+          pio run -t buildfs  # Build SPIFFS
+          pio run            # Build firmware
+        
+      - name: Install esptool
+        run: |
+          pip install esptool
+        
+      - name: Merge firmware and SPIFFS
+        run: |
+          esptool.py --chip esp32 merge_bin \
+            --flash_mode dio \
+            --flash_freq 40m \
+            --flash_size 4MB \
+            -o .pio/build/esp32dev/filaman_full.bin \
+            0x1000 .pio/build/esp32dev/bootloader.bin \
+            0x8000 .pio/build/esp32dev/partitions.bin \
+            0x10000 .pio/build/esp32dev/firmware.bin \
+            0x290000 .pio/build/esp32dev/spiffs.bin
+
+      - name: Prepare OTA firmware
+        run: |
+          cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+      
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Read CHANGELOG.md
+        id: changelog
+        run: |
+          CHANGELOG=$(awk "/## \\[${{ steps.get_version.outputs.VERSION }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
+          echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Install jq
+        if: ${{ github.server_url != 'https://github.com' }}
+        run: sudo apt-get install -y jq
+
+      - name: Determine and run release process
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
+          GITEA_REPOSITORY: ${{ secrets.GITEA_REPOSITORY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "$GITHUB_SERVER_URL" == "https://github.com" ]]; then
-            echo "platform=github" >> $GITHUB_OUTPUT
+            echo "Creating GitHub Release..."
+            curl -X POST \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/releases \
+              -d '{
+                "tag_name": "${{ github.ref_name }}",
+                "name": "Release ${{ steps.get_version.outputs.VERSION }}",
+                "body": "${{ steps.changelog.outputs.CHANGES }}",
+                "draft": false,
+                "prerelease": false
+              }' > release.json
+            
+            UPLOAD_URL=$(jq -r .upload_url release.json | sed 's/{?name,label}//')
+            
+            # Upload full firmware
+            curl -X POST \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              "${UPLOAD_URL}?name=filaman_full.bin" \
+              --data-binary @.pio/build/esp32dev/filaman_full.bin
+            
+            # Upload OTA firmware
+            curl -X POST \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              "${UPLOAD_URL}?name=filaman_ota.bin" \
+              --data-binary @.pio/build/esp32dev/filaman_ota.bin
           else
-            echo "platform=gitea" >> $GITHUB_OUTPUT
+            echo "Creating Gitea Release..."
+            RESPONSE=$(curl -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -H "accept: application/json" \
+              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
+              -d '{
+                "tag_name": "${{ github.ref_name }}",
+                "name": "Release ${{ steps.get_version.outputs.VERSION }}",
+                "body": "${{ steps.changelog.outputs.CHANGES }}",
+                "draft": false,
+                "prerelease": false
+              }')
+            
+            RELEASE_ID=$(echo $RESPONSE | jq -r .id)
+            
+            # Upload full firmware
+            curl -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_full.bin" \
+              --data-binary @.pio/build/esp32dev/filaman_full.bin
+            
+            # Upload OTA firmware
+            curl -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_ota.bin" \
+              --data-binary @.pio/build/esp32dev/filaman_ota.bin
           fi
-
-  gitea-release:
-    needs: detect
-    if: needs.detect.outputs.platform == 'gitea'
-    uses: ./.github/workflows/providers/gitea-release.yml
-
-  github-release:
-    needs: detect
-    if: needs.detect.outputs.platform == 'github'
-    uses: ./.github/workflows/providers/github-release.yml
