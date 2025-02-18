@@ -11,15 +11,13 @@ on:
         type: string
 
 permissions:
-  contents: write      # Required for creating releases
-  issues: read        # Required for reading changelog
-  pull-requests: read # Required for reading changelog
+  contents: write
+  issues: read
+  pull-requests: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
     - uses: actions/checkout@v4
     
@@ -74,21 +72,13 @@ jobs:
         fi
         
         echo "Creating Gitea release..."
+        release_data="{\"tag_name\":\"${{ github.ref_name }}\",\"name\":\"Release ${{ inputs.version }}\",\"body\":${{ toJSON(inputs.changelog) }},\"draft\":false,\"prerelease\":false}"
         RESPONSE=$(curl -sS -X POST \
           -H "Authorization: token ${GITEA_TOKEN}" \
           -H "Content-Type: application/json" \
           -H "Accept: application/json" \
           "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
-          -d @- << EOF
-{
-  "tag_name": "${{ github.ref_name }}",
-  "name": "Release ${{ inputs.version }}",
-  "body": ${{ toJSON(inputs.changelog) }},
-  "draft": false,
-  "prerelease": false
-}
-EOF
-)
+          -d "$release_data")
         
         # Extract and validate release ID
         RELEASE_ID=$(echo "$RESPONSE" | jq -r .id)
