@@ -161,8 +161,6 @@ void setupWebserver(AsyncWebServer &server) {
     Serial.print("Geladene Spoolman-URL: ");
     Serial.println(spoolmanUrl);
 
-    setupOTA(server);
-
     // Route für about
     server.on("/about", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /about erhalten");
