@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.13] - 2025-02-19
+### Added
+- update version to 1.2.13 and enhance release workflow with Python setup and Gitea support
+
+
 ## [1.2.12] - 2025-02-19
 ### Added
 - update version to 1.2.12 and refactor release workflows for improved provider detection and execution
