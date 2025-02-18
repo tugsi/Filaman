@@ -164,7 +164,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für about
     server.on("/about", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /about erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/about.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -338,8 +338,13 @@ void setupWebserver(AsyncWebServer &server) {
         Serial.println("RFID.js gesendet");
     });
 
-    // Route für Firmware Update
+    // Route for Firmware Update
     server.on("/upgrade", HTTP_GET, [](AsyncWebServerRequest *request) {
+        // During OTA, reduce memory usage
+        ws.enable(false);  // Temporarily disable WebSocket
+        ws.cleanupClients();
+        
+        Serial.println("Request for /upgrade received");
         AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/upgrade.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
@@ -350,7 +355,12 @@ void setupWebserver(AsyncWebServer &server) {
         [](AsyncWebServerRequest *request) {
             // The response will be sent from handleOTAUpload when the upload is complete
         },
-        handleOTAUpload
+        [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+            // Free memory before handling update
+            ws.enable(false);
+            ws.cleanupClients();
+            handleOTAUpload(request, filename, index, data, len, final);
+        }
     );
 
     // Fehlerbehandlung für nicht gefundene Seiten
