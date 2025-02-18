@@ -66,37 +66,38 @@ jobs:
         echo "EOF" >> $GITHUB_OUTPUT
     
     - name: Create Release
-      env:
+    env:
         GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
         GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
-      run: |
+        GITEA_REPOSITORY: ${{ secrets.GITEA_REPOSITORY }}
+    run: |
         # Create release using Gitea API
         RESPONSE=$(curl -X POST \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -H "accept: application/json" \
-          ${GITEA_API_URL}/repos/${GITHUB_REPOSITORY}/releases \
-          -d '{
+        -H "Authorization: token ${GITEA_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -H "accept: application/json" \
+        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
+        -d '{
             "tag_name": "${{ github.ref_name }}",
             "name": "Release ${{ steps.get_version.outputs.VERSION }}",
             "body": "${{ steps.changelog.outputs.CHANGES }}",
             "draft": false,
             "prerelease": false
-          }')
+        }')
         
         # Extract release ID from response
         RELEASE_ID=$(echo $RESPONSE | jq -r .id)
         
         # Upload full firmware
         curl -X POST \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          -H "Content-Type: application/octet-stream" \
-          ${GITEA_API_URL}/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_full.bin \
-          --data-binary @.pio/build/esp32dev/filaman_full.bin
+        -H "Authorization: token ${GITEA_TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_full.bin" \
+        --data-binary @.pio/build/esp32dev/filaman_full.bin
         
         # Upload OTA firmware
         curl -X POST \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          -H "Content-Type: application/octet-stream" \
-          ${GITEA_API_URL}/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_ota.bin \
-          --data-binary @.pio/build/esp32dev/filaman_ota.bin
+        -H "Authorization: token ${GITEA_TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_ota.bin" \
+        --data-binary @.pio/build/esp32dev/filaman_ota.bin

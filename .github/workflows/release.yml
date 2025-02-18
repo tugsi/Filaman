@@ -17,16 +17,14 @@ jobs:
         run: |
           if [[ "$GITHUB_SERVER_URL" == "https://github.com" ]]; then
             echo "platform=github" >> $GITHUB_OUTPUT
-          elif [[ "$CI_SERVER_URL" == *"gitlab"* ]]; then
-            echo "platform=gitlab" >> $GITHUB_OUTPUT
           else
             echo "platform=gitea" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run GitHub Release
-        if: steps.platform.outputs.platform == 'github'
-        uses: ./.github/workflows/providers/github-release.yml
-
-      - name: Run Gitea Release
-        if: steps.platform.outputs.platform == 'gitea'
-        uses: ./.github/workflows/providers/gitea-release.yml
+      - name: Run Release Workflow
+        run: |
+          if [[ "${{ steps.platform.outputs.platform }}" == "github" ]]; then
+            ./.github/workflows/providers/github-release.sh
+          else
+            ./.github/workflows/providers/gitea-release.sh
+          fi
