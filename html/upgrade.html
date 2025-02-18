@@ -1,0 +1,142 @@
+
+<!-- head --><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilaMan - Filament Management Tool</title>
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <img src="/logo.png" alt="FilaMan Logo" class="logo">
+            <div class="logo-text">
+                <h1>FilaMan<span class="version">v1.2.1</span></h1>
+                <h4>Filament Management Tool</h4>
+            </div>
+        </div>
+        <nav style="display: flex; gap: 1rem;">
+            <a href="/">Start</a>
+            <a href="/waage">Scale</a>
+            <a href="/spoolman">Spoolman/Bambu</a>
+            <a href="/about">About</a>
+            <a href="/upgrade">Upgrade</a>
+        </nav>
+        <div class="status-container">
+            <div class="status-item">
+                <span class="status-dot" id="bambuDot"></span>B
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="spoolmanDot"></span>S
+            </div>
+            <div class="ram-status" id="ramStatus"></div>
+        </div>
+    </div>
+
+<!-- head -->
+    
+    <div class="content">
+        <h1>Firmware Upgrade</h1>
+
+        <div class="warning">
+            <strong>Warning:</strong> Please do not turn off or restart the device during the update. 
+                        Configuration files will be automatically backed up and restored after the update.
+        </div>
+
+        
+        <div class="update-form" style="align-items: center;">
+            <form id="updateForm" enctype='multipart/form-data' style="text-align: center;"></form>
+                <input type='file' name='update' accept='.bin' required>
+                <input type='submit' value='Firmware Update starten'>
+            </form>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar">0%</div>
+        </div>
+        <div class="status"></div>
+    </div>
+
+    <script>
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const file = form.update.files[0];
+            const formData = new FormData();
+            formData.append('update', file);
+
+            const progress = document.querySelector('.progress-bar');
+            const progressContainer = document.querySelector('.progress-container');
+            const status = document.querySelector('.status');
+            
+            progressContainer.style.display = 'block';
+            status.style.display = 'none';
+            status.className = 'status';
+            form.querySelector('input[type=submit]').disabled = true;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update', true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progress.style.width = percentComplete + '%';
+                    progress.textContent = Math.round(percentComplete) + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                try {
+                    let response = this.responseText;
+                    try {
+                        // Versuche als JSON zu parsen
+                        const jsonResponse = JSON.parse(response);
+                        response = jsonResponse.message;
+                        
+                        if (jsonResponse.restart) {
+                            // Wenn Gerät neustartet, warte und lade dann neu
+                            status.textContent = response + " Weiterleitung in 5 Sekunden...";
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 5000);
+                        }
+                    } catch (e) {
+                        // Wenn kein JSON, nutze response als Text
+                        if (!isNaN(response)) {
+                            // Wenn es eine Zahl ist, update den Fortschritt
+                            const percent = parseInt(response);
+                            progress.style.width = percent + '%';
+                            progress.textContent = percent + '%';
+                            return;
+                        }
+                    }
+                    
+                    status.textContent = response;
+                    status.classList.add(xhr.status === 200 ? 'success' : 'error');
+                    status.style.display = 'block';
+                    
+                    if (xhr.status !== 200) {
+                        form.querySelector('input[type=submit]').disabled = false;
+                    }
+                } catch (error) {
+                    status.textContent = 'Fehler: ' + error.message;
+                    status.classList.add('error');
+                    status.style.display = 'block';
+                    form.querySelector('input[type=submit]').disabled = false;
+                }
+            };
+
+            xhr.onerror = function() {
+                status.textContent = 'Update fehlgeschlagen: Netzwerkfehler';
+                status.classList.add('error');
+                status.style.display = 'block';
+                form.querySelector('input[type=submit]').disabled = false;
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>

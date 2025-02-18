@@ -338,101 +338,12 @@ void setupWebserver(AsyncWebServer &server) {
         Serial.println("RFID.js gesendet");
     });
 
-    // Route für OTA Updates
-    server.on("/ota", HTTP_GET, [](AsyncWebServerRequest *request) {
-        Serial.println("Anfrage für /ota erhalten");
-        
-        String html = R"(
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Firmware Update</title>
-                <link rel="stylesheet" type="text/css" href="/style.css">
-                <style>
-                    .progress-container {
-                        width: 100%;
-                        margin: 20px 0;
-                        display: none;
-                    }
-                    .progress-bar {
-                        width: 0%;
-                        height: 20px;
-                        background-color: #4CAF50;
-                        text-align: center;
-                        line-height: 20px;
-                        color: white;
-                    }
-                    .status {
-                        margin: 10px 0;
-                        padding: 10px;
-                        display: none;
-                    }
-                    .error { background-color: #ffebee; color: #c62828; }
-                    .success { background-color: #e8f5e9; color: #2e7d32; }
-                </style>
-            </head>
-            <body>
-                <h2>Firmware Update</h2>
-                <form id="updateForm" enctype='multipart/form-data'>
-                    <input type='file' name='update' accept='.bin' required>
-                    <input type='submit' value='Update Firmware'>
-                </form>
-                <div class="progress-container">
-                    <div class="progress-bar">0%</div>
-                </div>
-                <div class="status"></div>
-                <script>
-                    document.getElementById('updateForm').addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        const form = e.target;
-                        const file = form.update.files[0];
-                        const formData = new FormData();
-                        formData.append('update', file);
-
-                        const progress = document.querySelector('.progress-bar');
-                        const progressContainer = document.querySelector('.progress-container');
-                        const status = document.querySelector('.status');
-                        
-                        progressContainer.style.display = 'block';
-                        status.style.display = 'none';
-                        status.className = 'status';
-                        form.querySelector('input[type=submit]').disabled = true;
-
-                        try {
-                            const response = await fetch('/update', {
-                                method: 'POST',
-                                body: formData,
-                                onUploadProgress: (e) => {
-                                    const percent = (e.loaded / e.total) * 100;
-                                    progress.style.width = percent + '%';
-                                    progress.textContent = Math.round(percent) + '%';
-                                }
-                            });
-
-                            const result = await response.text();
-                            status.textContent = result;
-                            status.classList.add(response.ok ? 'success' : 'error');
-                            status.style.display = 'block';
-
-                            if (response.ok) {
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 5000);
-                            } else {
-                                form.querySelector('input[type=submit]').disabled = false;
-                            }
-                        } catch (error) {
-                            status.textContent = 'Update failed: ' + error.message;
-                            status.classList.add('error');
-                            status.style.display = 'block';
-                            form.querySelector('input[type=submit]').disabled = false;
-                        }
-                    });
-                </script>
-            </body>
-            </html>
-        )";
-        request->send(200, "text/html", html);
+    // Route für Firmware Update
+    server.on("/upgrade", HTTP_GET, [](AsyncWebServerRequest *request) {
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/upgrade.html.gz", "text/html");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
     });
 
     server.on("/update", HTTP_POST, 

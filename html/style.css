@@ -1014,3 +1014,77 @@ input[type="submit"]:disabled,
     vertical-align: middle;
     margin-left: 0.5rem;
 }
+
+.progress-container {
+    width: 100%;
+    margin: 20px 0;
+    display: none;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar {
+    width: 0%;
+    height: 24px;
+    background-color: #4CAF50;
+    text-align: center;
+    line-height: 24px;
+    color: white;
+    transition: width 0.3s ease-in-out;
+    font-weight: bold;
+}
+.status {
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 4px;
+    display: none;
+}
+.error { 
+    background-color: #ffebee; 
+    color: #c62828; 
+    border: 1px solid #ef9a9a;
+}
+.success { 
+    background-color: #e8f5e9; 
+    color: #2e7d32; 
+    border: 1px solid #a5d6a7;
+}
+.update-form {
+    background: var(--primary-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 0 auto;
+    width: 400px;
+}
+.update-form input[type="file"] {
+    margin-bottom: 15px;
+    width: 80%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.update-form input[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.update-form input[type="submit"]:hover {
+    background-color: #45a049;
+}
+.update-form input[type="submit"]:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+.warning {
+    background-color: var(--primary-color);
+    border: 1px solid #ffe0b2;
+    color: #e65100;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 4px;
+}

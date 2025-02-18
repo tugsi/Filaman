@@ -127,10 +127,12 @@ bool restoreConfigs() {
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     static bool updateStarted = false;
     static size_t totalBytes = 0;
+    static size_t totalSize = 0;
 
     if (!index) {
         updateStarted = false;
         totalBytes = 0;
+        totalSize = request->contentLength();
 
         // Check minimum heap size
         if (ESP.getFreeHeap() < MIN_FREE_HEAP) {
@@ -138,13 +140,12 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             return;
         }
 
-        size_t updateSize = request->contentLength();
-        if (updateSize == 0) {
+        if (totalSize == 0) {
             request->send(400, "text/plain", "Invalid file size");
             return;
         }
 
-        Serial.printf("Update size: %u bytes\n", updateSize);
+        Serial.printf("Update size: %u bytes\n", totalSize);
         Serial.printf("Free space: %u bytes\n", ESP.getFreeSketchSpace());
         Serial.printf("Free heap: %u bytes\n", ESP.getFreeHeap());
 
@@ -158,7 +159,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
         SPIFFS.end();
 
         // Begin update with minimal configuration
-        if (!Update.begin(updateSize)) {
+        if (!Update.begin(totalSize)) {
             Serial.printf("Update.begin failed: %s\n", Update.errorString());
             request->send(500, "text/plain", "Failed to start update");
             return;
@@ -166,6 +167,9 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
 
         updateStarted = true;
         Serial.println("Update process started");
+        
+        // Send initial progress
+        request->send(200, "text/plain", "0");
     }
 
     if (!updateStarted) {
@@ -182,8 +186,11 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     }
 
     totalBytes += len;
-    if (totalBytes % (32 * 1024) == 0) {
-        Serial.printf("Progress: %u bytes\n", totalBytes);
+    
+    // Send progress update
+    if (!final) {
+        int progress = (totalBytes * 100) / totalSize;
+        request->send(200, "text/plain", String(progress));
     }
 
     if (final) {
@@ -196,7 +203,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
         // Try to restore configs
         if (!SPIFFS.begin(true)) {
             Serial.println("Failed to mount SPIFFS for restore");
-            request->send(200, "text/plain", "Update successful but config restore failed. Device will restart...");
+            request->send(200, "application/json", "{\"status\": \"success\", \"message\": \"Update successful but config restore failed. Device will restart...\", \"restart\": true}");
             delay(2000);
             ESP.restart();
             return;
@@ -206,7 +213,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             Serial.println("Failed to restore configs");
         }
 
-        request->send(200, "text/plain", "Update successful. Device will restart...");
+        request->send(200, "application/json", "{\"status\": \"success\", \"message\": \"Update successful! Device will restart...\", \"restart\": true}");
         delay(2000);
         ESP.restart();
     }
