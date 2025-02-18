@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.14] - 2025-02-19
+### Added
+- update version to 1.2.14 and refactor release workflows for improved GitHub and Gitea support
+
+
 ## [1.2.13] - 2025-02-19
 ### Added
 - update version to 1.2.13 and enhance release workflow with Python setup and Gitea support
