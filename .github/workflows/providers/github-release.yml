@@ -11,15 +11,11 @@ on:
         type: string
 
 permissions:
-  contents: write      # Required for creating releases
-  issues: read        # Required for reading changelog
-  pull-requests: read # Required for reading changelog
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Required for creating releases at job level
     steps:
     - uses: actions/checkout@v4
     
@@ -35,8 +31,8 @@ jobs:
     
     - name: Build Firmware
       run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
+        pio run -t buildfs
+        pio run
         
     - name: Merge firmware and SPIFFS
       run: |
@@ -53,7 +49,7 @@ jobs:
     - name: Prepare OTA firmware
       run: cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
     
-    - name: Create Release
+    - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
