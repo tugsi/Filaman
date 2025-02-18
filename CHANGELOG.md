@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.8] - 2025-02-18
+### Added
+- update version to 1.2.8 in platformio.ini; refactor Gitea and GitHub release workflows
+- update version to 1.2.7 in platformio.ini; adjust Gitea release workflow
+
+
 ## [1.2.6] - 2025-02-18
 ### Added
 - update version to 1.2.6 in platformio.ini
