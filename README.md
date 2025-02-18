@@ -124,6 +124,24 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
     - Configure WiFi settings through the captive portal.
     - Access the web interface at `http://filaman.local` or the IP address.
 
+## GitHub Actions Configuration
+
+### Required Secrets for Gitea Releases
+
+When using Gitea as your repository host, you need to configure the following secrets in your repository:
+
+- `GITEA_API_URL`: The base URL of your Gitea instance, including protocol (e.g., `https://git.example.com`)
+- `GITEA_TOKEN`: Your Gitea access token with permissions to create releases
+- `GITEA_REPOSITORY`: The repository name in format `owner/repo` (e.g., `username/filaman`)
+
+Example values:
+```
+GITEA_API_URL=https://git.example.com
+GITEA_TOKEN=abcdef1234567890
+GITEA_REPOSITORY=username/filaman
+```
+
+Make sure to set these secrets in your repository settings under Settings > Secrets and Variables > Actions.
 
 ## Documentation
 

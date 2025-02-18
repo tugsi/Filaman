@@ -11,6 +11,92 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Verify Gitea API Connection
+        if: github.server_url != 'https://github.com'
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
+        run: |
+          # Sanitize URL
+          GITEA_BASE_URL=$(echo "$GITEA_API_URL" | sed 's#/\+$##' | sed 's#/api/v1$##')
+          GITEA_API_ENDPOINT="${GITEA_BASE_URL}/api/v1"
+          
+          echo "Testing connection to Gitea API..."
+          echo "API Endpoint: ${GITEA_API_ENDPOINT}"
+          
+          # Try to get Gitea version
+          RESPONSE=$(curl -sSf -w "\nHTTP_STATUS:%{http_code}" \
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            "${GITEA_API_ENDPOINT}/version")
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d":" -f2)
+          API_RESPONSE=$(echo "$RESPONSE" | grep -v "HTTP_STATUS:")
+          
+          echo "HTTP Status: ${HTTP_STATUS}"
+          echo "API Response: ${API_RESPONSE}"
+          
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Error: Could not connect to Gitea API"
+            exit 1
+          fi
+          
+          echo "Gitea API connection successful"
+      
+      - name: Parse and validate Gitea URL
+        if: github.server_url != 'https://github.com'
+        env:
+          GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
+        run: |
+          validate_url() {
+            local url="$1"
+            # Check if URL starts with protocol
+            if [[ ! "$url" =~ ^https?:// ]]; then
+              echo "Error: URL must start with http:// or https://"
+              return 1
+            fi
+            
+            # Extract host part
+            local host=$(echo "$url" | sed -E 's#^https?://##' | cut -d'/' -f1)
+            if [ -z "$host" ]; then
+              echo "Error: No host found in URL"
+              return 1
+            fi
+            
+            # Validate host format (domain or IP)
+            if [[ ! "$host" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+              echo "Error: Invalid host format"
+              return 1
+            fi
+            
+            echo "URL validation passed"
+            return 0
+          }
+          
+          echo "Validating Gitea API URL: $GITEA_API_URL"
+          if ! validate_url "$GITEA_API_URL"; then
+            exit 1
+          fi
+          
+          # Store validated base URL for later use
+          GITEA_BASE_URL=$(echo "$GITEA_API_URL" | sed 's#/\+$##' | sed 's#/api/v1$##')
+          echo "GITEA_BASE_URL=$GITEA_BASE_URL" >> $GITHUB_ENV
+          
+          # Test URL resolution
+          echo "Testing DNS resolution..."
+          host=$(echo "$GITEA_BASE_URL" | sed -E 's#^https?://##' | cut -d'/' -f1)
+          if ! ping -c 1 "$host" > /dev/null 2>&1; then
+            echo "Warning: Could not ping host (this might be normal if ICMP is blocked)"
+          fi
+          
+          # Test HTTPS connection
+          echo "Testing HTTPS connection..."
+          if ! curl -sSf -o /dev/null "$GITEA_BASE_URL"; then
+            echo "Error: Could not establish HTTPS connection to $GITEA_BASE_URL"
+            exit 1
+          fi
+          
+          echo "URL validation and connection test passed"
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -62,6 +148,51 @@ jobs:
         if: ${{ github.server_url != 'https://github.com' }}
         run: sudo apt-get install -y jq
 
+      - name: Debug Environment Variables
+        run: |
+          echo "GITHUB_SERVER_URL: $GITHUB_SERVER_URL"
+          if [ -n "$GITEA_TOKEN" ]; then
+            echo "GITEA_TOKEN is set"
+          else
+            echo "GITEA_TOKEN is not set"
+          fi
+          if [ -n "${{ secrets.GITEA_API_URL }}" ]; then
+            echo "GITEA_API_URL from secrets: ${{ secrets.GITEA_API_URL }}"
+          else
+            echo "GITEA_API_URL is not set in secrets"
+          fi
+          if [ -n "${{ secrets.GITEA_REPOSITORY }}" ]; then
+            echo "GITEA_REPOSITORY from secrets: ${{ secrets.GITEA_REPOSITORY }}"
+          else
+            echo "GITEA_REPOSITORY is not set in secrets"
+          fi
+
+      - name: Validate Gitea Configuration
+        if: github.server_url != 'https://github.com'
+        run: |
+          if [ -z "${{ secrets.GITEA_API_URL }}" ]; then
+            echo "::error::GITEA_API_URL is not configured in repository secrets"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITEA_TOKEN }}" ]; then
+            echo "::error::GITEA_TOKEN is not configured in repository secrets"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITEA_REPOSITORY }}" ]; then
+            echo "::error::GITEA_REPOSITORY is not configured in repository secrets"
+            exit 1
+          fi
+          
+          # Validate URL format
+          if [[ ! "${{ secrets.GITEA_API_URL }}" =~ ^https?:// ]]; then
+            echo "::error::GITEA_API_URL must start with http:// or https://"
+            exit 1
+          fi
+          
+          echo "Gitea configuration is valid"
+
       - name: Determine and run release process
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
@@ -100,32 +231,95 @@ jobs:
               --data-binary @.pio/build/esp32dev/filaman_ota.bin
           else
             echo "Creating Gitea Release..."
-            RESPONSE=$(curl -X POST \
+            
+            # Validate and sanitize inputs
+            if [ -z "$GITEA_TOKEN" ] || [ -z "$GITEA_API_URL" ] || [ -z "$GITEA_REPOSITORY" ]; then
+              echo "Error: Missing required Gitea configuration"
+              exit 1
+            fi
+            
+            # Remove trailing slash and /api/v1 if present
+            GITEA_BASE_URL=$(echo "$GITEA_API_URL" | sed 's#/\+$##' | sed 's#/api/v1$##')
+            
+            # Construct proper API URL
+            GITEA_API_ENDPOINT="${GITEA_BASE_URL}/api/v1"
+            
+            echo "Debug: URL Components"
+            echo "GITEA_BASE_URL: ${GITEA_BASE_URL}"
+            echo "GITEA_API_ENDPOINT: ${GITEA_API_ENDPOINT}"
+            echo "GITEA_REPOSITORY: ${GITEA_REPOSITORY}"
+            
+            # Test API connection with verbose output
+            echo "Testing API connection..."
+            curl -v "${GITEA_API_ENDPOINT}/version" 2>&1 | tee api_test.log
+            if [ ${PIPESTATUS[0]} -ne 0 ]; then
+              echo "Error: Could not connect to Gitea API"
+              echo "API Test Log:"
+              cat api_test.log
+              exit 1
+            fi
+            
+            # Prepare release data
+            RELEASE_DATA=$(cat << EOF
+{
+  "tag_name": "${{ github.ref_name }}",
+  "name": "Release ${{ steps.get_version.outputs.VERSION }}",
+  "body": $(echo "${{ steps.changelog.outputs.CHANGES }}" | jq -R -s .),
+  "draft": false,
+  "prerelease": false
+}
+EOF
+)
+            
+            echo "Debug: Release Payload"
+            echo "$RELEASE_DATA" | jq .
+            
+            # Create release with full debug output
+            echo "Creating release at ${GITEA_API_ENDPOINT}/repos/${GITEA_REPOSITORY}/releases"
+            RESPONSE=$(curl -v -X POST \
               -H "Authorization: token ${GITEA_TOKEN}" \
               -H "Content-Type: application/json" \
-              -H "accept: application/json" \
-              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
-              -d '{
-                "tag_name": "${{ github.ref_name }}",
-                "name": "Release ${{ steps.get_version.outputs.VERSION }}",
-                "body": "${{ steps.changelog.outputs.CHANGES }}",
-                "draft": false,
-                "prerelease": false
-              }')
+              -H "Accept: application/json" \
+              "${GITEA_API_ENDPOINT}/repos/${GITEA_REPOSITORY}/releases" \
+              -d "$RELEASE_DATA" 2>&1 | tee release_creation.log)
             
-            RELEASE_ID=$(echo $RESPONSE | jq -r .id)
+            if [ ${PIPESTATUS[0]} -ne 0 ]; then
+              echo "Error: Failed to create release"
+              echo "Release Creation Log:"
+              cat release_creation.log
+              exit 1
+            fi
             
-            # Upload full firmware
-            curl -X POST \
-              -H "Authorization: token ${GITEA_TOKEN}" \
-              -H "Content-Type: application/octet-stream" \
-              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_full.bin" \
-              --data-binary @.pio/build/esp32dev/filaman_full.bin
+            # Extract and validate release ID
+            RELEASE_ID=$(echo "$RESPONSE" | jq -r .id)
+            if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+              echo "Error: Failed to get release ID"
+              echo "API Response:"
+              echo "$RESPONSE" | jq .
+              echo "Full Response Log:"
+              cat release_creation.log
+              exit 1
+            fi
             
-            # Upload OTA firmware
-            curl -X POST \
-              -H "Authorization: token ${GITEA_TOKEN}" \
-              -H "Content-Type: application/octet-stream" \
-              "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=filaman_ota.bin" \
-              --data-binary @.pio/build/esp32dev/filaman_ota.bin
+            # Upload assets with debug output
+            for asset in "filaman_full.bin" "filaman_ota.bin"; do
+              echo "Uploading ${asset}..."
+              ASSET_URL="${GITEA_API_ENDPOINT}/repos/${GITEA_REPOSITORY}/releases/${RELEASE_ID}/assets?name=${asset}"
+              echo "Debug: Uploading to ${ASSET_URL}"
+              
+              curl -v -X POST \
+                -H "Authorization: token ${GITEA_TOKEN}" \
+                -H "Content-Type: application/octet-stream" \
+                "${ASSET_URL}" \
+                --data-binary "@.pio/build/esp32dev/${asset}" 2>&1 | tee "upload_${asset}.log"
+              
+              if [ ${PIPESTATUS[0]} -ne 0 ]; then
+                echo "Error: Failed to upload ${asset}"
+                echo "Upload Log:"
+                cat "upload_${asset}.log"
+                exit 1
+              fi
+            done
+            
+            echo "Release process completed successfully"
           fi
