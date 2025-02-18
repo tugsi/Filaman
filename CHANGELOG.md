@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.3] - 2025-02-18
+### Added
+- update version to 1.2.3; modify HTML files to reflect new version; enhance firmware update process and UI improvements
+
+
 ## [1.2.2] - 2025-02-18
 ### Added
 - update version to 1.2.2; change OTA upgrade link in HTML files; enhance OTA upload handling with progress updates and JSON responses
