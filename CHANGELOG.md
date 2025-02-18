@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2] - 2025-02-18
+### Added
+- update version to 1.2.2; change OTA upgrade link in HTML files; enhance OTA upload handling with progress updates and JSON responses
+- implement OTA update functionality with web interface; update partition settings and build configuration
+- remove unused OTA server setup and related includes; update platformio.ini dependencies
+- adjust weight counter threshold and optimize delay in RFID scanning; include scale header in NFC module
+- update version to v1.2.1 and change upgrade link to OTA in HTML files; modify updateSpoolTagId function to return boolean
+
+
 ## [1.2.0] - 2025-02-17
 ### Added
 - implement OTA functionality and update build scripts; change upgrade link to OTA in HTML
