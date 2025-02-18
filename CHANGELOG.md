@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.5] - 2025-02-18
+### Added
+- update version to 1.2.5; enhance Gitea release workflow and streamline release process
+
+
 ## [1.2.4] - 2025-02-18
 ### Added
 - update version to 1.2.4 in HTML files and platformio.ini
