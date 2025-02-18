@@ -11,18 +11,8 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.VERSION }}
       changelog: ${{ steps.changelog.outputs.CHANGES }}
-      provider: ${{ steps.detect-provider.outputs.provider }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Detect provider
-        id: detect-provider
-        run: |
-          if [[ "$GITHUB_SERVER_URL" == "https://github.com" ]]; then
-            echo "provider=github" >> $GITHUB_OUTPUT
-          else
-            echo "provider=gitea" >> $GITHUB_OUTPUT
-          fi
       
       - name: Get version from tag
         id: get_version
@@ -32,9 +22,6 @@ jobs:
         run: |
           PIO_VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
           TAG_VERSION=${{ steps.get_version.outputs.VERSION }}
-          
-          echo "PlatformIO version: $PIO_VERSION"
-          echo "Tag version: $TAG_VERSION"
           
           if [ "$PIO_VERSION" != "$TAG_VERSION" ]; then
             echo "Error: Version mismatch between tag ($TAG_VERSION) and platformio.ini ($PIO_VERSION)"
@@ -49,20 +36,22 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-  github-release:
-    needs: prepare
-    if: needs.prepare.outputs.provider == 'github'
-    uses: ./.github/workflows/providers/github-release.yml
-    with:
-      version: ${{ needs.prepare.outputs.version }}
-      changelog: ${{ needs.prepare.outputs.changelog }}
-    secrets: inherit
+      - name: Determine provider
+        id: detect-provider
+        run: |
+          if [[ "$GITHUB_SERVER_URL" == "https://github.com" ]]; then
+            echo "provider=github" >> $GITHUB_OUTPUT
+          else
+            echo "provider=gitea" >> $GITHUB_OUTPUT
+          fi
 
-  gitea-release:
+  release:
     needs: prepare
-    if: needs.prepare.outputs.provider == 'gitea'
-    uses: ./.github/workflows/providers/gitea-release.yml
-    with:
-      version: ${{ needs.prepare.outputs.version }}
-      changelog: ${{ needs.prepare.outputs.changelog }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run provider workflow
+        uses: ./.github/workflows/providers/${{ needs.prepare.outputs.provider == 'github' && 'github' || 'gitea' }}-release.yml
+        with:
+          version: ${{ needs.prepare.outputs.version }}
+          changelog: ${{ needs.prepare.outputs.changelog }}
+        secrets: inherit

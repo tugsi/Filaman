@@ -112,3 +112,7 @@ EOF
           fi
           echo "Successfully uploaded $file"
         done
+      }
+    }
+  }
+}
