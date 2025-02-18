@@ -66,11 +66,11 @@ jobs:
         echo "EOF" >> $GITHUB_OUTPUT
     
     - name: Create Release
-    env:
+      env:
         GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
         GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
         GITEA_REPOSITORY: ${{ secrets.GITEA_REPOSITORY }}
-    run: |
+      run: |
         # Create release using Gitea API
         RESPONSE=$(curl -X POST \
         -H "Authorization: token ${GITEA_TOKEN}" \
