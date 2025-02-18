@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.10] - 2025-02-18
+### Added
+- enhance Gitea release workflow with API connection verification and URL validation; update version to 1.2.10
+
+
 ## [1.2.9] - 2025-02-18
 ### Added
 - update version to 1.2.9 in platformio.ini
