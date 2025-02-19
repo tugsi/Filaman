@@ -2,6 +2,19 @@ name: Gitea Release
 
 on:
   workflow_call:
+    inputs:
+      gitea_ref_name:
+        description: 'Gitea ref name'
+        required: true
+        type: string
+      gitea_server_url:
+        description: 'Gitea server URL'
+        required: true
+        type: string
+      gitea_repository:
+        description: 'Gitea repository'
+        required: true
+        type: string
     secrets:
       GITEA_TOKEN:
         required: true
@@ -58,6 +71,9 @@ jobs:
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
+        GITEA_REF_NAME: ${{ inputs.gitea_ref_name }}
+        GITEA_SERVER_URL: ${{ inputs.gitea_server_url }}
+        GITEA_REPOSITORY: ${{ inputs.gitea_repository }}
       run: |
         TAG="${GITEA_REF_NAME}"
         API_URL="${GITEA_SERVER_URL}/api/v1"
@@ -80,7 +96,7 @@ jobs:
         
         RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
         
-        if [ -n "$RELEASE_ID" ]; then
+        if [ -n "$RELEASE_ID"; then
           echo "Release created with ID: $RELEASE_ID"
           
           # Upload files
