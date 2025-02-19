@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       provider: ${{ steps.provider.outputs.provider }}
+      gitea_ref_name: ${{ steps.provider.outputs.gitea_ref_name }}
+      gitea_server_url: ${{ steps.provider.outputs.gitea_server_url }}
+      gitea_repository: ${{ steps.provider.outputs.gitea_repository }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -20,6 +23,7 @@ jobs:
           echo "GITHUB_ACTIONS=${GITHUB_ACTIONS:-not set}"
           echo "GITEA_ACTIONS=${GITEA_ACTIONS:-not set}"
           echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
+          echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
           echo "RUNNER_NAME=${RUNNER_NAME:-not set}"
 
       - name: Determine CI Provider
@@ -28,6 +32,9 @@ jobs:
         run: |
           if [ -n "${GITEA_ACTIONS}" ] || [ -n "${GITEA_REPOSITORY}" ] || [[ "${RUNNER_NAME}" == *"gitea"* ]]; then
             echo "provider=gitea" >> "$GITHUB_OUTPUT"
+            echo "gitea_ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "gitea_server_url=${GITHUB_SERVER_URL}" >> "$GITHUB_OUTPUT"
+            echo "gitea_repository=${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
           elif [ "${GITHUB_ACTIONS}" = "true" ]; then
             echo "provider=github" >> "$GITHUB_OUTPUT"
           else
@@ -55,5 +62,9 @@ jobs:
     needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/providers/gitea-release.yml
+    with:
+      gitea_ref_name: ${{ needs.route.outputs.gitea_ref_name }}
+      gitea_server_url: ${{ needs.route.outputs.gitea_server_url }}
+      gitea_repository: ${{ needs.route.outputs.gitea_repository }}
     secrets:
       GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
