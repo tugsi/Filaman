@@ -16,11 +16,14 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3 python3-pip build-essential curl git
+        sudo apt-get install -y python3 python3-venv build-essential curl git
 
-    - name: Install Python Dependencies
+    - name: Set up Python Virtual Environment
       run: |
-        sudo pip3 install -U platformio esptool
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install platformio esptool
         
         echo "Verifying installations:"
         platformio --version
@@ -29,6 +32,7 @@ jobs:
 
     - name: Build Firmware
       run: |
+        source venv/bin/activate
         echo "Building SPIFFS..."
         platformio run -t buildfs
         
@@ -37,6 +41,7 @@ jobs:
 
     - name: Create Release Files
       run: |
+        source venv/bin/activate
         echo "Creating release files..."
         esptool.py --chip esp32 merge_bin \
           --flash_mode dio \
