@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.30] - 2025-02-19
+### Added
+- update version to 1.2.30 and enhance release workflows for Gitea and GitHub with improved artifact handling and changelog integration
+
+
 ## [1.2.29] - 2025-02-19
 ### Added
 - update version to 1.2.29 and enhance Gitea release workflow with improved error handling and debugging
