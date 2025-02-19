@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.46] - 2025-02-19
+### Added
+- update Gitea release workflow to include changelog and increment version to 1.2.46
+
+
 ## [1.2.45] - 2025-02-19
 ### Added
 - update Gitea release workflow to use dynamic upload URL and increment version to 1.2.45
