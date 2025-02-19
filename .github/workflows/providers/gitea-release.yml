@@ -6,33 +6,57 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-    
-    - name: Install PlatformIO
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Build Dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-    
+        # System-Level Dependencies
+        echo "Installing system dependencies..."
+        sudo apt-get update
+        sudo apt-get install -y python3-minimal python3-pip curl
+
+        # Verify Python installation
+        echo "Python version:"
+        python3 --version
+        
+        # Verify pip installation
+        echo "Pip version:"
+        pip3 --version
+        
+        # Install Python packages
+        echo "Installing Python packages..."
+        python3 -m pip install --user platformio
+        python3 -m pip install --user esptool
+        
+        # Add local bin to PATH
+        echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        export PATH="${HOME}/.local/bin:$PATH"
+        
+        # Verify installations
+        echo "PlatformIO version:"
+        pio --version || echo "PlatformIO not found in PATH"
+        
+        echo "Esptool version:"
+        esptool.py version || echo "Esptool not found in PATH"
+
     - name: Build Firmware
       run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
+        # Ensure PlatformIO is in PATH
+        export PATH="${HOME}/.local/bin:$PATH"
         
-    - name: Install esptool
-      run: |
-        pip install esptool
+        echo "Building SPIFFS..."
+        python3 -m platformio run -t buildfs
         
-    - name: Merge firmware and SPIFFS
+        echo "Building firmware..."
+        python3 -m platformio run
+
+    - name: Merge Firmware Files
       run: |
-        esptool.py --chip esp32 merge_bin \
+        export PATH="${HOME}/.local/bin:$PATH"
+        
+        python3 -m esptool --chip esp32 merge_bin \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
@@ -41,140 +65,50 @@ jobs:
           0x8000 .pio/build/esp32dev/partitions.bin \
           0x10000 .pio/build/esp32dev/firmware.bin \
           0x290000 .pio/build/esp32dev/spiffs.bin
-
-    - name: Prepare OTA firmware
-      run: |
+        
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
-    
-    - name: Get version from tag
-      id: get_version
-      run: |
-        TAG="${GITEA_REF_NAME}"
-        VERSION="${TAG#v}"
-        echo "VERSION=$VERSION" >> $GITEA_OUTPUT
-      
-    - name: Read CHANGELOG.md
-      id: changelog
-      run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITEA_OUTPUT
-        echo "$CHANGELOG" >> $GITEA_OUTPUT
-        echo "EOF" >> $GITEA_OUTPUT
 
-    - name: Create Gitea Release
+    - name: Create Release
+      shell: bash
       env:
         GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       run: |
-        # Debug: Print all environment variables (excluding the token)
-        env | grep -v "GITEA_TOKEN"
-        
-        # Remove trailing slash from server URL if present
-        SERVER_URL="${GITEA_SERVER_URL%/}"
+        # Basis-Variablen setzen
+        API_BASE="${GITEA_SERVER_URL}/api/v1"
         REPO="${GITEA_REPOSITORY}"
         TAG="${GITEA_REF_NAME}"
-        VERSION="${TAG#v}"  # Remove v prefix if present
         
-        echo "Debug environment:"
-        echo "Server URL: $SERVER_URL"
-        echo "Repository: $REPO"
-        echo "Tag: $TAG"
-        echo "Version: $VERSION"
+        echo "Creating release for ${TAG}..."
         
-        # Test API connectivity
-        echo "Testing API connectivity..."
-        TEST_RESPONSE=$(curl -v -k -H "Authorization: token ${GITEA_TOKEN}" "${SERVER_URL}/api/v1/version" 2>&1)
-        echo "API Test Response:"
-        echo "$TEST_RESPONSE"
-        
-        # Construct clean API URL
-        API_URL="${SERVER_URL}/api/v1"
-        RELEASE_URL="${API_URL}/repos/${REPO}/releases"
-        
-        echo "Using Release API URL: $RELEASE_URL"
-        
-        # Common curl options
-        CURL_OPTS="-v -k"  # -v for verbose, -k to ignore SSL verification
-        
-        # Create release with minimal data first
-        echo "Creating release..."
-        RELEASE_RESPONSE=$(curl $CURL_OPTS -X POST \
+        # Release erstellen
+        RESPONSE=$(curl -k -f -s \
+          -X POST \
           -H "accept: application/json" \
           -H "Authorization: token ${GITEA_TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${VERSION}\",\"draft\":false,\"prerelease\":false}" \
-          "${RELEASE_URL}" 2>&1)
+          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${TAG}\"}" \
+          "${API_BASE}/repos/${REPO}/releases")
         
-        echo "Full release creation response (including headers):"
-        echo "$RELEASE_RESPONSE"
+        # Release ID extrahieren
+        RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2)
         
-        # Extract the JSON response (last line)
-        RELEASE_JSON=$(echo "$RELEASE_RESPONSE" | tail -n 1)
-        echo "Release JSON response:"
-        echo "$RELEASE_JSON" | jq '.' || echo "Failed to parse JSON response"
-        
-        # Get release ID
-        RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
-        
-        if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-          echo "Failed to create release. Full response:"
-          echo "$RELEASE_RESPONSE"
-          # Try to get more detailed error information
-          ERROR_MSG=$(echo "$RELEASE_JSON" | jq -r '.message // .error // "Unknown error"')
-          echo "Error message: $ERROR_MSG"
+        if [ -n "$RELEASE_ID" ]; then
+          echo "Release created with ID: $RELEASE_ID"
+          
+          # Binärdateien hochladen
+          for file in "filaman_full.bin" "filaman_ota.bin"; do
+            echo "Uploading $file..."
+            curl -k -f -s \
+              -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@.pio/build/esp32dev/$file" \
+              "${API_BASE}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
+          done
+          
+          echo "Upload completed"
+        else
+          echo "Failed to create release"
+          echo "$RESPONSE"
           exit 1
         fi
-        
-        echo "Successfully created release with ID: $RELEASE_ID"
-        
-        # Upload assets
-        for file in "filaman_full.bin" "filaman_ota.bin"; do
-          echo "Uploading $file..."
-          UPLOAD_URL="${RELEASE_URL}/${RELEASE_ID}/assets?name=${file}"
-          echo "Upload URL: $UPLOAD_URL"
-          
-          UPLOAD_RESPONSE=$(curl $CURL_OPTS -X POST \
-            -H "accept: application/json" \
-            -H "Authorization: token ${GITEA_TOKEN}" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary "@.pio/build/esp32dev/${file}" \
-            "${UPLOAD_URL}" 2>&1)
-          
-          echo "Full upload response for $file (including headers):"
-          echo "$UPLOAD_RESPONSE"
-          
-          # Extract the JSON response (last line)
-          UPLOAD_JSON=$(echo "$UPLOAD_RESPONSE" | tail -n 1)
-          echo "Upload JSON response:"
-          echo "$UPLOAD_JSON" | jq '.' || echo "Failed to parse JSON response"
-          
-          if ! echo "$UPLOAD_JSON" | jq -e '.id' > /dev/null; then
-            echo "Failed to upload $file. Full response:"
-            echo "$UPLOAD_RESPONSE"
-            ERROR_MSG=$(echo "$UPLOAD_JSON" | jq -r '.message // .error // "Unknown error"')
-            echo "Error message: $ERROR_MSG"
-            exit 1
-          fi
-          
-          echo "Successfully uploaded $file"
-        done
-        
-        # Update release with full description after successful file upload
-        echo "Updating release description..."
-        CHANGELOG='${{ steps.changelog.outputs.CHANGES }}'
-        UPDATE_RESPONSE=$(curl $CURL_OPTS -X PATCH \
-          -H "accept: application/json" \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{\"body\":$(echo "$CHANGELOG" | jq -R -s .)}" \
-          "${RELEASE_URL}/${RELEASE_ID}" 2>&1)
-        
-        echo "Full update response (including headers):"
-        echo "$UPDATE_RESPONSE"
-        
-        # Extract the JSON response (last line)
-        UPDATE_JSON=$(echo "$UPDATE_RESPONSE" | tail -n 1)
-        echo "Update JSON response:"
-        echo "$UPDATE_JSON" | jq '.' || echo "Failed to parse JSON response"
-        
-        echo "Release process completed"
