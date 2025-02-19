@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.50] - 2025-02-19
+### Added
+- update version to 1.2.50 and remove obsolete build workflow
+
+
 ## [1.2.49] - 2025-02-19
 ### Added
 - update version to 1.2.49 and modify changelog reading in Gitea release workflow
