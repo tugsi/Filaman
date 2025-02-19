@@ -71,7 +71,9 @@ jobs:
     - name: Read CHANGELOG.md
       id: changelog
       run: |
-        ls -alh
+        if [ -z "$GITHUB_OUTPUT" ]; then
+          GITHUB_OUTPUT="output.txt"
+        fi
         CHANGELOG=$(awk "/## \\[${{ inputs.gitea_ref_name }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
         echo "$CHANGELOG"
         echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
