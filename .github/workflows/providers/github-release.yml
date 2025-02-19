@@ -1,9 +1,7 @@
 name: Github Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:  # This ensures the workflow can only be called from another workflow
 
 permissions:
   contents: write      # Required for creating releases
