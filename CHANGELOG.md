@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.23] - 2025-02-19
+### Added
+- update Gitea release workflow and increment version to 1.2.23
+
+
 ## [1.2.22] - 2025-02-19
 ### Added
 - update Gitea runner configuration and increment version to 1.2.22
