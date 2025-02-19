@@ -68,17 +68,28 @@ jobs:
         
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
 
+    - name: Read CHANGELOG.md
+      id: changelog
+      run: |
+        VERSION=${{ inputs.gitea_ref_name }}
+        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/ {p=0} p" CHANGELOG.md)
+        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
         GITEA_REF_NAME: ${{ inputs.gitea_ref_name }}
         GITEA_SERVER_URL: ${{ inputs.gitea_server_url }}
         GITEA_REPOSITORY: ${{ inputs.gitea_repository }}
+        CHANGELOG: ${{ steps.changelog.outputs.CHANGES }}
       run: |
         echo "Debug environment:"
         echo "GITEA_REF_NAME: ${GITEA_REF_NAME}"
         echo "GITEA_SERVER_URL: ${GITEA_SERVER_URL}"
         echo "GITEA_REPOSITORY: ${GITEA_REPOSITORY}"
+        echo "CHANGELOG: ${CHANGELOG}"
         
         TAG="${GITEA_REF_NAME}"
         API_URL="${GITEA_SERVER_URL}/api/v1"
@@ -91,7 +102,7 @@ jobs:
           -X POST \
           -H "Authorization: token ${TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${TAG}\"}" \
+          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${TAG}\",\"body\":\"${CHANGELOG}\"}" \
           "${API_URL}/repos/${REPO}/releases")
         
         RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
