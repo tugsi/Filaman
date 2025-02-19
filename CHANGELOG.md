@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.57] - 2025-02-20
+### Added
+- update version to 1.2.57 in platformio configuration
+
+### Fixed
+- update spiffs offset and sizes in firmware and partitions configuration
+
+
 ## [1.2.56] - 2025-02-19
 ### Added
 - update version to 1.2.56 and adjust firmware and partition settings
