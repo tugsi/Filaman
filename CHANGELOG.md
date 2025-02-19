@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.55] - 2025-02-19
+### Added
+- update version to 1.2.55 and adjust Gitea release workflow to remove 'v' prefix from version
+
+
 ## [1.2.54] - 2025-02-19
 ### Added
 - update version to 1.2.54 and add check for missing changelog in Gitea release workflow
