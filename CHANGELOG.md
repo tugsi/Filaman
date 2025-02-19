@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.33] - 2025-02-19
+### Added
+- update version to 1.2.33 and refactor release workflows for Gitea and GitHub
+
+
 ## [1.2.32] - 2025-02-19
 ### Added
 - update version to 1.2.32 and adjust workflow dependencies for GitHub and Gitea releases
