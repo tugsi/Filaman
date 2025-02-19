@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.58] - 2025-02-20
+### Added
+- update version to 1.2.58 in HTML files and platformio configuration
+
+
 ## [1.2.57] - 2025-02-20
 ### Added
 - update version to 1.2.57 in platformio configuration
