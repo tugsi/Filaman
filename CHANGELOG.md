@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.39] - 2025-02-19
+### Added
+- update Gitea release workflow to use Python virtual environment and increment version to 1.2.39
+
+
 ## [1.2.38] - 2025-02-19
 ### Added
 - update Gitea release workflow and increment version to 1.2.38
