@@ -81,6 +81,7 @@ jobs:
         if [ -z "$CHANGELOG" ]; then
           echo "No changelog found for version $VERSION"
           exit 1
+        fi
 
     - name: Create Release
       env:
