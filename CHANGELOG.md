@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.35] - 2025-02-19
+### Added
+- update Gitea release workflow and version to 1.2.35
+
+
 ## [1.2.34] - 2025-02-19
 ### Added
 - update version to 1.2.34 and enhance Gitea and GitHub release workflows
