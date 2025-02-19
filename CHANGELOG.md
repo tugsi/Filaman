@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.18] - 2025-02-19
+### Added
+- remove Gitea and GitHub release workflows and increment version to 1.2.18
+
+
 ## [1.2.17] - 2025-02-19
 ### Added
 - update Gitea release workflow for version 1.2.17 and improve job structure
