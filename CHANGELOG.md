@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.56] - 2025-02-19
+### Added
+- update version to 1.2.56 and adjust firmware and partition settings
+
+### Changed
+- remove redundant comment from Gitea release workflow
+
+
 ## [1.2.55] - 2025-02-19
 ### Added
 - update version to 1.2.55 and adjust Gitea release workflow to remove 'v' prefix from version
