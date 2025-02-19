@@ -10,42 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       provider: ${{ steps.provider.outputs.provider }}
-      gitea_ref_name: ${{ steps.route_vars.outputs.ref_name }}
-      gitea_server_url: ${{ steps.route_vars.outputs.server_url }}
-      gitea_repository: ${{ steps.route_vars.outputs.repository }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Debug Environment
-        id: route_vars
         run: |
           echo "CI Environment Details:"
           echo "GITHUB_ACTIONS=${GITHUB_ACTIONS:-not set}"
           echo "GITEA_ACTIONS=${GITEA_ACTIONS:-not set}"
           echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
-          echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
-          echo "GITEA_REF_NAME=${GITEA_REF_NAME:-not set}"
           echo "RUNNER_NAME=${RUNNER_NAME:-not set}"
-          
-          # Set outputs for Gitea variables
-          if [ -n "${GITEA_REF_NAME}" ]; then
-            echo "ref_name=${GITEA_REF_NAME}" >> "$GITHUB_OUTPUT"
-          else 
-            echo "ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -n "${GITEA_SERVER_URL}" ]; then
-            echo "server_url=${GITEA_SERVER_URL}" >> "$GITHUB_OUTPUT"
-          else
-            echo "server_url=https://gitea.example.com" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -n "${GITEA_REPOSITORY}" ]; then
-            echo "repository=${GITEA_REPOSITORY}" >> "$GITHUB_OUTPUT"
-          else
-            echo "repository=${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Determine CI Provider
         id: provider
@@ -58,10 +33,6 @@ jobs:
           else
             echo "provider=unknown" >> "$GITHUB_OUTPUT"
           fi
-          
-          # Debug outputs
-          echo "Provider outputs:"
-          cat "$GITHUB_OUTPUT"
 
   verify-provider:
     needs: route
@@ -70,10 +41,6 @@ jobs:
       - name: Echo detected provider
         run: |
           echo "Detected CI Provider: ${{ needs.route.outputs.provider }}"
-          echo "Gitea Ref Name: ${{ needs.route.outputs.gitea_ref_name }}"
-          echo "Gitea Server URL: ${{ needs.route.outputs.gitea_server_url }}"
-          echo "Gitea Repository: ${{ needs.route.outputs.gitea_repository }}"
-          
           if [ "${{ needs.route.outputs.provider }}" = "unknown" ]; then
             echo "::error::Failed to detect CI provider!"
             exit 1
@@ -88,9 +55,5 @@ jobs:
     needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/providers/gitea-release.yml
-    with:
-      gitea_ref_name: ${{ needs.route.outputs.gitea_ref_name }}
-      gitea_server_url: ${{ needs.route.outputs.gitea_server_url }}
-      gitea_repository: ${{ needs.route.outputs.gitea_repository }}
     secrets:
       GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
