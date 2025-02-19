@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.53] - 2025-02-19
+### Added
+- update version to 1.2.53 and enhance Gitea release workflow to handle missing changelog
+
+
 ## [1.2.52] - 2025-02-19
 ### Added
 - update version to 1.2.52 and improve Gitea release workflow output handling
