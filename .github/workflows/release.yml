@@ -6,50 +6,43 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  prepare:
     runs-on: gitea-runner
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Debug Environment
-        run: |
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "GITHUB_SHA: $GITHUB_SHA"
-          echo "PWD: $PWD"
-          ls -la
       
       - name: Get version from tag
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Raw version: ${VERSION}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
       - name: Get changelog
         id: changelog
         run: |
-          echo "Reading changelog for version ${{ steps.version.outputs.version }}"
-          if [ ! -f "CHANGELOG.md" ]; then
-            echo "Error: CHANGELOG.md not found"
-            ls -la
-            exit 1
-          fi
-          
           CHANGELOG=$(awk "/## \\[${{ steps.version.outputs.version }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-          if [ -z "$CHANGELOG" ]; then
-            echo "Warning: No changelog entry found for version ${{ steps.version.outputs.version }}"
-            echo "File content:"
-            cat CHANGELOG.md
-          else
-            echo "Found changelog entry:"
-            echo "$CHANGELOG"
-          fi
-          
-          {
-            echo "changelog<<EOF"
-            echo "$CHANGELOG"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  github:
+    needs: prepare
+    if: github.server_url == 'https://github.com'
+    uses: ./.github/workflows/providers/github-release.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      changelog: ${{ needs.prepare.outputs.changelog }}
+    secrets: inherit
+
+  gitea:
+    needs: prepare
+    if: github.server_url != 'https://github.com'
+    runs-on: gitea-runner
+    steps:
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -79,32 +72,20 @@ jobs:
             0x290000 .pio/build/esp32dev/spiffs.bin
           cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
       
-      - name: Create Gitea Release
-        if: github.server_url != 'https://github.com'
+      - name: Create Release
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
           GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
           GITEA_REPOSITORY: ${{ secrets.GITEA_REPOSITORY }}
         run: |
-          echo "Creating Gitea release for version ${{ steps.version.outputs.version }}"
-          curl -v -X POST "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
+          echo "Creating release for version ${{ needs.prepare.outputs.version }}"
+          curl -X POST "${GITEA_API_URL}/repos/${GITEA_REPOSITORY}/releases" \
             -H "Authorization: token ${GITEA_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{
               \"tag_name\": \"${GITHUB_REF#refs/tags/}\",
-              \"name\": \"Release ${{ steps.version.outputs.version }}\",
-              \"body\": \"${{ steps.changelog.outputs.changelog }}\",
+              \"name\": \"Release ${{ needs.prepare.outputs.version }}\",
+              \"body\": \"${{ needs.prepare.outputs.changelog }}\",
               \"draft\": false,
               \"prerelease\": false
             }"
-            
-      - name: Create GitHub Release
-        if: github.server_url == 'https://github.com'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "Release ${{ steps.version.outputs.version }}" \
-            --notes "${{ steps.changelog.outputs.changelog }}" \
-            ".pio/build/esp32dev/filaman_full.bin#filaman_full.bin" \
-            ".pio/build/esp32dev/filaman_ota.bin#filaman_ota.bin"
