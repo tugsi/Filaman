@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.41] - 2025-02-19
+### Added
+- update Gitea release workflow debug output and increment version to 1.2.41
+
+
 ## [1.2.40] - 2025-02-19
 ### Added
 - add inputs for Gitea release workflow and increment version to 1.2.40
