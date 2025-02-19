@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.19] - 2025-02-19
+### Added
+- add Gitea and GitHub release workflows for version 1.2.19
+
+
 ## [1.2.18] - 2025-02-19
 ### Added
 - remove Gitea and GitHub release workflows and increment version to 1.2.18
