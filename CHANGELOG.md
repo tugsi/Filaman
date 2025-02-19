@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.21] - 2025-02-19
+### Added
+- update Gitea release condition and increment version to 1.2.21
+
+
 ## [1.2.20] - 2025-02-19
 ### Added
 - update release workflows for GitHub and Gitea, increment version to 1.2.20
