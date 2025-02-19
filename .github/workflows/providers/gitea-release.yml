@@ -1,80 +1,89 @@
 name: Gitea Release
 
 on:
-  workflow_call:  # This ensures the workflow can only be called from another workflow
+  workflow_call:
 
 jobs:
   build:
+    uses: ./.github/workflows/providers/build.yml
+
+  create-release:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # Required for creating releases
-      issues: read        # Required for reading changelog
-      pull-requests: read # Required for reading changelog
+      contents: write
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
       with:
-        python-version: '3.x'
-    
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-    
-    - name: Build Firmware
-      run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
-        
-    - name: Install esptool
-      run: |
-        pip install esptool
-        
-    - name: Merge firmware and SPIFFS
-      run: |
-        esptool.py --chip esp32 merge_bin \
-          --flash_mode dio \
-          --flash_freq 40m \
-          --flash_size 4MB \
-          -o .pio/build/esp32dev/filaman_full.bin \
-          0x1000 .pio/build/esp32dev/bootloader.bin \
-          0x8000 .pio/build/esp32dev/partitions.bin \
-          0x10000 .pio/build/esp32dev/firmware.bin \
-          0x290000 .pio/build/esp32dev/spiffs.bin
+        name: firmware
+        path: firmware
 
-    - name: Prepare OTA firmware
-      run: |
-        # Use PlatformIO to create a proper OTA image
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
-    
-    - name: Get version from tag
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
-    - name: Read CHANGELOG.md
-      id: changelog
-      run: |
-        CHANGELOG=$(awk "/## \\[${{ steps.get_version.outputs.VERSION }}\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-    
-    - name: Install and Configure GitHub CLI
-      run: |
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-        && sudo apt update \
-        && sudo apt install gh -y
-        
-    - name: Create Release with GitHub CLI
+    - name: Create Gitea Release
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       run: |
-        gh release create "${{ github.ref_name }}" \
-          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
-          --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          ".pio/build/esp32dev/filaman_full.bin#filaman_full.bin" \
-          ".pio/build/esp32dev/filaman_ota.bin#filaman_ota.bin"
+        # Determine API URL if not set
+        API_URL="${GITEA_API_URL:-${GITEA_SERVER_URL}/api/v1}"
+        REPO="${GITEA_REPOSITORY}"
+        TAG="${GITEA_REF_NAME}"
+        
+        if [ -z "$API_URL" ] || [ -z "$REPO" ] || [ -z "$TAG" ]; then
+          echo "Error: Required Gitea environment variables are not set"
+          env
+          exit 1
+        fi
+        
+        # Escape changelog content for JSON
+        CHANGELOG_ESCAPED=$(echo '${{ needs.build.outputs.changelog }}' | jq -sR .)
+        
+        echo "Creating release for tag: $TAG"
+        echo "Using API URL: $API_URL"
+        echo "Repository: $REPO"
+        
+        # Create release using Gitea API
+        RELEASE_DATA=$(cat <<EOF
+        {
+          "tag_name": "$TAG",
+          "name": "Release ${{ needs.build.outputs.version }}",
+          "body": ${CHANGELOG_ESCAPED}
+        }
+        EOF
+        )
+        
+        echo "Release data:"
+        echo "$RELEASE_DATA" | jq '.'
+        
+        # Create the release
+        RELEASE_ID=$(curl -X POST \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "$RELEASE_DATA" \
+          "${API_URL}/repos/${REPO}/releases" \
+          | tee /dev/stderr \
+          | jq -r '.id')
+        
+        if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+          echo "Failed to create release"
+          exit 1
+        fi
+        
+        echo "Created release with ID: $RELEASE_ID"
+        
+        # Upload the binary files
+        for file in "filaman_full.bin" "filaman_ota.bin"; do
+          echo "Uploading $file..."
+          RESPONSE=$(curl -X POST \
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"firmware/$file" \
+            "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file")
+          
+          if echo "$RESPONSE" | jq -e '.id' > /dev/null; then
+            echo "Successfully uploaded $file"
+          else
+            echo "Failed to upload $file"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+        done
