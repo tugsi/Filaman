@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.28] - 2025-02-19
+### Added
+- add build and release workflows for Gitea and GitHub, increment version to 1.2.28
+
+
 ## [1.2.27] - 2025-02-19
 ### Added
 - enhance CI workflows with provider detection and update version to 1.2.27
