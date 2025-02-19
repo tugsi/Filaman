@@ -53,11 +53,11 @@ jobs:
           fi
 
   github-release:
-    needs: verify-provider
+    needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'github'
     uses: ./.github/workflows/providers/github-release.yml
 
   gitea-release:
-    needs: verify-provider
+    needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/providers/gitea-release.yml
