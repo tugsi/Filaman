@@ -2,61 +2,98 @@ name: Gitea Release
 
 on:
   workflow_call:
+    inputs:
+      server_url:
+        description: 'Gitea server URL'
+        required: false
+        type: string
+        default: 'https://gitea.your-domain.com'
+    secrets:
+      GITEA_TOKEN:
+        required: true
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    environment: production
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
     - name: Install Build Dependencies
       run: |
-        # System-Level Dependencies
-        echo "Installing system dependencies..."
+        echo "Current directory: $(pwd)"
+        
+        # Systemabhängigkeiten
         sudo apt-get update
-        sudo apt-get install -y python3-minimal python3-pip curl
+        sudo apt-get install -y build-essential gcc git wget
+        
+        # PlatformIO CLI installieren
+        curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/get-platformio.py -o get-platformio.py
+        python3 get-platformio.py
+        
+        # PATH aktualisieren
+        echo "$HOME/.platformio/penv/bin" >> $GITHUB_PATH
+        export PATH="$HOME/.platformio/penv/bin:$PATH"
+        
+        echo "Verifying installation:"
+        pio --version
+        python --version
+        gcc --version
+        
+        echo "Project contents:"
+        ls -la
 
-        # Verify Python installation
-        echo "Python version:"
-        python3 --version
-        
-        # Verify pip installation
-        echo "Pip version:"
-        pip3 --version
-        
-        # Install Python packages
-        echo "Installing Python packages..."
-        python3 -m pip install --user platformio
-        python3 -m pip install --user esptool
-        
-        # Add local bin to PATH
-        echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        export PATH="${HOME}/.local/bin:$PATH"
-        
-        # Verify installations
-        echo "PlatformIO version:"
-        pio --version || echo "PlatformIO not found in PATH"
-        
-        echo "Esptool version:"
-        esptool.py version || echo "Esptool not found in PATH"
-
-    - name: Build Firmware
+    - name: Prepare Build Environment
       run: |
-        # Ensure PlatformIO is in PATH
-        export PATH="${HOME}/.local/bin:$PATH"
+        # PlatformIO Core initialisieren
+        pio platform install "espressif32"
+        
+        echo "Installing libraries..."
+        pio lib install \
+          "tzapu/WiFiManager @ ^2.0.17" \
+          "https://github.com/me-no-dev/ESPAsyncWebServer.git" \
+          "me-no-dev/AsyncTCP @ ^1.1.1" \
+          "bogde/HX711 @ ^0.7.5" \
+          "adafruit/Adafruit SSD1306 @ ^2.5.13" \
+          "adafruit/Adafruit GFX Library @ ^1.11.11" \
+          "adafruit/Adafruit PN532 @ ^1.3.3" \
+          "bblanchon/ArduinoJson @ ^7.3.0" \
+          "knolleary/PubSubClient @ ^2.8" \
+          "digitaldragon/SSLClient @ ^1.3.2"
+        
+        echo "Installed libraries:"
+        pio lib list
+
+    - name: Build Project
+      run: |
+        # PlatformIO Core Variablen setzen
+        export PLATFORMIO_BUILD_FLAGS="-D VERSION=\\"1.2.35\\" -DNDEBUG"
+        
+        echo "Building project..."
+        pio run -e esp32dev -v
         
         echo "Building SPIFFS..."
-        python3 -m platformio run -t buildfs
+        pio run -e esp32dev -t buildfs -v
         
-        echo "Building firmware..."
-        python3 -m platformio run
+        echo "Build output:"
+        ls -la .pio/build/esp32dev/
 
     - name: Merge Firmware Files
       run: |
-        export PATH="${HOME}/.local/bin:$PATH"
+        pip install esptool==4.5.1
         
-        python3 -m esptool --chip esp32 merge_bin \
+        echo "Available files:"
+        ls -la .pio/build/esp32dev/
+        
+        esptool.py --chip esp32 merge_bin \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
@@ -67,30 +104,46 @@ jobs:
           0x290000 .pio/build/esp32dev/spiffs.bin
         
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+        
+        echo "Final binaries:"
+        ls -la .pio/build/esp32dev/filaman_*.bin
 
     - name: Create Release
       shell: bash
       env:
-        GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        TOKEN: ${{ secrets.GITEA_TOKEN }}
+        SERVER_URL: ${{ inputs.server_url }}
       run: |
-        # Basis-Variablen setzen
-        API_BASE="${GITEA_SERVER_URL}/api/v1"
+        # Basis-Variablen
+        API_BASE="${GITEA_SERVER_URL:-${SERVER_URL}}/api/v1"
         REPO="${GITEA_REPOSITORY}"
         TAG="${GITEA_REF_NAME}"
         
-        echo "Creating release for ${TAG}..."
+        echo "Release configuration:"
+        echo "API Base: $API_BASE"
+        echo "Repository: $REPO"
+        echo "Tag: $TAG"
+        
+        # Test API-Verbindung
+        echo "Testing API connection..."
+        curl -k -v \
+          -H "Authorization: token ${TOKEN}" \
+          "${API_BASE}/version"
         
         # Release erstellen
-        RESPONSE=$(curl -k -f -s \
+        echo "Creating release..."
+        RESPONSE=$(curl -k -v \
           -X POST \
-          -H "accept: application/json" \
-          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Authorization: token ${TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${TAG}\"}" \
           "${API_BASE}/repos/${REPO}/releases")
         
+        echo "Release response:"
+        echo "$RESPONSE"
+        
         # Release ID extrahieren
-        RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2)
+        RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
         
         if [ -n "$RELEASE_ID" ]; then
           echo "Release created with ID: $RELEASE_ID"
@@ -98,9 +151,9 @@ jobs:
           # Binärdateien hochladen
           for file in "filaman_full.bin" "filaman_ota.bin"; do
             echo "Uploading $file..."
-            curl -k -f -s \
+            curl -k -v \
               -X POST \
-              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Authorization: token ${TOKEN}" \
               -H "Content-Type: application/octet-stream" \
               --data-binary "@.pio/build/esp32dev/$file" \
               "${API_BASE}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
@@ -109,6 +162,5 @@ jobs:
           echo "Upload completed"
         else
           echo "Failed to create release"
-          echo "$RESPONSE"
           exit 1
         fi

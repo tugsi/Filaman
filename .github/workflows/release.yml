@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       provider: ${{ steps.provider.outputs.provider }}
+      server_url: ${{ steps.provider.outputs.server_url }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -20,6 +21,7 @@ jobs:
           echo "GITHUB_ACTIONS=${GITHUB_ACTIONS:-not set}"
           echo "GITEA_ACTIONS=${GITEA_ACTIONS:-not set}"
           echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
+          echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
           echo "RUNNER_NAME=${RUNNER_NAME:-not set}"
 
       - name: Determine CI Provider
@@ -28,17 +30,24 @@ jobs:
         run: |
           # Initialize provider as unknown
           PROVIDER="unknown"
+          SERVER_URL=""
           
           # Check for Gitea specific environment first
           if [ -n "${GITEA_ACTIONS}" ] || [ -n "${GITEA_REPOSITORY}" ] || [[ "${RUNNER_NAME}" == *"gitea"* ]]; then
             PROVIDER="gitea"
+            SERVER_URL="${GITEA_SERVER_URL}"
           # Then check for GitHub
           elif [ "${GITHUB_ACTIONS}" = "true" ]; then
             PROVIDER="github"
           fi
           
           echo "Detected provider: ${PROVIDER}"
-          echo "provider=${PROVIDER}" >> "${GITHUB_OUTPUT}"
+          echo "Server URL: ${SERVER_URL}"
+          
+          {
+            echo "provider=${PROVIDER}"
+            echo "server_url=${SERVER_URL}"
+          } >> "$GITHUB_OUTPUT"
 
   verify-provider:
     needs: route
@@ -47,6 +56,7 @@ jobs:
       - name: Echo detected provider
         run: |
           echo "Detected CI Provider: ${{ needs.route.outputs.provider }}"
+          echo "Server URL: ${{ needs.route.outputs.server_url }}"
           if [ "${{ needs.route.outputs.provider }}" = "unknown" ]; then
             echo "::error::Failed to detect CI provider!"
             exit 1
@@ -61,3 +71,7 @@ jobs:
     needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/providers/gitea-release.yml
+    with:
+      server_url: ${{ needs.route.outputs.server_url }}
+    secrets:
+      GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
