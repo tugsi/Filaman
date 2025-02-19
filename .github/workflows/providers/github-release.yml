@@ -54,13 +54,11 @@ jobs:
     - name: Read CHANGELOG.md
       id: changelog
       run: |
-        VERSION=${{ inputs.gitea_ref_name }}
+        VERSION=${{ steps.get_version.outputs.VERSION }}
         CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
         echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        echo "CHANGELOG CONTENT:"
-        echo "$CHANGELOG"
 
     - name: Create GitHub Release
       env:
