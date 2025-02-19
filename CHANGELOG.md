@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.48] - 2025-02-19
+### Added
+- update version to 1.2.48 and modify changelog reading in release workflows
+
+
 ## [1.2.47] - 2025-02-19
 ### Added
 - update version to 1.2.47 and modify changelog reading in GitHub release workflow
