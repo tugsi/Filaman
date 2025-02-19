@@ -75,14 +75,14 @@ jobs:
         GITEA_SERVER_URL: ${{ inputs.gitea_server_url }}
         GITEA_REPOSITORY: ${{ inputs.gitea_repository }}
       run: |
+        echo "Debug environment:"
+        echo "GITEA_REF_NAME: ${GITEA_REF_NAME}"
+        echo "GITEA_SERVER_URL: ${GITEA_SERVER_URL}"
+        echo "GITEA_REPOSITORY: ${GITEA_REPOSITORY}"
+        
         TAG="${GITEA_REF_NAME}"
         API_URL="${GITEA_SERVER_URL}/api/v1"
         REPO="${GITEA_REPOSITORY}"
-        
-        echo "Debug environment:"
-        echo "TAG: ${TAG}"
-        echo "API_URL: ${API_URL}"
-        echo "REPO: ${REPO}"
         
         echo "Creating release for ${TAG} on ${REPO}..."
         
