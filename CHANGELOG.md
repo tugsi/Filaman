@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.47] - 2025-02-19
+### Added
+- update version to 1.2.47 and modify changelog reading in GitHub release workflow
+
+
 ## [1.2.46] - 2025-02-19
 ### Added
 - update Gitea release workflow to include changelog and increment version to 1.2.46
