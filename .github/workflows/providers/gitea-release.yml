@@ -95,8 +95,9 @@ jobs:
           "${API_URL}/repos/${REPO}/releases")
         
         RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
+        UPLOAD_URL=$(echo "$RESPONSE" | grep -o '"upload_url":"[^"]*' | cut -d':' -f2- | tr -d '"')
         
-        if [ -n "$RELEASE_ID"; then
+        if [ -n "$RELEASE_ID" ]; then
           echo "Release created with ID: $RELEASE_ID"
           
           # Upload files
@@ -107,7 +108,7 @@ jobs:
               -H "Authorization: token ${TOKEN}" \
               -H "Content-Type: application/octet-stream" \
               --data-binary "@.pio/build/esp32dev/$file" \
-              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
+              "${UPLOAD_URL}?name=$file"
           done
         else
           echo "Failed to create release. Response:"
