@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.43] - 2025-02-19
+### Added
+- update Gitea release workflow by removing unnecessary outputs and increment version to 1.2.43
+
+
 ## [1.2.42] - 2025-02-19
 ### Added
 - update Gitea release workflow to include additional outputs and increment version to 1.2.42
