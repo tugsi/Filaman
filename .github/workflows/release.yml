@@ -34,7 +34,7 @@ jobs:
           changelog: ${{ steps.changelog.outputs.changelog }}
         
       - name: Run Gitea Release
-        if: github.server_url != 'https://github.com'
+        if: github.server_url != 'https://gitlab.fire-devils.org'
         uses: ./.github/workflows/providers/gitea-release.yml
         with:
           version: ${{ steps.version.outputs.version }}
