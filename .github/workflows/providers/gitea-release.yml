@@ -12,7 +12,7 @@ on:
 
 jobs:
   release:
-    runs-on: gitea-runner
+    runs-on: gitea-runner-1
     steps:
       - name: Debug Info
         run: |
