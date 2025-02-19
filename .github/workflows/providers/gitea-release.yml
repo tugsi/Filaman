@@ -23,67 +23,115 @@ jobs:
       env:
         GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       run: |
-        # Determine API URL if not set
-        API_URL="${GITEA_API_URL:-${GITEA_SERVER_URL}/api/v1}"
+        # Debug: Print all environment variables (excluding the token)
+        env | grep -v "GITEA_TOKEN"
+        
+        # Remove trailing slash from server URL if present
+        SERVER_URL="${GITEA_SERVER_URL%/}"
         REPO="${GITEA_REPOSITORY}"
         TAG="${GITEA_REF_NAME}"
+        VERSION="${TAG#v}"  # Remove v prefix if present
         
-        if [ -z "$API_URL" ] || [ -z "$REPO" ] || [ -z "$TAG" ]; then
-          echo "Error: Required Gitea environment variables are not set"
-          env
-          exit 1
-        fi
-        
-        # Escape changelog content for JSON
-        CHANGELOG_ESCAPED=$(echo '${{ needs.build.outputs.changelog }}' | jq -sR .)
-        
-        echo "Creating release for tag: $TAG"
-        echo "Using API URL: $API_URL"
+        echo "Debug environment:"
+        echo "Server URL: $SERVER_URL"
         echo "Repository: $REPO"
+        echo "Tag: $TAG"
+        echo "Version: $VERSION"
         
-        # Create release using Gitea API
-        RELEASE_DATA=$(cat <<EOF
-        {
-          "tag_name": "$TAG",
-          "name": "Release ${{ needs.build.outputs.version }}",
-          "body": ${CHANGELOG_ESCAPED}
-        }
-        EOF
-        )
+        # Test API connectivity
+        echo "Testing API connectivity..."
+        TEST_RESPONSE=$(curl -v -k -H "Authorization: token ${GITEA_TOKEN}" "${SERVER_URL}/api/v1/version" 2>&1)
+        echo "API Test Response:"
+        echo "$TEST_RESPONSE"
         
-        echo "Release data:"
-        echo "$RELEASE_DATA" | jq '.'
+        # Construct clean API URL
+        API_URL="${SERVER_URL}/api/v1"
+        RELEASE_URL="${API_URL}/repos/${REPO}/releases"
         
-        # Create the release
-        RELEASE_ID=$(curl -X POST \
+        echo "Using Release API URL: $RELEASE_URL"
+        
+        # Common curl options
+        CURL_OPTS="-v -k"  # -v for verbose, -k to ignore SSL verification
+        
+        # Create release with minimal data first
+        echo "Creating release..."
+        RELEASE_RESPONSE=$(curl $CURL_OPTS -X POST \
+          -H "accept: application/json" \
           -H "Authorization: token ${GITEA_TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "$RELEASE_DATA" \
-          "${API_URL}/repos/${REPO}/releases" \
-          | tee /dev/stderr \
-          | jq -r '.id')
+          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${VERSION}\",\"draft\":false,\"prerelease\":false}" \
+          "${RELEASE_URL}" 2>&1)
+        
+        echo "Full release creation response (including headers):"
+        echo "$RELEASE_RESPONSE"
+        
+        # Extract the JSON response (last line)
+        RELEASE_JSON=$(echo "$RELEASE_RESPONSE" | tail -n 1)
+        echo "Release JSON response:"
+        echo "$RELEASE_JSON" | jq '.' || echo "Failed to parse JSON response"
+        
+        # Get release ID
+        RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
         
         if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-          echo "Failed to create release"
+          echo "Failed to create release. Full response:"
+          echo "$RELEASE_RESPONSE"
+          # Try to get more detailed error information
+          ERROR_MSG=$(echo "$RELEASE_JSON" | jq -r '.message // .error // "Unknown error"')
+          echo "Error message: $ERROR_MSG"
           exit 1
         fi
         
-        echo "Created release with ID: $RELEASE_ID"
+        echo "Successfully created release with ID: $RELEASE_ID"
         
-        # Upload the binary files
+        # Upload assets
         for file in "filaman_full.bin" "filaman_ota.bin"; do
           echo "Uploading $file..."
-          RESPONSE=$(curl -X POST \
+          UPLOAD_URL="${RELEASE_URL}/${RELEASE_ID}/assets?name=${file}"
+          echo "Upload URL: $UPLOAD_URL"
+          
+          UPLOAD_RESPONSE=$(curl $CURL_OPTS -X POST \
+            -H "accept: application/json" \
             -H "Authorization: token ${GITEA_TOKEN}" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @"firmware/$file" \
-            "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file")
+            --data-binary "@firmware/${file}" \
+            "${UPLOAD_URL}" 2>&1)
           
-          if echo "$RESPONSE" | jq -e '.id' > /dev/null; then
-            echo "Successfully uploaded $file"
-          else
-            echo "Failed to upload $file"
-            echo "Response: $RESPONSE"
+          echo "Full upload response for $file (including headers):"
+          echo "$UPLOAD_RESPONSE"
+          
+          # Extract the JSON response (last line)
+          UPLOAD_JSON=$(echo "$UPLOAD_RESPONSE" | tail -n 1)
+          echo "Upload JSON response:"
+          echo "$UPLOAD_JSON" | jq '.' || echo "Failed to parse JSON response"
+          
+          if ! echo "$UPLOAD_JSON" | jq -e '.id' > /dev/null; then
+            echo "Failed to upload $file. Full response:"
+            echo "$UPLOAD_RESPONSE"
+            ERROR_MSG=$(echo "$UPLOAD_JSON" | jq -r '.message // .error // "Unknown error"')
+            echo "Error message: $ERROR_MSG"
             exit 1
           fi
+          
+          echo "Successfully uploaded $file"
         done
+        
+        # Update release with full description after successful file upload
+        echo "Updating release description..."
+        CHANGELOG='${{ needs.build.outputs.changelog }}'
+        UPDATE_RESPONSE=$(curl $CURL_OPTS -X PATCH \
+          -H "accept: application/json" \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"body\":$(echo "$CHANGELOG" | jq -R -s .)}" \
+          "${RELEASE_URL}/${RELEASE_ID}" 2>&1)
+        
+        echo "Full update response (including headers):"
+        echo "$UPDATE_RESPONSE"
+        
+        # Extract the JSON response (last line)
+        UPDATE_JSON=$(echo "$UPDATE_RESPONSE" | tail -n 1)
+        echo "Update JSON response:"
+        echo "$UPDATE_JSON" | jq '.' || echo "Failed to parse JSON response"
+        
+        echo "Release process completed"
