@@ -14,23 +14,50 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Debug Environment
+        run: |
+          echo "CI Environment Details:"
+          echo "GITHUB_ACTIONS=${GITHUB_ACTIONS:-not set}"
+          echo "GITEA_ACTIONS=${GITEA_ACTIONS:-not set}"
+          echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
+          echo "RUNNER_NAME=${RUNNER_NAME:-not set}"
+
       - name: Determine CI Provider
         id: provider
+        shell: bash
         run: |
-          if [[ "$GITHUB_ACTIONS" == "true" ]]; then
-            echo "provider=github" >> $GITHUB_OUTPUT
-          elif [[ "$GITEA_ACTIONS" == "true" ]]; then
-            echo "provider=gitea" >> $GITHUB_OUTPUT
-          else
-            echo "provider=unknown" >> $GITHUB_OUTPUT
+          # Initialize provider as unknown
+          PROVIDER="unknown"
+          
+          # Check for Gitea specific environment first
+          if [ -n "${GITEA_ACTIONS}" ] || [ -n "${GITEA_REPOSITORY}" ] || [[ "${RUNNER_NAME}" == *"gitea"* ]]; then
+            PROVIDER="gitea"
+          # Then check for GitHub
+          elif [ "${GITHUB_ACTIONS}" = "true" ]; then
+            PROVIDER="github"
+          fi
+          
+          echo "Detected provider: ${PROVIDER}"
+          echo "provider=${PROVIDER}" >> "${GITHUB_OUTPUT}"
+
+  verify-provider:
+    needs: route
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo detected provider
+        run: |
+          echo "Detected CI Provider: ${{ needs.route.outputs.provider }}"
+          if [ "${{ needs.route.outputs.provider }}" = "unknown" ]; then
+            echo "::error::Failed to detect CI provider!"
+            exit 1
           fi
 
   github-release:
-    needs: route
+    needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'github'
     uses: ./.github/workflows/providers/github-release.yml
 
   gitea-release:
-    needs: route
+    needs: [route, verify-provider]
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/providers/gitea-release.yml
