@@ -4,63 +4,20 @@ on:
   workflow_call:
 
 jobs:
+  build:
+    uses: ./.github/workflows/providers/build.yml
+
   create-release:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
       with:
-        python-version: '3.x'
-    
-    - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-    
-    - name: Build Firmware
-      run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
-        
-    - name: Install esptool
-      run: |
-        pip install esptool
-        
-    - name: Merge firmware and SPIFFS
-      run: |
-        esptool.py --chip esp32 merge_bin \
-          --flash_mode dio \
-          --flash_freq 40m \
-          --flash_size 4MB \
-          -o .pio/build/esp32dev/filaman_full.bin \
-          0x1000 .pio/build/esp32dev/bootloader.bin \
-          0x8000 .pio/build/esp32dev/partitions.bin \
-          0x10000 .pio/build/esp32dev/firmware.bin \
-          0x290000 .pio/build/esp32dev/spiffs.bin
-
-    - name: Prepare OTA firmware
-      run: |
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
-    
-    - name: Get version from tag
-      id: get_version
-      run: |
-        TAG="${GITEA_REF_NAME}"
-        VERSION="${TAG#v}"
-        echo "VERSION=$VERSION" >> $GITEA_OUTPUT
-      
-    - name: Read CHANGELOG.md
-      id: changelog
-      run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITEA_OUTPUT
-        echo "$CHANGELOG" >> $GITEA_OUTPUT
-        echo "EOF" >> $GITEA_OUTPUT
+        name: firmware
+        path: firmware
 
     - name: Create Gitea Release
       env:
@@ -137,7 +94,7 @@ jobs:
             -H "accept: application/json" \
             -H "Authorization: token ${GITEA_TOKEN}" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary "@.pio/build/esp32dev/${file}" \
+            --data-binary "@firmware/${file}" \
             "${UPLOAD_URL}" 2>&1)
           
           echo "Full upload response for $file (including headers):"
@@ -161,7 +118,7 @@ jobs:
         
         # Update release with full description after successful file upload
         echo "Updating release description..."
-        CHANGELOG='${{ steps.changelog.outputs.CHANGES }}'
+        CHANGELOG='${{ needs.build.outputs.changelog }}'
         UPDATE_RESPONSE=$(curl $CURL_OPTS -X PATCH \
           -H "accept: application/json" \
           -H "Authorization: token ${GITEA_TOKEN}" \
