@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.89] - 2025-02-20
+### Changed
+- update webpages for version v1.2.89
+- enhance OTA update process with SPIFFS support and improved error handling
+
+
 ## [1.2.88] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.88
