@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.74] - 2025-02-20
+### Changed
+- update webpages for version v1.2.74
+- enhance OTA update process with improved handling of full image updates and SPIFFS data
+
+
 ## [1.2.73] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.73
