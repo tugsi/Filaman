@@ -21,52 +21,37 @@ void stopAllTasks() {
 }
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    static size_t contentLength = 0;
-    
     if (!index) {
-        contentLength = request->contentLength();
-        Serial.printf("Update Start: %s (size: %u bytes)\n", filename.c_str(), contentLength);
-        
-        if (contentLength == 0) {
+        Serial.printf("Update Start: %s\n", filename.c_str());
+        if (request->contentLength() == 0) {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid file size\"}");
             return;
         }
 
-        // Stoppe alle Tasks vor dem Update
         if (!tasksAreStopped && (RfidReaderTask || BambuMqttTask || ScaleTask)) {
             stopAllTasks();
             tasksAreStopped = true;
         }
 
-        // Für full.bin keine Magic Byte Prüfung
-        bool isFullImage = (contentLength > 0x300000);
-        if (!isFullImage && data[0] != 0xE9) {
-            Serial.printf("Wrong magic byte: 0x%02X (expected 0xE9)\n", data[0]);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid firmware format\"}");
-            return;
-        }
-
-        // Bei full.bin UPDATE_SIZE_UNKNOWN verwenden
-        if (!Update.begin(isFullImage ? UPDATE_SIZE_UNKNOWN : contentLength)) {
+        // Da die full.bin jetzt das korrekte Magic Byte hat, 
+        // können wir ein normales Update ohne spezielle Flags starten
+        if (!Update.begin()) {
             Update.printError(Serial);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"OTA could not begin\"}");
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update start failed\"}");
             return;
         }
-        Serial.printf("Starting %s update\n", isFullImage ? "full" : "firmware");
     }
 
-    // Schreibe Update-Daten
     if (Update.write(data, len) != len) {
         Update.printError(Serial);
-        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"OTA write failed\"}");
+        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Write failed\"}");
         return;
     }
 
-    // Update abschließen
     if (final) {
         if (!Update.end(true)) {
             Update.printError(Serial);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"OTA end failed\"}");
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed\"}");
             return;
         }
         Serial.println("Update successful, restarting...");

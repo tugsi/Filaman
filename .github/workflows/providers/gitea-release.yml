@@ -30,33 +30,51 @@ jobs:
     - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
-        pip install --upgrade platformio
+        pip install --upgrade platformio esptool
     
     - name: Build Firmware
       run: |
         pio run -t buildfs  # Build SPIFFS
         pio run            # Build firmware
         
-    - name: Install esptool
+    - name: Prepare binaries
       run: |
-        pip install esptool
+        cd .pio/build/esp32dev
         
-    - name: Merge firmware and SPIFFS
-      run: |
+        # Debug: Show all generated files
+        echo "Files in build directory:"
+        ls -la
+        
+        # Create OTA binary (already has correct magic byte)
+        cp firmware.bin filaman_ota.bin
+        
+        # Create a magic byte prepended binary for the bootloader
+        echo -ne '\xE9' > bootloader_with_magic.bin
+        cat bootloader.bin >> bootloader_with_magic.bin
+        
+        echo "Creating full binary with magic byte..."
         esptool.py --chip esp32 merge_bin \
+          --fill-flash-size 4MB \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o .pio/build/esp32dev/filaman_full.bin \
-          0x1000 .pio/build/esp32dev/bootloader.bin \
-          0x8000 .pio/build/esp32dev/partitions.bin \
-          0x10000 .pio/build/esp32dev/firmware.bin \
-          0x3D0000 .pio/build/esp32dev/spiffs.bin
+          -o filaman_full.bin \
+          0x0000 bootloader_with_magic.bin \
+          0x8000 partitions.bin \
+          0x10000 firmware.bin \
+          0x3D0000 spiffs.bin
+        
+        # Verify magic bytes
+        echo "Checking magic bytes:"
+        echo "OTA binary first bytes:"
+        hexdump -C -n 16 filaman_ota.bin
+        echo "Full binary first bytes:"
+        hexdump -C -n 16 filaman_full.bin
+        
+        # Verify file sizes
+        echo "File sizes:"
+        ls -lh *.bin
 
-    - name: Prepare OTA firmware
-      run: |
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
-    
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
