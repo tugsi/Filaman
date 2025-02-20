@@ -16,15 +16,19 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             return;
         }
 
-        if (!Update.begin(contentLength)) {
+        // Determine if this is a full image (firmware + SPIFFS) or just firmware
+        bool isFullImage = (contentLength > 0x3D0000); // SPIFFS starts at 0x3D0000
+
+        if (!Update.begin(contentLength, isFullImage ? U_FLASH : U_SPIFFS)) {
             Serial.printf("Not enough space: %u required\n", contentLength);
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
             return;
         }
         
-        Serial.println("Update started");
+        Serial.println(isFullImage ? "Full image update started" : "Firmware update started");
     }
-
+    
+    // Write chunk to flash
     if (Update.write(data, len) != len) {
         Update.printError(Serial);
         request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update\"}");
