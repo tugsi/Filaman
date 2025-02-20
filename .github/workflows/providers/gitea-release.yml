@@ -69,8 +69,6 @@ jobs:
         
         # Verify magic bytes
         echo "Checking magic bytes:"
-        echo "OTA binary first bytes:"
-        xxd -l 16 filaman_ota.bin
         echo "Full binary first bytes:"
         xxd -l 16 filaman_full.bin
         
@@ -105,7 +103,7 @@ jobs:
           
           # Upload binaries
           cd .pio/build/esp32dev_ota
-          for file in filaman_full.bin filaman_ota.bin filaman.bin filaman_spiffs.bin; do
+          for file in filaman_full.bin; do
             echo "Uploading $file..."
             curl -k -s \
               -X POST \

@@ -58,8 +58,6 @@ jobs:
         
         # Verify magic bytes
         echo "Checking magic bytes:"
-        echo "OTA binary first bytes:"
-        xxd -l 16 filaman_ota.bin
         echo "Full binary first bytes:"
         xxd -l 16 filaman_full.bin
         
@@ -88,7 +86,4 @@ jobs:
         gh release create "${{ github.ref_name }}" \
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          .pio/build/esp32dev_ota/filaman_full.bin \
-          .pio/build/esp32dev_ota/filaman_ota.bin \
-          .pio/build/esp32dev_ota/filaman.bin \
-          .pio/build/esp32dev_ota/filaman_spiffs.bin
+          .pio/build/esp32dev_ota/filaman_full.bin
