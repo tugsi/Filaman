@@ -22,10 +22,23 @@ void stopAllTasks() {
 }
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    static size_t contentLength = 0;
+    static bool isFullImage = false;
+    
     if (!index) {
-        Serial.printf("Update Start: %s\n", filename.c_str());
-        if (request->contentLength() == 0) {
+        contentLength = request->contentLength();
+        Serial.printf("Update Start: %s (size: %u bytes)\n", filename.c_str(), contentLength);
+        
+        if (contentLength == 0) {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid file size\"}");
+            return;
+        }
+
+        // Bei full.bin muss das Magic Byte nicht geprüft werden
+        isFullImage = (contentLength > 0x300000);
+        if (!isFullImage && data[0] != ESP_MAGIC) {
+            Serial.printf("Wrong magic byte: 0x%02X (expected 0x%02X)\n", data[0], ESP_MAGIC);
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid firmware format\"}");
             return;
         }
 
@@ -34,11 +47,22 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             tasksAreStopped = true;
         }
 
-        if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+        if (!Update.begin(contentLength, isFullImage ? U_FLASH : U_FLASH)) {
             Update.printError(Serial);
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"OTA could not begin\"}");
             return;
         }
+        
+        Serial.printf("Starting %s update\n", isFullImage ? "full" : "firmware");
+    }
+
+    // Debug output für die ersten paar Bytes
+    if (index == 0) {
+        Serial.printf("First bytes: ");
+        for(size_t i = 0; i < min(16UL, len); i++) {
+            Serial.printf("%02X ", data[i]);
+        }
+        Serial.println();
     }
 
     if (Update.write(data, len) != len) {
@@ -53,6 +77,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"OTA end failed\"}");
             return;
         }
+        Serial.println("Update successful, restarting...");
         request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
         delay(500);
         ESP.restart();

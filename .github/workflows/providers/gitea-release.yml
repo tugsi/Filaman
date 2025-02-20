@@ -46,27 +46,56 @@ jobs:
     - name: Build Firmware
       run: |
         source venv/bin/activate
+        # Ensure clean build
+        platformio run -t clean
+        
         echo "Building SPIFFS..."
         platformio run -t buildfs
         
         echo "Building firmware..."
         platformio run
+        
+        # Get esp32 bootloader
+        python -c "import pkg_resources; print(pkg_resources.resource_filename('platformio', 'packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin'))" > bootloader_path.txt
+        cp $(cat bootloader_path.txt) .pio/build/esp32dev/bootloader.bin
 
     - name: Create Release Files
       run: |
         source venv/bin/activate
-        echo "Creating release files..."
+        
+        # Verify file existence and sizes
+        echo "Verifying build files..."
+        ls -lh .pio/build/esp32dev/bootloader.bin
+        ls -lh .pio/build/esp32dev/partitions.bin
+        ls -lh .pio/build/esp32dev/firmware.bin
+        ls -lh .pio/build/esp32dev/spiffs.bin
+        ls -lh .pio/build/esp32dev/ota_data_initial.bin
+        
+        # Create OTA file (firmware only)
+        echo "Creating OTA update binary..."
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+        
+        # Create full flash binary
+        echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
+          -o .pio/build/esp32dev/filaman_full.bin \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o .pio/build/esp32dev/filaman_full.bin \
-          0x1000 .pio/build/esp32dev/bootloader.bin \
+          0x0000 .pio/build/esp32dev/bootloader.bin \
           0x8000 .pio/build/esp32dev/partitions.bin \
+          0xe000 .pio/build/esp32dev/ota_data_initial.bin \
           0x10000 .pio/build/esp32dev/firmware.bin \
           0x3D0000 .pio/build/esp32dev/spiffs.bin
         
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+        # Verify created files and show sizes
+        echo "Verifying created files..."
+        ls -lh .pio/build/esp32dev/filaman_full.bin
+        ls -lh .pio/build/esp32dev/filaman_ota.bin
+        
+        # Show binary info
+        echo "Binary information:"
+        esptool.py --chip esp32 image_info .pio/build/esp32dev/filaman_full.bin
 
     - name: Read CHANGELOG.md
       id: changelog
