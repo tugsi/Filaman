@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.71] - 2025-02-20
+### Added
+- update version number to v1.2.65 in HTML files and platformio.ini; add script to create full binary
+
+### Changed
+- update webpages for version v1.2.71
+
+
 ## [1.2.70] - 2025-02-20
 ### Added
 - add logging to stopAllTasks for better debugging
