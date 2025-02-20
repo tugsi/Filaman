@@ -107,14 +107,20 @@ jobs:
           
           # Upload binaries
           cd .pio/build/esp32dev
-          for file in filaman_ota.bin filaman_spiffs.bin filaman_full.bin; do
-            echo "Uploading $file..."
-            curl -k -s \
-              -X POST \
-              -H "Authorization: token ${TOKEN}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary "@$file" \
-              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
+          
+          # Check if files exist before uploading
+          for file in filaman_spiffs.bin filaman_full.bin; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file..."
+              curl -k -s \
+                -X POST \
+                -H "Authorization: token ${TOKEN}" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary "@$file" \
+                "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
+            else
+              echo "Warning: $file not found"
+            fi
           done
         else
           echo "Failed to create release. Response:"

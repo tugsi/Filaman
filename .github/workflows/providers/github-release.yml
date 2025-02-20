@@ -87,7 +87,23 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        gh release create "${{ github.ref_name }}" \
-          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
-          --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          .pio/build/esp32dev/filaman_full.bin
+        # Check which files exist and create a list for upload
+        cd .pio/build/esp32dev
+        FILES_TO_UPLOAD=""
+        for file in filaman_spiffs.bin filaman_full.bin; do
+          if [ -f "$file" ]; then
+            FILES_TO_UPLOAD="$FILES_TO_UPLOAD .pio/build/esp32dev/$file"
+          else
+            echo "Warning: $file not found"
+          fi
+        done
+        
+        # Create release with available files
+        if [ -n "$FILES_TO_UPLOAD" ]; then
+          gh release create "${{ github.ref_name }}" \
+            --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+            --notes "${{ steps.changelog.outputs.CHANGES }}" \
+            $FILES_TO_UPLOAD
+        else
+          echo "Error: No files found to upload"
+          exit 1
