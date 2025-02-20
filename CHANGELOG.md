@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.87] - 2025-02-20
+### Changed
+- update webpages for version v1.2.87
+
+### Fixed
+- update firmware build process and remove unused OTA environment
+
+
 ## [1.2.86] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.86
