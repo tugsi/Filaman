@@ -13,7 +13,7 @@ const uint8_t ESP_MAGIC = 0xE9;
 
 void stopAllTasks() {
     // Stop all tasks
-    vTaskSuspend(NfcTask);
+    vTaskSuspend(RfidReaderTask);
     vTaskSuspend(BambuMqttTask);
     vTaskSuspend(ScaleTask);
     //vTaskDelay(100 / portTICK_PERIOD_MS);
