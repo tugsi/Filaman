@@ -29,9 +29,14 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     static bool isFullImage = false;
     static uint32_t currentOffset = 0;
     
+    // Flash layout constants from partitions.csv
+    static const uint32_t FLASH_SIZE = 0x400000;    // 4MB total
+    static const uint32_t APP_SIZE = 0x1E0000;      // Size per app partition
+    static const uint32_t SPIFFS_OFFSET = 0x3D0000; // SPIFFS start
+    
     if (!index) {
         contentLength = request->contentLength();
-        Serial.printf("Update size: %u bytes\n", contentLength);
+        Serial.printf("Update size: %u bytes (0x%X)\n", contentLength, contentLength);
         
         if (contentLength == 0) {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid file size\"}");
@@ -43,48 +48,63 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             tasksAreStopped = true;
         }
 
-        // Erweiterte Größenprüfung für full.bin
-        isFullImage = (contentLength >= 0x400000); // 4MB full image
+        isFullImage = (contentLength >= SPIFFS_OFFSET);
         
         if (!isFullImage) {
+            // Regular firmware update must not exceed app partition size
+            if (contentLength > APP_SIZE) {
+                Serial.printf("Firmware too large: 0x%X > 0x%X\n", contentLength, APP_SIZE);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Firmware too large\"}");
+                return;
+            }
+            
             if (!Update.begin(contentLength)) {
                 Serial.printf("Not enough space for firmware: %u required\n", contentLength);
                 request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
                 return;
             }
-            Serial.println("Firmware update started");
+            Serial.printf("Firmware update started (size: 0x%X)\n", contentLength);
         } else {
-            // Sicherstellen, dass genügend Flash-Speicher verfügbar ist
-            if(!Update.begin(0x400000, U_FLASH)) { // 4MB Gesamtgröße
+            // Full image update
+            if (contentLength > FLASH_SIZE) {
+                Serial.printf("Image too large: 0x%X > 0x%X\n", contentLength, FLASH_SIZE);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Image too large\"}");
+                return;
+            }
+            
+            if (!Update.begin(FLASH_SIZE, U_FLASH)) {
                 Serial.println("Could not begin full image update");
                 request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Could not start full update\"}");
                 return;
             }
-            Serial.println("Full image update started");
+            Serial.printf("Full image update started (size: 0x%X)\n", contentLength);
         }
         currentOffset = 0;
-    }
-
-    // Zusätzliche Debug-Ausgaben
-    if (isFullImage) {
-        Serial.printf("Writing at offset: 0x%X, length: %u\n", currentOffset, len);
     }
 
     if (Update.write(data, len) != len) {
         String errorMsg = Update.errorString();
         if (errorMsg != "No Error") {
             Update.printError(Serial);
-            Serial.printf("Error at offset: 0x%X\n", currentOffset);
+            Serial.printf("Error at offset: 0x%X of 0x%X bytes\n", currentOffset, contentLength);
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
             return;
         }
+    }
+    
+    // Progress logging
+    if ((currentOffset % 0x40000) == 0) { // Log every 256KB
+        Serial.printf("Update progress: 0x%X of 0x%X bytes (%.1f%%)\n", 
+            currentOffset, 
+            contentLength, 
+            (currentOffset * 100.0) / contentLength);
     }
     
     currentOffset += len;
     
     if (final) {
         if (Update.end(true)) {
-            Serial.println("Update complete");
+            Serial.printf("Update complete: 0x%X bytes written\n", currentOffset);
             request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
             delay(1000);
             ESP.restart();
