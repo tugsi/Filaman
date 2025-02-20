@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.83] - 2025-02-20
+### Changed
+- update webpages for version v1.2.83
+- replace hexdump with xxd for magic byte verification in release workflows
+
+
 ## [1.2.82] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.82
