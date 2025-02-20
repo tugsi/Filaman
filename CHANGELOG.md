@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.88] - 2025-02-20
+### Changed
+- update webpages for version v1.2.88
+
+### Fixed
+- improve OTA update handling and logging for better error reporting
+
+
 ## [1.2.87] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.87
