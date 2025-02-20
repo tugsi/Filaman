@@ -28,11 +28,9 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     static size_t contentLength = 0;
     static bool isFullImage = false;
     static uint32_t currentOffset = 0;
-    
-    // Flash layout constants from partitions.csv
-    static const uint32_t FLASH_SIZE = 0x400000;    // 4MB total
-    static const uint32_t APP_SIZE = 0x1E0000;      // Size per app partition
-    static const uint32_t SPIFFS_OFFSET = 0x3D0000; // SPIFFS start
+    static uint8_t *spiffsBuffer = nullptr;
+    static size_t spiffsSize = 0x30000;  // 192KB SPIFFS size
+    static size_t spiffsStored = 0;
     
     if (!index) {
         contentLength = request->contentLength();
@@ -48,77 +46,148 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             tasksAreStopped = true;
         }
 
-        isFullImage = (contentLength >= SPIFFS_OFFSET);
+        isFullImage = (contentLength > 0x300000);  // Über 3MB ist ein full image
         
-        if (!isFullImage) {
-            // Regular firmware update must not exceed app partition size
-            if (contentLength > APP_SIZE) {
-                Serial.printf("Firmware too large: 0x%X > 0x%X\n", contentLength, APP_SIZE);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Firmware too large\"}");
+        if (isFullImage) {
+            // Alloziere Buffer für SPIFFS-Daten
+            spiffsBuffer = (uint8_t*)malloc(spiffsSize);
+            if (!spiffsBuffer) {
+                Serial.println("Failed to allocate SPIFFS buffer");
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Memory allocation failed\"}");
                 return;
             }
+            memset(spiffsBuffer, 0xFF, spiffsSize);
+            spiffsStored = 0;
             
-            if (!Update.begin(contentLength)) {
-                Serial.printf("Not enough space for firmware: %u required\n", contentLength);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
-                return;
-            }
-            Serial.printf("Firmware update started (size: 0x%X)\n", contentLength);
-        } else {
-            // Full image update
-            if (contentLength > FLASH_SIZE) {
-                Serial.printf("Image too large: 0x%X > 0x%X\n", contentLength, FLASH_SIZE);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Image too large\"}");
-                return;
-            }
-            
-            if (!Update.begin(FLASH_SIZE, U_FLASH)) {
+            // Starte Update mit der Firmware-Größe
+            if (!Update.begin(0x3D0000, U_FLASH)) {  // Nur bis zum SPIFFS-Start
                 Serial.println("Could not begin full image update");
+                free(spiffsBuffer);
+                spiffsBuffer = nullptr;
                 request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Could not start full update\"}");
                 return;
             }
-            Serial.printf("Full image update started (size: 0x%X)\n", contentLength);
+        } else {
+            // Normales Firmware-Update
+            if (!Update.begin(contentLength)) {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
+                return;
+            }
         }
+        
         currentOffset = 0;
+        Serial.printf("%s update started\n", isFullImage ? "Full image" : "Firmware");
     }
 
-    if (Update.write(data, len) != len) {
-        String errorMsg = Update.errorString();
-        if (errorMsg != "No Error") {
-            Update.printError(Serial);
-            Serial.printf("Error at offset: 0x%X of 0x%X bytes\n", currentOffset, contentLength);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
-            return;
+    if (isFullImage && currentOffset >= 0x3D0000) {
+        // SPIFFS-Daten sammeln
+        size_t spiffsOffset = currentOffset - 0x3D0000;
+        if (spiffsOffset < spiffsSize) {
+            size_t copyLen = min(len, spiffsSize - spiffsOffset);
+            memcpy(spiffsBuffer + spiffsOffset, data, copyLen);
+            spiffsStored += copyLen;
+            Serial.printf("Stored SPIFFS data: offset=0x%X, len=%u\n", spiffsOffset, copyLen);
         }
+        
+        // Nur die Firmware-Daten an Update.write() übergeben
+        return;
     }
-    
-    // Progress logging
-    if ((currentOffset % 0x40000) == 0) { // Log every 256KB
-        Serial.printf("Update progress: 0x%X of 0x%X bytes (%.1f%%)\n", 
-            currentOffset, 
-            contentLength, 
-            (currentOffset * 100.0) / contentLength);
+
+    // Schreibe Firmware-Daten
+    size_t writeLen = isFullImage ? min(len, 0x3D0000 - currentOffset) : len;
+    if (writeLen > 0) {
+        if (Update.write(data, writeLen) != writeLen) {
+            String errorMsg = Update.errorString();
+            if (errorMsg != "No Error") {
+                Update.printError(Serial);
+                if (spiffsBuffer) {
+                    free(spiffsBuffer);
+                    spiffsBuffer = nullptr;
+                }
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
+                return;
+            }
+        }
     }
     
     currentOffset += len;
     
+    // Progress logging
+    if ((currentOffset % 0x40000) == 0) {
+        Serial.printf("Update progress: 0x%X of 0x%X bytes (%.1f%%)\n", 
+            currentOffset, contentLength, (currentOffset * 100.0) / contentLength);
+    }
+    
     if (final) {
-        if (Update.end(true)) {
-            Serial.printf("Update complete: 0x%X bytes written\n", currentOffset);
-            request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
-            delay(1000);
-            ESP.restart();
-        } else {
+        bool success = true;
+        
+        // Beende Firmware-Update
+        if (!Update.end(true)) {
+            success = false;
             String errorMsg = Update.errorString();
             if (errorMsg != "No Error") {
                 Update.printError(Serial);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed: " + errorMsg + "\"}");
-            } else {
-                request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
-                delay(1000);
-                ESP.restart();
+                if (spiffsBuffer) {
+                    free(spiffsBuffer);
+                    spiffsBuffer = nullptr;
+                }
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Firmware update failed: " + errorMsg + "\"}");
+                return;
             }
         }
+        
+        // SPIFFS aktualisieren wenn es ein full image war
+        if (success && isFullImage && spiffsBuffer && spiffsStored > 0) {
+            Serial.printf("Starting SPIFFS update (size: 0x%X)\n", spiffsStored);
+            
+            if (SPIFFS.begin(true)) {
+                SPIFFS.end();  // Unmount first
+            }
+            
+            if (!Update.begin(spiffsSize, U_SPIFFS)) {
+                Serial.println("Could not begin SPIFFS update");
+                free(spiffsBuffer);
+                spiffsBuffer = nullptr;
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SPIFFS update failed to start\"}");
+                return;
+            }
+            
+            if (Update.write(spiffsBuffer, spiffsSize) != spiffsSize) {
+                Serial.println("SPIFFS Write Failed");
+                Update.printError(Serial);
+                free(spiffsBuffer);
+                spiffsBuffer = nullptr;
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SPIFFS write failed\"}");
+                return;
+            }
+            
+            if (!Update.end(true)) {
+                Serial.println("SPIFFS End Failed");
+                Update.printError(Serial);
+                free(spiffsBuffer);
+                spiffsBuffer = nullptr;
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SPIFFS finish failed\"}");
+                return;
+            }
+            
+            // Cleanup
+            free(spiffsBuffer);
+            spiffsBuffer = nullptr;
+            
+            // Verify SPIFFS
+            if (!SPIFFS.begin(true)) {
+                Serial.println("SPIFFS mount after update failed");
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SPIFFS verification failed\"}");
+                return;
+            }
+            SPIFFS.end();
+        }
+        
+        // Alles erfolgreich
+        Serial.printf("Update complete: 0x%X bytes written\n", currentOffset);
+        request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
+        delay(500);
+        ESP.restart();
     }
 }
 
