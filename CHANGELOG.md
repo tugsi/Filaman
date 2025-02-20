@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.63] - 2025-02-20
+### Added
+- update version to 1.2.63
+
+### Changed
+- update webpages for version v1.2.63
+
+
 ## [1.2.62] - 2025-02-20
 ### Added
 - update version to 1.2.62
