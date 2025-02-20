@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.64] - 2025-02-20
+### Changed
+- update webpages for version v1.2.64
+
+### Fixed
+- improve error handling in OTA upload process
+
+
 ## [1.2.63] - 2025-02-20
 ### Added
 - update version to 1.2.63
