@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.78] - 2025-02-20
+### Changed
+- update webpages for version v1.2.78
+- streamline Gitea release workflow and update version to 1.2.77
+
+### Fixed
+- update Gitea and GitHub release workflows to improve binary preparation and verification fix: correct version number in HTML files and platformio.ini to v1.2.76 enhance: streamline OTA update handling by removing unnecessary magic byte checks
+
+
 ## [1.2.77] - 2025-02-20
 ### Changed
 - optimize Gitea release workflow by simplifying build steps and improving file handling
