@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.68] - 2025-02-20
+### Added
+- add task handles for BambuMqttTask and ScaleTask; rename stopTasks to stopAllTasks
+
+### Changed
+- update webpages for version v1.2.68
+
+### Fixed
+- update stopAllTasks to suspend RfidReaderTask instead of NfcTask
+
+
 ## [1.2.67] - 2025-02-20
 ### Added
 - improve OTA upload handling and add SPIFFS update support
