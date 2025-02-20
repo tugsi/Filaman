@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.77] - 2025-02-20
+### Changed
+- optimize Gitea release workflow by simplifying build steps and improving file handling
+- update webpages for version v1.2.77
+
+
 ## [1.2.76] - 2025-02-20
 ### Added
 - enhance OTA update process with improved file verification and new OTA data initialization
