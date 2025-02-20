@@ -20,81 +20,150 @@ void stopAllTasks() {
     Serial.println("All tasks stopped");
 }
 
+void performStageTwo() {
+    if (!SPIFFS.begin(true)) {
+        Serial.println("Error: Could not mount SPIFFS for stage 2");
+        return;
+    }
+
+    File firmwareFile = SPIFFS.open("/firmware.bin", "r");
+    if (!firmwareFile) {
+        Serial.println("Error: Could not open firmware.bin from SPIFFS");
+        return;
+    }
+
+    size_t firmwareSize = firmwareFile.size();
+    size_t maxAppSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+
+    Serial.printf("Stage 2 - Firmware size: %u bytes\n", firmwareSize);
+    Serial.printf("Available space: %u bytes\n", maxAppSpace);
+
+    if (firmwareSize > maxAppSpace) {
+        Serial.printf("Error: Not enough space for firmware. Need %u bytes but only have %u bytes\n", 
+                    firmwareSize, maxAppSpace);
+        return;
+    }
+
+    if (!Update.begin(firmwareSize)) {
+        Update.printError(Serial);
+        return;
+    }
+
+    size_t written = Update.writeStream(firmwareFile);
+    if (written != firmwareSize) {
+        Update.printError(Serial);
+        return;
+    }
+
+    if (!Update.end(true)) {
+        Update.printError(Serial);
+        return;
+    }
+
+    firmwareFile.close();
+    SPIFFS.remove("/firmware.bin"); // Cleanup
+    Serial.println("Stage 2 update successful, restarting...");
+    delay(500);
+    ESP.restart();
+}
+
+void checkForStagedUpdate() {
+    if (!SPIFFS.begin(true)) {
+        return;
+    }
+
+    if (SPIFFS.exists("/firmware.bin")) {
+        Serial.println("Found staged firmware update, initiating stage 2...");
+        performStageTwo();
+    }
+}
+
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    static File stagingFile;
+    
     if (!index) {
-        bool isFullImage = filename.endsWith(".bin");
-        Serial.printf("Update Start: %s (type: %s)\n", filename.c_str(), isFullImage ? "full" : "OTA");
+        bool isSpiffsUpdate = filename.endsWith("_spiffs.bin");
+        Serial.printf("Update Start: %s (type: %s)\n", filename.c_str(), isSpiffsUpdate ? "SPIFFS" : "OTA");
         
         if (request->contentLength() == 0) {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid file size\"}");
             return;
         }
 
-        // Berechne verfügbaren Speicherplatz
-        size_t updateSize = request->contentLength();
-        size_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-        
-        Serial.printf("Update size: %u bytes\n", updateSize);
-        Serial.printf("Available space: %u bytes\n", maxSketchSpace);
-        
-        if (updateSize > maxSketchSpace) {
-            Serial.printf("Error: Not enough space. Need %u bytes but only have %u bytes available\n", 
-                        updateSize, maxSketchSpace);
-            request->send(400, "application/json", 
-                        "{\"status\":\"error\",\"message\":\"Not enough space for update\"}");
-            return;
-        }
-
+        // Stop tasks before update
         if (!tasksAreStopped && (RfidReaderTask || BambuMqttTask || ScaleTask)) {
             stopAllTasks();
             tasksAreStopped = true;
         }
 
-        // Ensure SPIFFS is ended before update
-        if (SPIFFS.begin()) {
-            SPIFFS.end();
-        }
-
-        bool success;
-        if (isFullImage) {
-            success = Update.begin(updateSize, U_FLASH);
-        } else {
-            if (data[0] != 0xE9) {
-                Serial.printf("Wrong magic byte: 0x%02X (expected 0xE9)\n", data[0]);
+        size_t updateSize = request->contentLength();
+        
+        if (isSpiffsUpdate) {
+            if (!SPIFFS.begin(true)) {
                 request->send(400, "application/json", 
-                            "{\"status\":\"error\",\"message\":\"Invalid firmware format\"}");
+                            "{\"status\":\"error\",\"message\":\"Could not mount SPIFFS\"}");
                 return;
             }
-            success = Update.begin(updateSize);
-        }
-
-        if (!success) {
-            Update.printError(Serial);
-            request->send(400, "application/json", 
-                        "{\"status\":\"error\",\"message\":\"Update initialization failed\"}");
-            return;
+            
+            // Start SPIFFS update
+            if (!Update.begin(updateSize, U_SPIFFS)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", 
+                            "{\"status\":\"error\",\"message\":\"SPIFFS update initialization failed\"}");
+                return;
+            }
+        } else {
+            // Regular OTA update
+            stagingFile = SPIFFS.open("/firmware.bin", "w");
+            if (!stagingFile) {
+                request->send(400, "application/json", 
+                            "{\"status\":\"error\",\"message\":\"Could not create staging file\"}");
+                return;
+            }
         }
     }
 
-    if (Update.write(data, len) != len) {
-        Update.printError(Serial);
-        request->send(400, "application/json", 
-                    "{\"status\":\"error\",\"message\":\"Write failed\"}");
-        return;
+    if (stagingFile) {
+        // Stage 1: Write to SPIFFS
+        if (stagingFile.write(data, len) != len) {
+            stagingFile.close();
+            SPIFFS.remove("/firmware.bin");
+            request->send(400, "application/json", 
+                        "{\"status\":\"error\",\"message\":\"Write to SPIFFS failed\"}");
+            return;
+        }
+    } else {
+        // Direct SPIFFS update
+        if (Update.write(data, len) != len) {
+            Update.printError(Serial);
+            request->send(400, "application/json", 
+                        "{\"status\":\"error\",\"message\":\"Write failed\"}");
+            return;
+        }
     }
 
     if (final) {
-        if (!Update.end(true)) {
-            Update.printError(Serial);
-            request->send(400, "application/json", 
-                        "{\"status\":\"error\",\"message\":\"Update failed\"}");
-            return;
+        if (stagingFile) {
+            // Finish Stage 1
+            stagingFile.close();
+            Serial.println("Stage 1 complete - firmware staged in SPIFFS");
+            request->send(200, "application/json", 
+                        "{\"status\":\"success\",\"message\":\"Update staged successfully! Starting stage 2...\"}");
+            performStageTwo();
+        } else {
+            // Finish direct SPIFFS update
+            if (!Update.end(true)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", 
+                            "{\"status\":\"error\",\"message\":\"Update failed\"}");
+                return;
+            }
+            Serial.println("SPIFFS update successful, restarting...");
+            request->send(200, "application/json", 
+                        "{\"status\":\"success\",\"message\":\"SPIFFS update successful! Device will restart...\",\"restart\":true}");
+            delay(500);
+            ESP.restart();
         }
-        Serial.println("Update successful, restarting...");
-        request->send(200, "application/json", 
-                    "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
-        delay(500);
-        ESP.restart();
     }
 }
 

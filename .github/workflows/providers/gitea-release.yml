@@ -48,29 +48,27 @@ jobs:
       run: |
         cd .pio/build/esp32dev
         
-        # Create OTA binary (already has correct magic byte)
-        cp firmware.bin filaman.bin
+        # Kopiere die Firmware in den SPIFFS-Build-Ordner
+        cp firmware.bin ./spiffs/firmware.bin
         
-        # Create a magic byte prepended binary for the bootloader
-        echo -ne '\xE9' > bootloader_with_magic.bin
-        cat bootloader.bin >> bootloader_with_magic.bin
+        # Baue das SPIFFS-Image neu mit der eingebetteten Firmware
+        pio run -t buildfs
         
-        echo "Creating full binary with magic byte..."
+        # Erstelle die Release-Dateien
+        cp spiffs.bin filaman_spiffs.bin
+        
+        # Create full binary with magic byte
+        echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
           --fill-flash-size 4MB \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o filaman.bin \
-          0x0000 bootloader_with_magic.bin \
+          -o filaman_full.bin \
+          0x0000 bootloader.bin \
           0x8000 partitions.bin \
           0x10000 firmware.bin \
           0x390000 spiffs.bin
-        
-        # Verify magic bytes
-        echo "Checking magic bytes:"
-        echo "Full binary first bytes:"
-        xxd -l 16 filaman.bin
         
         # Verify file sizes
         echo "File sizes:"
@@ -103,7 +101,7 @@ jobs:
           
           # Upload binaries
           cd .pio/build/esp32dev
-          for file in filaman.bin; do
+          for file in filaman_ota.bin filaman_spiffs.bin filaman_full.bin; do
             echo "Uploading $file..."
             curl -k -s \
               -X POST \
