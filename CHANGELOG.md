@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.62] - 2025-02-20
+### Added
+- update version to 1.2.62
+
+### Changed
+- update webpages for version 1.2.62
+
+
 ## [1.2.61] - 2025-02-20
 ### Added
 - update version to 1.2.61 and enhance OTA update error handling
