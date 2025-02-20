@@ -36,4 +36,5 @@ void mqtt_loop(void * parameter);
 bool setBambuSpool(String payload);
 void bambu_restart();
 
+extern TaskHandle_t BambuMqttTask;
 #endif

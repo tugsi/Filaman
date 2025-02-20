@@ -3,14 +3,20 @@
 #include <Update.h>
 #include <SPIFFS.h>
 #include "commonFS.h"
+#include "bambu.h"
+#include "scale.h"
+#include "nfc.h"
 
 // Magic byte patterns für verschiedene Image-Typen
 const uint8_t FIRMWARE_MAGIC = 0xE9;
 const uint8_t ESP_MAGIC = 0xE9;
 
-void stopTasks() {
+void stopAllTasks() {
     // Stop all tasks
-    vTaskSuspend(NULL);
+    vTaskSuspend(NfcTask);
+    vTaskSuspend(BambuMqttTask);
+    vTaskSuspend(ScaleTask);
+    //vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -21,8 +27,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     static size_t spiffsSize = 0;
     static const uint32_t SPIFFS_START = 0x310000;  // SPIFFS start in full.bin
     
-    stopTasks();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    stopAllTasks();
 
     if (!index) {
         // Reset static variables

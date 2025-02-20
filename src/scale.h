@@ -15,4 +15,6 @@ extern uint8_t weigthCouterToApi;
 extern uint8_t scale_tare_counter;
 extern uint8_t pauseMainTask;
 
+extern TaskHandle_t ScaleTask;
+
 #endif
