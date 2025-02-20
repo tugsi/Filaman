@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.69] - 2025-02-20
+### Changed
+- update webpages for version v1.2.69
+
+
 ## [1.2.68] - 2025-02-20
 ### Added
 - add task handles for BambuMqttTask and ScaleTask; rename stopTasks to stopAllTasks
