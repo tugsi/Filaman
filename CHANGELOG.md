@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.82] - 2025-02-20
+### Changed
+- update webpages for version v1.2.82
+- enhance Gitea and GitHub release workflows to include magic byte handling and improve binary verification
+
+
 ## [1.2.81] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.81
