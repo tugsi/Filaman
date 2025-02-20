@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.60] - 2025-02-20
+### Added
+- update version to 1.2.60 in platformio configuration
+
+### Changed
+- update webpages for version 1.2.60
+
+
 ## [1.2.59] - 2025-02-20
 ### Added
 - update version to 1.2.59 and enhance OTA upload handling
