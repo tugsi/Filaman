@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.76] - 2025-02-20
+### Added
+- enhance OTA update process with improved file verification and new OTA data initialization
+
+### Changed
+- update webpages for version v1.2.76
+- streamline Gitea release workflow and remove obsolete OTA data initialization script
+
+
 ## [1.2.75] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.75
