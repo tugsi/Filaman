@@ -4,15 +4,12 @@ on:
   workflow_call:
     inputs:
       gitea_ref_name:
-        description: 'Gitea ref name'
         required: true
         type: string
       gitea_server_url:
-        description: 'Gitea server URL'
         required: true
         type: string
       gitea_repository:
-        description: 'Gitea repository'
         required: true
         type: string
     secrets:
@@ -23,138 +20,106 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3 python3-venv build-essential curl git
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-    - name: Set up Python Virtual Environment
+    - name: Install dependencies
       run: |
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install platformio esptool
-        
-        echo "Verifying installations:"
-        platformio --version
-        python3 --version
-        esptool.py version
 
     - name: Build Firmware
       run: |
-        source venv/bin/activate
-        # Ensure clean build
-        platformio run -t clean
-        
-        echo "Building SPIFFS..."
+        # Build SPIFFS first
         platformio run -t buildfs
-        
-        echo "Building firmware..."
+        # Then build firmware
         platformio run
-        
-        # Get esp32 bootloader
-        python -c "import pkg_resources; print(pkg_resources.resource_filename('platformio', 'packages/framework-arduinoespressif32/tools/sdk/esp32/bin/bootloader_dio_40m.bin'))" > bootloader_path.txt
-        cp $(cat bootloader_path.txt) .pio/build/esp32dev/bootloader.bin
 
-    - name: Create Release Files
+    - name: Prepare Release Files
       run: |
-        source venv/bin/activate
+        cd .pio/build/esp32dev
         
-        # Verify file existence and sizes
-        echo "Verifying build files..."
-        ls -lh .pio/build/esp32dev/bootloader.bin
-        ls -lh .pio/build/esp32dev/partitions.bin
-        ls -lh .pio/build/esp32dev/firmware.bin
-        ls -lh .pio/build/esp32dev/spiffs.bin
-        ls -lh .pio/build/esp32dev/ota_data_initial.bin
+        # Get bootloader
+        BOOTLOADER_PATH=$(find ~/.platformio -name "bootloader_dio_40m.bin" | head -n 1)
+        if [ ! -f "$BOOTLOADER_PATH" ]; then
+            echo "Error: bootloader not found!"
+            exit 1
+        fi
+        echo "Using bootloader from: $BOOTLOADER_PATH"
+        cp "$BOOTLOADER_PATH" bootloader.bin
         
-        # Create OTA file (firmware only)
-        echo "Creating OTA update binary..."
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+        # Create OTA update binary (firmware only)
+        cp firmware.bin filaman_ota.bin
         
-        # Create full flash binary
+        # Create full binary
         echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
-          -o .pio/build/esp32dev/filaman_full.bin \
+          -o filaman_full.bin \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          0x0000 .pio/build/esp32dev/bootloader.bin \
-          0x8000 .pio/build/esp32dev/partitions.bin \
-          0xe000 .pio/build/esp32dev/ota_data_initial.bin \
-          0x10000 .pio/build/esp32dev/firmware.bin \
-          0x3D0000 .pio/build/esp32dev/spiffs.bin
+          0x1000 bootloader.bin \
+          0x8000 partitions.bin \
+          0x10000 firmware.bin \
+          0x3D0000 spiffs.bin
         
-        # Verify created files and show sizes
-        echo "Verifying created files..."
-        ls -lh .pio/build/esp32dev/filaman_full.bin
-        ls -lh .pio/build/esp32dev/filaman_ota.bin
+        # Verify results
+        echo "File sizes:"
+        ls -l bootloader.bin partitions.bin firmware.bin spiffs.bin filaman_full.bin filaman_ota.bin
         
-        # Show binary info
-        echo "Binary information:"
-        esptool.py --chip esp32 image_info .pio/build/esp32dev/filaman_full.bin
+        echo "Firmware info:"
+        esptool.py --chip esp32 image_info firmware.bin
+        
+        echo "Full binary first 16 bytes:"
+        hexdump -C -n 16 filaman_full.bin
 
     - name: Read CHANGELOG.md
       id: changelog
       run: |
-        VERSION=$(echo "${{ inputs.gitea_ref_name }}" | sed 's/^v//')
-        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/ {p=0} p" CHANGELOG.md)
+        VERSION=${GITHUB_REF_NAME#v}
+        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
         echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        echo "CHANGELOG CONTENT:"
-        echo "$CHANGELOG"
-        if [ -z "$CHANGELOG" ]; then
-          echo "No changelog found for version $VERSION"
-          exit 1
-        fi
 
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
-        GITEA_REF_NAME: ${{ inputs.gitea_ref_name }}
-        GITEA_SERVER_URL: ${{ inputs.gitea_server_url }}
-        GITEA_REPOSITORY: ${{ inputs.gitea_repository }}
-        CHANGELOG: ${{ steps.changelog.outputs.CHANGES }}
       run: |
-        echo "Debug environment:"
-        echo "GITEA_REF_NAME: ${GITEA_REF_NAME}"
-        echo "GITEA_SERVER_URL: ${GITEA_SERVER_URL}"
-        echo "GITEA_REPOSITORY: ${GITEA_REPOSITORY}"
-        echo "CHANGELOG: ${CHANGELOG}"
-        
-        TAG="${GITEA_REF_NAME}"
-        API_URL="${GITEA_SERVER_URL}/api/v1"
-        REPO="${GITEA_REPOSITORY}"
-        
-        echo "Creating release for ${TAG} on ${REPO}..."
+        TAG="${{ inputs.gitea_ref_name }}"
+        API_URL="${{ inputs.gitea_server_url }}/api/v1"
+        REPO="${{ inputs.gitea_repository }}"
         
         # Create release
         RESPONSE=$(curl -k -s \
           -X POST \
           -H "Authorization: token ${TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"tag_name\":\"${TAG}\",\"name\":\"Release ${TAG}\",\"body\":\"${CHANGELOG}\"}" \
+          -d "{
+            \"tag_name\":\"${TAG}\",
+            \"name\":\"Release ${TAG}\",
+            \"body\":\"${{ steps.changelog.outputs.CHANGES }}\"
+          }" \
           "${API_URL}/repos/${REPO}/releases")
         
         RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
-        UPLOAD_URL=$(echo "$RESPONSE" | grep -o '"upload_url":"[^"]*' | cut -d':' -f2- | tr -d '"')
         
         if [ -n "$RELEASE_ID" ]; then
           echo "Release created with ID: $RELEASE_ID"
           
-          # Upload files
-          for file in "filaman_full.bin" "filaman_ota.bin"; do
+          # Upload binaries
+          for file in filaman_full.bin filaman_ota.bin; do
             echo "Uploading $file..."
             curl -k -s \
               -X POST \
               -H "Authorization: token ${TOKEN}" \
               -H "Content-Type: application/octet-stream" \
               --data-binary "@.pio/build/esp32dev/$file" \
-              "${UPLOAD_URL}?name=$file"
+              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
           done
         else
           echo "Failed to create release. Response:"
