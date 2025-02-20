@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.86] - 2025-02-20
+### Changed
+- update webpages for version v1.2.86
+
+### Fixed
+- update SPIFFS offset and size in release workflows and partitions.csv
+
+
 ## [1.2.85] - 2025-02-20
 ### Added
 - ci: streamline release workflows by removing unnecessary binary uploads and adding SPIFFS formatting
