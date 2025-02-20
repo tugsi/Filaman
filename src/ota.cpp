@@ -19,10 +19,20 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
         // Determine if this is a full image (firmware + SPIFFS) or just firmware
         bool isFullImage = (contentLength > 0x3D0000); // SPIFFS starts at 0x3D0000
 
-        if (!Update.begin(contentLength, isFullImage ? U_FLASH : U_SPIFFS)) {
-            Serial.printf("Not enough space: %u required\n", contentLength);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
-            return;
+        if (isFullImage) {
+            // For full images, we need to make sure we have enough space and properly partition it
+            if (!Update.begin(ESP.getFreeSketchSpace(), U_FLASH)) {
+                Serial.printf("Not enough space for full image: %u bytes required\n", contentLength);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Full image updates are not supported via OTA. Please use USB update for full images.\"}");
+                return;
+            }
+        } else {
+            // For firmware-only updates
+            if (!Update.begin(contentLength, U_FLASH)) {
+                Serial.printf("Not enough space: %u required\n", contentLength);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available for firmware update\"}");
+                return;
+            }
         }
         
         Serial.println(isFullImage ? "Full image update started" : "Firmware update started");
@@ -31,7 +41,8 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     // Write chunk to flash
     if (Update.write(data, len) != len) {
         Update.printError(Serial);
-        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update\"}");
+        String errorMsg = Update.errorString();
+        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
         return;
     }
 
@@ -42,8 +53,9 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             delay(1000);
             ESP.restart();
         } else {
+            String errorMsg = Update.errorString();
             Update.printError(Serial);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed\"}");
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed: " + errorMsg + "\"}");
         }
     }
 }
