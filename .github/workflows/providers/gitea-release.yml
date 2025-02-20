@@ -33,7 +33,9 @@ jobs:
         pip install --upgrade platformio esptool
     
     - name: Install xxd
-      run: sudo apt-get install xxd
+      run: |
+        sudo apt-get update
+        sudo apt-get install xxd
     
     - name: Build Firmware
       run: |
