@@ -21,6 +21,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio esptool
     
+    - name: Install xxd
+      run: sudo apt-get install xxd
+    
     - name: Build Firmware
       run: |
         pio run -e esp32dev_ota -t buildfs  # Build SPIFFS
@@ -54,9 +57,9 @@ jobs:
         # Verify magic bytes
         echo "Checking magic bytes:"
         echo "OTA binary first bytes:"
-        hexdump -C -n 16 filaman_ota.bin
+        xxd -l 16 filaman_ota.bin
         echo "Full binary first bytes:"
-        hexdump -C -n 16 filaman_full.bin
+        xxd -l 16 filaman_full.bin
         
         # Verify file sizes
         echo "File sizes:"
