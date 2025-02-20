@@ -25,6 +25,8 @@ jobs:
       run: |
         pio run -t buildfs  # Build SPIFFS
         pio run            # Build firmware
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman.bin
+        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/filaman_spiffs.bin
         
     - name: Prepare binaries
       run: |
@@ -86,4 +88,6 @@ jobs:
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
           .pio/build/esp32dev/filaman_full.bin \
-          .pio/build/esp32dev/filaman_ota.bin
+          .pio/build/esp32dev/filaman_ota.bin \
+          .pio/build/esp32dev/filaman.bin \
+          .pio/build/esp32dev/filaman_spiffs.bin

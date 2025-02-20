@@ -36,6 +36,8 @@ jobs:
       run: |
         pio run -t buildfs  # Build SPIFFS
         pio run            # Build firmware
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman.bin
+        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/filaman_spiffs.bin
         
     - name: Prepare binaries
       run: |
@@ -93,7 +95,7 @@ jobs:
           
           # Upload binaries
           cd .pio/build/esp32dev
-          for file in filaman_full.bin filaman_ota.bin; do
+          for file in filaman_full.bin filaman_ota.bin filaman.bin filaman_spiffs.bin; do
             echo "Uploading $file..."
             curl -k -s \
               -X POST \

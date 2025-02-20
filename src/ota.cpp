@@ -22,7 +22,9 @@ void stopAllTasks() {
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!index) {
-        Serial.printf("Update Start: %s\n", filename.c_str());
+        bool isFullImage = filename.endsWith("full.bin");
+        Serial.printf("Update Start: %s (type: %s)\n", filename.c_str(), isFullImage ? "full" : "OTA");
+        
         if (request->contentLength() == 0) {
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid file size\"}");
             return;
@@ -33,9 +35,21 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             tasksAreStopped = true;
         }
 
-        // Da die full.bin jetzt das korrekte Magic Byte hat, 
-        // können wir ein normales Update ohne spezielle Flags starten
-        if (!Update.begin()) {
+        bool success;
+        if (isFullImage) {
+            // Full image update ohne Magic Byte Check, aber mit U_FLASH
+            success = Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH);
+        } else {
+            // Normales OTA update mit Magic Byte Check
+            if (data[0] != 0xE9) {
+                Serial.printf("Wrong magic byte: 0x%02X (expected 0xE9)\n", data[0]);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid firmware format\"}");
+                return;
+            }
+            success = Update.begin(request->contentLength());
+        }
+
+        if (!success) {
             Update.printError(Serial);
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update start failed\"}");
             return;
