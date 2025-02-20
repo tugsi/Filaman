@@ -13,10 +13,12 @@ const uint8_t ESP_MAGIC = 0xE9;
 
 void stopAllTasks() {
     // Stop all tasks
+    Serial.println("Stopping all tasks");
     vTaskSuspend(RfidReaderTask);
     vTaskSuspend(BambuMqttTask);
     vTaskSuspend(ScaleTask);
-    //vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    Serial.println("All tasks stopped");
 }
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -29,6 +31,7 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     
     stopAllTasks();
 
+    Serial.println("Start Main Upgrad Function");
     if (!index) {
         // Reset static variables
         if (spiffsBuffer) {
