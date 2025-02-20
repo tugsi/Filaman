@@ -43,10 +43,12 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     
     // Schreibe Daten
     if (Update.write(data, len) != len) {
-        Update.printError(Serial);
         String errorMsg = Update.errorString();
-        request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
-        return;
+        if (errorMsg != "No Error") {
+            Update.printError(Serial);
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
+            return;
+        }
     }
     
     currentOffset += len;
@@ -59,8 +61,14 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             ESP.restart();
         } else {
             String errorMsg = Update.errorString();
-            Update.printError(Serial);
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed: " + errorMsg + "\"}");
+            if (errorMsg != "No Error") {
+                Update.printError(Serial);
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Update failed: " + errorMsg + "\"}");
+            } else {
+                request->send(200, "application/json", "{\"status\":\"success\",\"message\":\"Update successful! Device will restart...\",\"restart\":true}");
+                delay(1000);
+                ESP.restart();
+            }
         }
     }
 }
