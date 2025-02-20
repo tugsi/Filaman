@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.65] - 2025-02-20
+### Changed
+- update webpages for version v1.2.65
+
+
 ## [1.2.64] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.64
