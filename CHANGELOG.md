@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.90] - 2025-02-20
+### Changed
+- update webpages for version v1.2.90
+- update Gitea and GitHub release workflows to include SPIFFS directory creation and firmware copying
+
+
 ## [1.2.89] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.89
