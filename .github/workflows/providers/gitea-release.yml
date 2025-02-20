@@ -41,39 +41,37 @@ jobs:
       run: |
         cd .pio/build/esp32dev
         
-        # Debug: Show all generated files
-        echo "Files in build directory:"
-        ls -la
-        
-        # Create OTA binary (already has correct magic byte)
+        # Create OTA binary (firmware only)
         cp firmware.bin filaman_ota.bin
         
-        # Create a magic byte prepended binary for the bootloader
-        echo -ne '\xE9' > bootloader_with_magic.bin
-        cat bootloader.bin >> bootloader_with_magic.bin
+        # Create basic flash layout
+        echo "Creating initial 4MB flash image..."
+        dd if=/dev/zero bs=1M count=4 of=flash_4mb.bin
         
-        echo "Creating full binary with magic byte..."
-        esptool.py --chip esp32 merge_bin \
-          --fill-flash-size 4MB \
-          --flash_mode dio \
-          --flash_freq 40m \
-          --flash_size 4MB \
-          -o filaman_full.bin \
-          0x0000 bootloader_with_magic.bin \
-          0x8000 partitions.bin \
-          0x10000 firmware.bin \
-          0x3D0000 spiffs.bin
+        # Create partition layout
+        echo "Writing bootloader..."
+        dd if=bootloader.bin of=flash_4mb.bin bs=1 seek=$((0x1000)) conv=notrunc
         
-        # Verify magic bytes
-        echo "Checking magic bytes:"
-        echo "OTA binary first bytes:"
-        hexdump -C -n 16 filaman_ota.bin
-        echo "Full binary first bytes:"
-        hexdump -C -n 16 filaman_full.bin
+        echo "Writing partitions..."
+        dd if=partitions.bin of=flash_4mb.bin bs=1 seek=$((0x8000)) conv=notrunc
         
-        # Verify file sizes
+        echo "Writing firmware..."
+        dd if=firmware.bin of=flash_4mb.bin bs=1 seek=$((0x10000)) conv=notrunc
+        
+        echo "Writing SPIFFS..."
+        dd if=spiffs.bin of=flash_4mb.bin bs=1 seek=$((0x3D0000)) conv=notrunc
+        
+        # Rename to final name
+        cp flash_4mb.bin filaman_full.bin
+        
+        # Verify file sizes and content
         echo "File sizes:"
         ls -lh *.bin
+        
+        echo "Binary information:"
+        esptool.py --chip esp32 image_info filaman_ota.bin || true
+        echo "Full binary info:"
+        xxd -l 64 filaman_full.bin
 
     - name: Create Release
       env:
