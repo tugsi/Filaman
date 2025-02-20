@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.59] - 2025-02-20
+### Added
+- update version to 1.2.59 and enhance OTA upload handling
+
+### Changed
+- update webpages for version 1.2.59
+
+
 ## [1.2.58] - 2025-02-20
 ### Added
 - update version to 1.2.58 in HTML files and platformio configuration
