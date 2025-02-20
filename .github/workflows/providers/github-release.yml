@@ -28,17 +28,17 @@ jobs:
     
     - name: Build Firmware
       run: |
-        pio run -e esp32dev_ota -t buildfs  # Build SPIFFS
-        pio run -e esp32dev_ota            # Build firmware
-        cp .pio/build/esp32dev_ota/firmware.bin .pio/build/esp32dev_ota/filaman.bin
-        cp .pio/build/esp32dev_ota/spiffs.bin .pio/build/esp32dev_ota/filaman_spiffs.bin
+        pio run -e esp32dev -t buildfs  # Build SPIFFS
+        pio run -e esp32dev            # Build firmware
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman.bin
+        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/filaman_spiffs.bin
         
     - name: Prepare binaries
       run: |
-        cd .pio/build/esp32dev_ota
+        cd .pio/build/esp32dev
         
         # Create OTA binary (already has correct magic byte)
-        cp firmware.bin filaman_ota.bin
+        cp firmware.bin filaman.bin
         
         # Create a magic byte prepended binary for the bootloader
         echo -ne '\xE9' > bootloader_with_magic.bin
@@ -50,7 +50,7 @@ jobs:
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          -o filaman_full.bin \
+          -o filaman.bin \
           0x0000 bootloader_with_magic.bin \
           0x8000 partitions.bin \
           0x10000 firmware.bin \
@@ -59,7 +59,7 @@ jobs:
         # Verify magic bytes
         echo "Checking magic bytes:"
         echo "Full binary first bytes:"
-        xxd -l 16 filaman_full.bin
+        xxd -l 16 filaman.bin
         
         # Verify file sizes
         echo "File sizes:"
@@ -86,4 +86,4 @@ jobs:
         gh release create "${{ github.ref_name }}" \
           --title "Release ${{ steps.get_version.outputs.VERSION }}" \
           --notes "${{ steps.changelog.outputs.CHANGES }}" \
-          .pio/build/esp32dev_ota/filaman_full.bin
+          .pio/build/esp32dev/filaman.bin

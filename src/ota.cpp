@@ -22,7 +22,7 @@ void stopAllTasks() {
 
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!index) {
-        bool isFullImage = filename.endsWith("full.bin");
+        bool isFullImage = true;
         Serial.printf("Update Start: %s (type: %s)\n", filename.c_str(), isFullImage ? "full" : "OTA");
         
         if (request->contentLength() == 0) {
