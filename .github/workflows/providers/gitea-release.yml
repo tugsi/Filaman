@@ -21,71 +21,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
-
-    - name: Install dependencies
+    
+    - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
-        pip install platformio esptool
-
+        pip install --upgrade platformio
+    
     - name: Build Firmware
       run: |
-        # Build SPIFFS first
-        platformio run -t buildfs
-        # Then build firmware
-        platformio run
-
-    - name: Prepare Release Files
+        pio run -t buildfs  # Build SPIFFS
+        pio run            # Build firmware
+        
+    - name: Install esptool
       run: |
-        cd .pio/build/esp32dev
+        pip install esptool
         
-        # Get bootloader
-        BOOTLOADER_PATH=$(find ~/.platformio -name "bootloader_dio_40m.bin" | head -n 1)
-        if [ ! -f "$BOOTLOADER_PATH" ]; then
-            echo "Error: bootloader not found!"
-            exit 1
-        fi
-        echo "Using bootloader from: $BOOTLOADER_PATH"
-        cp "$BOOTLOADER_PATH" bootloader.bin
-        
-        # Create OTA update binary (firmware only)
-        cp firmware.bin filaman_ota.bin
-        
-        # Create full binary
-        echo "Creating full binary..."
+    - name: Merge firmware and SPIFFS
+      run: |
         esptool.py --chip esp32 merge_bin \
-          -o filaman_full.bin \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          0x1000 bootloader.bin \
-          0x8000 partitions.bin \
-          0x10000 firmware.bin \
-          0x3D0000 spiffs.bin
-        
-        # Verify results
-        echo "File sizes:"
-        ls -l bootloader.bin partitions.bin firmware.bin spiffs.bin filaman_full.bin filaman_ota.bin
-        
-        echo "Firmware info:"
-        esptool.py --chip esp32 image_info firmware.bin
-        
-        echo "Full binary first 16 bytes:"
-        hexdump -C -n 16 filaman_full.bin
+          -o .pio/build/esp32dev/filaman_full.bin \
+          0x1000 .pio/build/esp32dev/bootloader.bin \
+          0x8000 .pio/build/esp32dev/partitions.bin \
+          0x10000 .pio/build/esp32dev/firmware.bin \
+          0x3D0000 .pio/build/esp32dev/spiffs.bin
 
-    - name: Read CHANGELOG.md
-      id: changelog
+    - name: Prepare OTA firmware
       run: |
-        VERSION=${GITHUB_REF_NAME#v}
-        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
-        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_ota.bin
+    
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
@@ -112,13 +83,14 @@ jobs:
           echo "Release created with ID: $RELEASE_ID"
           
           # Upload binaries
+          cd .pio/build/esp32dev
           for file in filaman_full.bin filaman_ota.bin; do
             echo "Uploading $file..."
             curl -k -s \
               -X POST \
               -H "Authorization: token ${TOKEN}" \
               -H "Content-Type: application/octet-stream" \
-              --data-binary "@.pio/build/esp32dev/$file" \
+              --data-binary "@$file" \
               "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
           done
         else
