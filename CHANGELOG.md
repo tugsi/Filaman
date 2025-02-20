@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.80] - 2025-02-20
+### Added
+- update Gitea and GitHub release workflows to include new firmware and SPIFFS binaries; fix version display in HTML files to v1.2.78
+
+### Changed
+- update webpages for version v1.2.80
+- bump version to 1.2.79 in platformio.ini
+
+
 ## [1.2.79] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.79
