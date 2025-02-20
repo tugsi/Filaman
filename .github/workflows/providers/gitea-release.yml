@@ -46,18 +46,24 @@ jobs:
         
     - name: Prepare binaries
       run: |
-        cd .pio/build/esp32dev
+        # Ensure we're in the project root
+        cd $GITHUB_WORKSPACE
         
-        # Kopiere die Firmware in den SPIFFS-Build-Ordner
-        cp firmware.bin ./spiffs/firmware.bin
+        # Create SPIFFS directory if it doesn't exist
+        mkdir -p .pio/build/esp32dev/spiffs
         
-        # Baue das SPIFFS-Image neu mit der eingebetteten Firmware
+        # Copy firmware to SPIFFS directory
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/spiffs/firmware.bin
+        
+        # Build new SPIFFS image with firmware included
         pio run -t buildfs
         
-        # Erstelle die Release-Dateien
+        cd .pio/build/esp32dev
+        
+        # Create release files
         cp spiffs.bin filaman_spiffs.bin
         
-        # Create full binary with magic byte
+        # Create full binary
         echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
           --fill-flash-size 4MB \
