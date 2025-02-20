@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.73] - 2025-02-20
+### Changed
+- update webpages for version v1.2.73
+- improve OTA update process with enhanced size checks and progress logging
+
+### Fixed
+- enhance OTA update process with improved size checks and debugging output
+
+
 ## [1.2.72] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.72
