@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.72] - 2025-02-20
+### Changed
+- update webpages for version v1.2.72
+- simplify OTA update process by removing unnecessary buffer and adjusting offsets
+
+
 ## [1.2.71] - 2025-02-20
 ### Added
 - update version number to v1.2.65 in HTML files and platformio.ini; add script to create full binary
