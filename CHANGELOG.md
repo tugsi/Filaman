@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.81] - 2025-02-20
+### Changed
+- update webpages for version v1.2.81
+- update Gitea and GitHub release workflows to use esp32dev_ota for building and uploading firmware and SPIFFS binaries
+
+
 ## [1.2.80] - 2025-02-20
 ### Added
 - update Gitea and GitHub release workflows to include new firmware and SPIFFS binaries; fix version display in HTML files to v1.2.78
