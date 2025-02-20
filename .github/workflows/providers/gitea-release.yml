@@ -34,14 +34,14 @@ jobs:
     
     - name: Build Firmware
       run: |
-        pio run -t buildfs  # Build SPIFFS
-        pio run            # Build firmware
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman.bin
-        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/filaman_spiffs.bin
+        pio run -e esp32dev_ota -t buildfs  # Build SPIFFS
+        pio run -e esp32dev_ota            # Build firmware
+        cp .pio/build/esp32dev_ota/firmware.bin .pio/build/esp32dev_ota/filaman.bin
+        cp .pio/build/esp32dev_ota/spiffs.bin .pio/build/esp32dev_ota/filaman_spiffs.bin
         
     - name: Prepare binaries
       run: |
-        cd .pio/build/esp32dev
+        cd .pio/build/esp32dev_ota
         
         # Create OTA binary (firmware only)
         cp firmware.bin filaman_ota.bin
@@ -94,7 +94,7 @@ jobs:
           echo "Release created with ID: $RELEASE_ID"
           
           # Upload binaries
-          cd .pio/build/esp32dev
+          cd .pio/build/esp32dev_ota
           for file in filaman_full.bin filaman_ota.bin filaman.bin filaman_spiffs.bin; do
             echo "Uploading $file..."
             curl -k -s \
