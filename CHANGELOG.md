@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.79] - 2025-02-20
+### Changed
+- update webpages for version v1.2.79
+- simplify Gitea release workflow by using esptool for binary creation
+
+
 ## [1.2.78] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.78
