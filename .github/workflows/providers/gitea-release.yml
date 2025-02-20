@@ -43,31 +43,36 @@ jobs:
       run: |
         cd .pio/build/esp32dev_ota
         
-        # Create OTA binary (firmware only)
+        # Create OTA binary (already has correct magic byte)
         cp firmware.bin filaman_ota.bin
         
-        # Use esptool to create the full binary
+        # Create a magic byte prepended binary for the bootloader
+        echo -ne '\xE9' > bootloader_with_magic.bin
+        cat bootloader.bin >> bootloader_with_magic.bin
+        
+        echo "Creating full binary with magic byte..."
         esptool.py --chip esp32 merge_bin \
+          --fill-flash-size 4MB \
           --flash_mode dio \
           --flash_freq 40m \
           --flash_size 4MB \
-          --target-offset 0x0 \
           -o filaman_full.bin \
-          0x1000 bootloader.bin \
+          0x0000 bootloader_with_magic.bin \
           0x8000 partitions.bin \
           0x10000 firmware.bin \
           0x3D0000 spiffs.bin
         
-        # Verify binaries
+        # Verify magic bytes
+        echo "Checking magic bytes:"
+        echo "OTA binary first bytes:"
+        hexdump -C -n 16 filaman_ota.bin
+        echo "Full binary first bytes:"
+        hexdump -C -n 16 filaman_full.bin
+        
+        # Verify file sizes
         echo "File sizes:"
         ls -lh *.bin
         
-        echo "Binary information:"
-        echo "OTA binary info:"
-        esptool.py --chip esp32 image_info filaman_ota.bin || true
-        echo "Full binary first 64 bytes:"
-        od -A x -t x1z -N 64 filaman_full.bin
-
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
