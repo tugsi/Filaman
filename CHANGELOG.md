@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.84] - 2025-02-20
+### Changed
+- update webpages for version v1.2.84
+- ci: update installation steps for xxd to include package list update
+
+
 ## [1.2.83] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.83
