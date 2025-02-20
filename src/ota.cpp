@@ -29,12 +29,6 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
     static bool isFullImage = false;
     static uint32_t currentOffset = 0;
     
-    // Offset-Definitionen aus dem Workflow
-    static const uint32_t BOOTLOADER_OFFSET = 0x1000;
-    static const uint32_t PARTITIONS_OFFSET = 0x8000;
-    static const uint32_t FIRMWARE_OFFSET = 0x10000;
-    static const uint32_t SPIFFS_OFFSET = 0x3D0000;
-    
     if (!index) {
         contentLength = request->contentLength();
         Serial.printf("Update size: %u bytes\n", contentLength);
@@ -44,26 +38,26 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             return;
         }
 
-        // Stop all tasks to save resources
         if (!tasksAreStopped && (RfidReaderTask || BambuMqttTask || ScaleTask)) {
             stopAllTasks();
             tasksAreStopped = true;
         }
 
-        isFullImage = (contentLength > SPIFFS_OFFSET);
+        // Erweiterte Größenprüfung für full.bin
+        isFullImage = (contentLength >= 0x400000); // 4MB full image
+        
         if (!isFullImage) {
-            // Regular firmware update
             if (!Update.begin(contentLength)) {
-                Serial.printf("Not enough space: %u required\n", contentLength);
+                Serial.printf("Not enough space for firmware: %u required\n", contentLength);
                 request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
                 return;
             }
             Serial.println("Firmware update started");
         } else {
-            // Full image update - start with bootloader
-            if (!Update.begin(contentLength, U_FLASH)) {
-                Serial.printf("Not enough space for full image: %u required\n", contentLength);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
+            // Sicherstellen, dass genügend Flash-Speicher verfügbar ist
+            if(!Update.begin(0x400000, U_FLASH)) { // 4MB Gesamtgröße
+                Serial.println("Could not begin full image update");
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Could not start full update\"}");
                 return;
             }
             Serial.println("Full image update started");
@@ -71,11 +65,16 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
         currentOffset = 0;
     }
 
-    // Write data
+    // Zusätzliche Debug-Ausgaben
+    if (isFullImage) {
+        Serial.printf("Writing at offset: 0x%X, length: %u\n", currentOffset, len);
+    }
+
     if (Update.write(data, len) != len) {
         String errorMsg = Update.errorString();
         if (errorMsg != "No Error") {
             Update.printError(Serial);
+            Serial.printf("Error at offset: 0x%X\n", currentOffset);
             request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
             return;
         }
