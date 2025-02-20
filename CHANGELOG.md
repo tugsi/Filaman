@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.66] - 2025-02-20
+### Added
+- enhance OTA upload to support SPIFFS updates
+
+### Changed
+- update webpages for version v1.2.66
+
+
 ## [1.2.65] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.65
