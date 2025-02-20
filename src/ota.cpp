@@ -4,8 +4,14 @@
 #include <SPIFFS.h>
 #include "commonFS.h"
 
+// Magic byte patterns für verschiedene Image-Typen
+const uint8_t FIRMWARE_MAGIC = 0xE9;
+const uint8_t ESP_MAGIC = 0xE9;
+
 void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     static size_t contentLength = 0;
+    static bool isFullImage = false;
+    static uint32_t currentOffset = 0;
     
     if (!index) {
         contentLength = request->contentLength();
@@ -16,35 +22,34 @@ void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t ind
             return;
         }
 
-        // Determine if this is a full image (firmware + SPIFFS) or just firmware
-        bool isFullImage = (contentLength > 0x3D0000); // SPIFFS starts at 0x3D0000
-
-        if (isFullImage) {
-            // For full images, we need to make sure we have enough space and properly partition it
-            if (!Update.begin(ESP.getFreeSketchSpace(), U_FLASH)) {
-                Serial.printf("Not enough space for full image: %u bytes required\n", contentLength);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Full image updates are not supported via OTA. Please use USB update for full images.\"}");
-                return;
-            }
-        } else {
-            // For firmware-only updates
-            if (!Update.begin(contentLength, U_FLASH)) {
+        // Prüfe Magic Byte für Image-Typ
+        if (data[0] == ESP_MAGIC) {
+            // Normales Firmware Image oder full.bin
+            isFullImage = (contentLength > 0x3D0000);
+            
+            if (!Update.begin(contentLength)) {
                 Serial.printf("Not enough space: %u required\n", contentLength);
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available for firmware update\"}");
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Not enough space available\"}");
                 return;
             }
+            
+            Serial.println(isFullImage ? "Full image update started" : "Firmware update started");
+        } else {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid image format\"}");
+            return;
         }
-        
-        Serial.println(isFullImage ? "Full image update started" : "Firmware update started");
+        currentOffset = 0;
     }
     
-    // Write chunk to flash
+    // Schreibe Daten
     if (Update.write(data, len) != len) {
         Update.printError(Serial);
         String errorMsg = Update.errorString();
         request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Error writing update: " + errorMsg + "\"}");
         return;
     }
+    
+    currentOffset += len;
 
     if (final) {
         if (Update.end(true)) {
