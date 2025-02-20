@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.75] - 2025-02-20
+### Changed
+- update webpages for version v1.2.75
+- simplify OTA update handling by removing unnecessary variables and improving error reporting
+
+
 ## [1.2.74] - 2025-02-20
 ### Changed
 - update webpages for version v1.2.74
