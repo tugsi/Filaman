@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.94] - 2025-02-21
+### Changed
+- update webpages for version v1.2.94
+- remove unused flash size parameters in release workflows
+
+
 ## [1.2.93] - 2025-02-21
 ### Changed
 - update webpages for version v1.2.93
