@@ -49,7 +49,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         }
 
         else if (doc["type"] == "writeNfcTag") {
-            if (doc["payload"].is<JsonObject>()) {
+            if (doc["payload"].is<String>()) {
                 // Versuche NFC-Daten zu schreiben
                 String payloadString;
                 serializeJson(doc["payload"], payloadString);
@@ -235,7 +235,7 @@ void setupWebserver(AsyncWebServer &server) {
         html.replace("{{spoolmanUrl}}", spoolmanUrl);
 
         JsonDocument doc;
-        if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<JsonObject>()) {
+        if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<String>()) {
             String bambuIp = doc["bambu_ip"].as<String>();
             String bambuSerial = doc["bambu_serialnr"].as<String>();
             String bambuCode = doc["bambu_accesscode"].as<String>();

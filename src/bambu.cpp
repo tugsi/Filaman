@@ -58,7 +58,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
 
 bool loadBambuCredentials() {
     JsonDocument doc;
-    if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<JsonObject>()) {
+    if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<String>()) {
         // Temporäre Strings für die Werte
         String ip = doc["bambu_ip"].as<String>();
         String code = doc["bambu_accesscode"].as<String>();
@@ -270,9 +270,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Prüfen, ob "print->upgrade_state" und "print.ams.ams" existieren
-    if (doc["print"]["upgrade_state"].is<JsonObject>()) {
+    if (doc["print"]["upgrade_state"].is<String>()) {
         // Prüfen ob AMS-Daten vorhanden sind
-        if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonObject>()) {
+        if (!doc["print"]["ams"].is<String>() || !doc["print"]["ams"]["ams"].is<String>()) {
             return;
         }
 
@@ -315,7 +315,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         // Prüfe die externe Spule
-        if (!hasChanges && doc["print"]["vt_tray"].is<JsonObject>()) {
+        if (!hasChanges && doc["print"]["vt_tray"].is<String>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             bool foundExternal = false;
             
@@ -363,7 +363,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         ams_count = amsArray.size();
 
         // Wenn externe Spule vorhanden, füge sie hinzu
-        if (doc["print"]["vt_tray"].is<JsonObject>()) {
+        if (doc["print"]["vt_tray"].is<String>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             int extIdx = ams_count;  // Index für externe Spule
             ams_data[extIdx].ams_id = 255;  // Spezielle ID für externe Spule

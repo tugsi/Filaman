@@ -186,7 +186,7 @@ bool updateSpoolTagId(String uidString, const char* payload) {
     }
     
     // Überprüfe, ob die erforderlichen Felder vorhanden sind
-    if (!doc["sm_id"].is<JsonObject>() || doc["sm_id"].as<String>() == "") {
+    if (!doc["sm_id"].is<String>() || doc["sm_id"].as<String>() == "") {
         Serial.println("Keine Spoolman-ID gefunden.");
         return false;
     }
@@ -368,7 +368,7 @@ bool checkSpoolmanExtraFields() {
                 for (uint8_t s = 0; s < extraLength; s++) {
                     bool found = false;
                     for (JsonObject field : doc.as<JsonArray>()) {
-                        if (field["key"].is<JsonObject>() && field["key"] == extraFields[s]) {
+                        if (field["key"].is<String>() && field["key"] == extraFields[s]) {
                             Serial.println("Feld gefunden: " + extraFields[s]);
                             found = true;
                             break;
@@ -430,7 +430,7 @@ bool checkSpoolmanInstance(const String& url) {
             String payload = http.getString();
             JsonDocument doc;
             DeserializationError error = deserializeJson(doc, payload);
-            if (!error && doc["status"].is<JsonObject>()) {
+            if (!error && doc["status"].is<String>()) {
                 const char* status = doc["status"];
                 http.end();
 
@@ -469,7 +469,7 @@ bool saveSpoolmanUrl(const String& url) {
 
 String loadSpoolmanUrl() {
     JsonDocument doc;
-    if (loadJsonValue("/spoolman_url.json", doc) && doc["url"].is<JsonObject>()) {
+    if (loadJsonValue("/spoolman_url.json", doc) && doc["url"].is<String>()) {
         return doc["url"].as<String>();
     }
     Serial.println("Keine gültige Spoolman-URL gefunden.");
