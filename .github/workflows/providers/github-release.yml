@@ -36,6 +36,17 @@ jobs:
         else
           echo "DATA_CHANGED=false" >> $GITHUB_OUTPUT
         fi
+
+    - name: Check for SPIFFS changes
+      id: check_spiffs
+      run: |
+        git fetch --unshallow || true
+        CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
+        if echo "$CHANGED_FILES" | grep -q "^data/\|^html/"; then
+          echo "SPIFFS_CHANGED=true" >> $GITHUB_OUTPUT
+        else
+          echo "SPIFFS_CHANGED=false" >> $GITHUB_OUTPUT
+        fi
     
     - name: Build Firmware
       run: |
@@ -48,6 +59,12 @@ jobs:
         
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
+        
+        # Copy SPIFFS binary if SPIFFS changed
+        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
+          echo "SPIFFS changes detected, copying SPIFFS binary..."
+          cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
+        fi
         
         # Create full binary (always)
         (cd .pio/build/esp32dev && \

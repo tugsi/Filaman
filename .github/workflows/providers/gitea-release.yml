@@ -74,6 +74,12 @@ jobs:
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
         
+        # Copy SPIFFS binary if SPIFFS changed
+        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
+          echo "SPIFFS changes detected, copying SPIFFS binary..."
+          cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
+        fi
+        
         # Create full binary (always)
         (cd .pio/build/esp32dev && \
         esptool.py --chip esp32 merge_bin \
@@ -86,12 +92,6 @@ jobs:
           0x8000 partitions.bin \
           0x10000 firmware.bin \
           0x390000 spiffs.bin)
-        
-        # Only copy SPIFFS binary if data changed
-        if [[ "${{ steps.check_data.outputs.DATA_CHANGED }}" == "true" ]]; then
-          echo "Data changes detected, copying SPIFFS binary..."
-          cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
-        fi
         
         # Verify file sizes
         echo "File sizes:"
