@@ -79,15 +79,15 @@ jobs:
         
         # Create full binary (always)
         (cd .pio/build/esp32dev && 
-        esptool.py --chip esp32 merge_bin 
-          --fill-flash-size 4MB 
-          --flash_mode dio 
-          --flash_freq 40m 
-          --flash_size 4MB 
-          -o filaman_full_${VERSION}.bin 
-          0x0000 bootloader.bin 
-          0x8000 partitions.bin 
-          0x10000 firmware.bin 
+        esptool.py --chip esp32 merge_bin \
+          --fill-flash-size 4MB \
+          --flash_mode dio \
+          --flash_freq 40m \
+          --flash_size 4MB \
+          -o filaman_full_${VERSION}.bin \
+          0x1000 bootloader.bin \
+          0x8000 partitions.bin \
+          0x10000 firmware.bin \
           0x390000 spiffs.bin)
         
         # Verify file sizes
