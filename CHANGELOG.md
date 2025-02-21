@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.24] - 2025-02-21
+### Changed
+- update webpages for version v1.3.24
+- workflow: rename update files to upgrade in GitHub release workflow
+- workflow: aktualisiere bestehende Einträge im Changelog für vorhandene Versionen
+
+### Fixed
+- workflow: improve Gitea release process with dynamic URL determination and debug outputs
+
+
 ## [1.3.23] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.23
