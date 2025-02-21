@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.99] - 2025-02-21
+### Added
+- add SPIFFS change detection and binary copying to release workflows
+- add backup and restore functions for JSON configurations during OTA updates
+
+### Changed
+- update webpages for version v1.2.99
+- update JSON field type checks from JsonObject to String for improved validation
+- update JSON handling in API and Bambu modules for improved object management
+- update platformio.ini dependencies and improve version handling in website.cpp
+- update Cache-Control header to reflect a 1-week duration
+- remove version definition from website.cpp
+- optimize WiFi and WebSocket settings; enhance TCP/IP stack configuration
+- update upgrade page title and heading; adjust cache control duration
+
+
 ## [1.2.98] - 2025-02-21
 ### Changed
 - update webpages for version v1.2.98
