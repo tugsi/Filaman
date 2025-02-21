@@ -51,6 +51,7 @@ jobs:
           if [ "${{ needs.route.outputs.provider }}" = "unknown" ]; then
             echo "::error::Failed to detect CI provider!"
             exit 1
+          fi
 
   github-release:
     needs: [route, verify-provider]
