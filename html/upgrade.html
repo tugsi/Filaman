@@ -64,6 +64,22 @@
             statusContainer.style.display = 'none';
         }
 
+        // Größenbeschränkung für Upload
+        const MAX_FILE_SIZE = 4000000; // 4MB
+
+        async function checkMagicByte(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const arr = new Uint8Array(reader.result);
+                    // Prüfe auf Magic Byte 0xE9 für ESP32 Firmware
+                    resolve(arr[0] === 0xE9);
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file.slice(0, 1));
+            });
+        }
+
         document.getElementById('updateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
@@ -73,8 +89,25 @@
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('update', file);
+            if (file.size > MAX_FILE_SIZE) {
+                alert('File too large. Maximum size is 4MB.');
+                return;
+            }
+
+            // Prüfe Magic Byte für normale Firmware-Dateien
+            if (!file.name.endsWith('_spiffs.bin')) {
+                try {
+                    const isValidFirmware = await checkMagicByte(file);
+                    if (!isValidFirmware) {
+                        alert('Invalid firmware file. Missing ESP32 magic byte.');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error checking magic byte:', error);
+                    alert('Could not verify firmware file.');
+                    return;
+                }
+            }
 
             const progress = document.querySelector('.progress-bar');
             const progressContainer = document.querySelector('.progress-container');
@@ -85,69 +118,74 @@
             status.className = 'status';
             form.querySelector('input[type=submit]').disabled = true;
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/update', true);
+            // Chunk-basierter Upload mit Retry-Logik
+            const chunkSize = 8192; // Optimale Chunk-Größe
+            const maxRetries = 3;
+            let offset = 0;
 
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
+            async function uploadChunk(chunk, retryCount = 0) {
+                try {
+                    const response = await fetch('/update', {
+                        method: 'POST',
+                        body: chunk,
+                        headers: {
+                            'Content-Type': 'application/octet-stream',
+                            'X-File-Name': file.name,
+                            'X-Chunk-Offset': offset.toString(),
+                            'X-Chunk-Size': chunk.size.toString(),
+                            'X-Total-Size': file.size.toString()
+                        },
+                        timeout: 30000 // 30 Sekunden Timeout
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText || response.statusText);
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error(`Chunk upload failed (attempt ${retryCount + 1}):`, error);
+                    if (retryCount < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Warte 1 Sekunde vor Retry
+                        return uploadChunk(chunk, retryCount + 1);
+                    }
+                    throw error;
+                }
+            }
+
+            try {
+                while (offset < file.size) {
+                    const end = Math.min(offset + chunkSize, file.size);
+                    const chunk = file.slice(offset, end);
+                    
+                    await uploadChunk(chunk);
+                    
+                    offset = end;
+                    const percentComplete = (offset / file.size) * 100;
                     progress.style.width = percentComplete + '%';
                     progress.textContent = Math.round(percentComplete) + '%';
-                }
-            };
-
-            xhr.onload = function() {
-                try {
-                    let response = this.responseText;
-                    try {
-                        const jsonResponse = JSON.parse(response);
-                        response = jsonResponse.message;
-                        
-                        if (jsonResponse.restart) {
-                            status.textContent = response + " Redirecting in 20 seconds...";
-                            let countdown = 20;
-                            const timer = setInterval(() => {
-                                countdown--;
-                                if (countdown <= 0) {
-                                    clearInterval(timer);
-                                    window.location.href = '/';
-                                } else {
-                                    status.textContent = response + ` Redirecting in ${countdown} seconds...`;
-                                }
-                            }, 1000);
-                        }
-                    } catch (e) {
-                        if (!isNaN(response)) {
-                            const percent = parseInt(response);
-                            progress.style.width = percent + '%';
-                            progress.textContent = percent + '%';
-                            return;
-                        }
-                    }
                     
-                    status.textContent = response;
-                    status.classList.add(xhr.status === 200 ? 'success' : 'error');
-                    status.style.display = 'block';
-                    
-                    if (xhr.status !== 200) {
-                        form.querySelector('input[type=submit]').disabled = false;
-                    }
-                } catch (error) {
-                    status.textContent = 'Error: ' + error.message;
-                    status.classList.add('error');
-                    status.style.display = 'block';
-                    form.querySelector('input[type=submit]').disabled = false;
+                    // Kleine Pause zwischen den Chunks für bessere Stabilität
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
-            };
 
-            xhr.onerror = function() {
-                status.textContent = 'Update failed: Network error';
+                // Final success handler
+                status.textContent = 'Update successful! Device will restart...';
+                status.classList.add('success');
+                status.style.display = 'block';
+                
+                // Warte auf Neustart und Redirect
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 20000);
+
+            } catch (error) {
+                status.textContent = 'Update failed: ' + error.message;
                 status.classList.add('error');
                 status.style.display = 'block';
                 form.querySelector('input[type=submit]').disabled = false;
-            };
-
-            xhr.send(formData);
+            }
         });
     </script>
 </body>

@@ -78,6 +78,8 @@ uint8_t wifiErrorCounter = 0;
 
 // ##### PROGRAM START #####
 void loop() {
+
+  /*
   // Überprüfe den WLAN-Status
   if (WiFi.status() != WL_CONNECTED) {
     wifiErrorCounter++;
@@ -87,7 +89,8 @@ void loop() {
     wifiOn = true;
   }
   if (wifiErrorCounter > 20) ESP.restart();
-
+  */
+ 
   unsigned long currentMillis = millis();
 
   // Send AMS Data min every Minute
