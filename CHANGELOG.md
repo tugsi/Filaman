@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.26] - 2025-02-21
+### Changed
+- update webpages for version v1.3.26
+
+### Fixed
+- workflow: improve Gitea release workflow with enhanced error handling and debug outputs
+
+
 ## [1.3.25] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.25
