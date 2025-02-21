@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.4] - 2025-02-21
+### Added
+- add Gitea and GitHub release workflows
+
+### Changed
+- update webpages for version v1.3.4
+- Merge branch 'old'
+
+
 ## [1.3.3] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.3
