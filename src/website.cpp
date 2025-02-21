@@ -11,6 +11,7 @@
 
 // Cache-Control Header definieren
 #define CACHE_CONTROL "max-age=31536000" // Cache für 1 Jahr
+#define VERSION "1.0.0"
 
 AsyncWebServer server(webserverPort);
 AsyncWebSocket ws("/ws");
@@ -362,6 +363,11 @@ void setupWebserver(AsyncWebServer &server) {
             handleOTAUpload(request, filename, index, data, len, final);
         }
     );
+
+    server.on("/api/version", HTTP_GET, [](AsyncWebServerRequest *request){
+        String jsonResponse = "{\"version\": \"" VERSION "\"}";
+        request->send(200, "application/json", jsonResponse);
+    });
 
     // Fehlerbehandlung für nicht gefundene Seiten
     server.onNotFound([](AsyncWebServerRequest *request){

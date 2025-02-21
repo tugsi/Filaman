@@ -37,44 +37,51 @@ jobs:
         sudo apt-get update
         sudo apt-get install xxd
     
+    - name: Check for SPIFFS changes
+      id: check_spiffs
+      run: |
+        git fetch --unshallow || true
+        CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
+        if echo "$CHANGED_FILES" | grep -q "^data/\|^html/"; then
+          echo "SPIFFS_CHANGED=true" >> $GITHUB_OUTPUT
+        else
+          echo "SPIFFS_CHANGED=false" >> $GITHUB_OUTPUT
+        fi
+    
     - name: Build Firmware
       run: |
-        pio run -e esp32dev -t buildfs  # Build SPIFFS
-        pio run -e esp32dev            # Build firmware
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman.bin
-        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/filaman_spiffs.bin
+        # Get version from platformio.ini
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        
+        # Always build firmware
+        pio run -e esp32dev
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
+        
+        # Only build SPIFFS if changed
+        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
+          echo "Building SPIFFS due to changes..."
+          cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
+        fi
         
     - name: Prepare binaries
       run: |
-        # Ensure we're in the project root
-        cd $GITHUB_WORKSPACE
-        
-        # Create SPIFFS directory if it doesn't exist
-        mkdir -p .pio/build/esp32dev/spiffs
-        
-        # Copy firmware to SPIFFS directory
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/spiffs/firmware.bin
-        
-        # Build new SPIFFS image with firmware included
-        pio run -t buildfs
-        
         cd .pio/build/esp32dev
+        VERSION=$(grep '^version = ' ../../platformio.ini | cut -d'"' -f2)
         
-        # Create release files
-        cp spiffs.bin filaman_spiffs.bin
-        
-        # Create full binary
-        echo "Creating full binary..."
-        esptool.py --chip esp32 merge_bin \
-          --fill-flash-size 4MB \
-          --flash_mode dio \
-          --flash_freq 40m \
-          --flash_size 4MB \
-          -o filaman_full.bin \
-          0x0000 bootloader.bin \
-          0x8000 partitions.bin \
-          0x10000 firmware.bin \
-          0x390000 spiffs.bin
+        # Create full binary only if SPIFFS changed
+        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
+          echo "Creating full binary..."
+          esptool.py --chip esp32 merge_bin \
+            --fill-flash-size 4MB \
+            --flash_mode dio \
+            --flash_freq 40m \
+            --flash_size 4MB \
+            -o filaman_full_${VERSION}.bin \
+            0x0000 bootloader.bin \
+            0x8000 partitions.bin \
+            0x10000 firmware.bin \
+            0x390000 spiffs.bin
+        fi
         
         # Verify file sizes
         echo "File sizes:"
@@ -87,6 +94,7 @@ jobs:
         TAG="${{ inputs.gitea_ref_name }}"
         API_URL="${{ inputs.gitea_server_url }}/api/v1"
         REPO="${{ inputs.gitea_repository }}"
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         
         # Create release
         RESPONSE=$(curl -k -s \
@@ -104,12 +112,20 @@ jobs:
         
         if [ -n "$RELEASE_ID" ]; then
           echo "Release created with ID: $RELEASE_ID"
-          
-          # Upload binaries
           cd .pio/build/esp32dev
           
-          # Check if files exist before uploading
-          for file in filaman_spiffs.bin filaman_full.bin; do
+          # Always upload firmware
+          if [ -f "filaman_${VERSION}.bin" ]; then
+            curl -k -s \
+              -X POST \
+              -H "Authorization: token ${TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@filaman_${VERSION}.bin" \
+              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=filaman_${VERSION}.bin"
+          fi
+          
+          # Upload SPIFFS and full binary only if they exist
+          for file in webpage_${VERSION}.bin filaman_full_${VERSION}.bin; do
             if [ -f "$file" ]; then
               echo "Uploading $file..."
               curl -k -s \
@@ -118,8 +134,6 @@ jobs:
                 -H "Content-Type: application/octet-stream" \
                 --data-binary "@$file" \
                 "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
-            else
-              echo "Warning: $file not found"
             fi
           done
         else
