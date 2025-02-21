@@ -120,47 +120,46 @@ jobs:
         echo "Debug: API URL: ${GITEA_API_URL}"
         echo "Debug: Repository: ${GITEA_OWNER}/${GITEA_REPO}"
         
-        # Prepare files for upload
-        FILES=""
-        for file in upgrade_filaman_firmware_v${VERSION}.bin upgrade_filaman_website_v${VERSION}.bin filaman_full_${VERSION}.bin; do
-          if [ -f "$file" ]; then
-            FILES="$FILES -F \"attach[]=@$file\""
-            echo "Debug: Found file: $file"
-          fi
-        done
-
-        # Test API connection with explicit token header
-        echo "Debug: Testing API connection..."
-        TEST_RESPONSE=$(curl -s -w "\n%{http_code}" \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          "${GITEA_API_URL}/api/v1/version")
-        TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
-        if [ "$TEST_STATUS" != "200" ]; then
-          echo "Error: Cannot connect to Gitea API"
-          echo "Response: $TEST_RESPONSE"
-          exit 1
-        fi
-
-        # Create release using API
+        # Erstelle zuerst den Release ohne Dateien
         echo "Debug: Creating release..."
         RELEASE_DATA="{\"tag_name\":\"v${VERSION}\",\"name\":\"v${VERSION}\",\"body\":\"${{ steps.changelog.outputs.CHANGES }}\"}"
-
-        # Create release with explicit token header and file uploads
-        CURL_CMD="curl -s -w \"\n%{http_code}\" \
+        
+        RELEASE_RESPONSE=$(curl -s -w "\n%{http_code}" \
           -X POST \
-          -H \"Authorization: token ${GITEA_TOKEN}\" \
-          -H \"Content-Type: application/json\" \
-          -d '${RELEASE_DATA}' \
-          ${FILES} \
-          \"${GITEA_API_URL}/api/v1/repos/${GITEA_OWNER}/${GITEA_REPO}/releases\""
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "${RELEASE_DATA}" \
+          "${GITEA_API_URL}/api/v1/repos/${GITEA_OWNER}/${GITEA_REPO}/releases")
         
-        RESPONSE=$(eval $CURL_CMD)
+        RELEASE_STATUS=$(echo "$RELEASE_RESPONSE" | tail -n1)
+        RELEASE_BODY=$(echo "$RELEASE_RESPONSE" | head -n -1)
         
-        HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
-        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
-
-        echo "Debug: HTTP Status: $HTTP_STATUS"
-        if [ "$HTTP_STATUS" != "201" ]; then
+        if [ "$RELEASE_STATUS" != "201" ]; then
           echo "Error: Failed to create release"
-          echo "Response: $RESPONSE_BODY"
+          echo "Response: $RELEASE_BODY"
           exit 1
+        fi
+        
+        # Extrahiere die Release-ID aus der Antwort
+        RELEASE_ID=$(echo "$RELEASE_BODY" | grep -o '"id":[0-9]*' | cut -d':' -f2)
+        
+        # Lade die Dateien einzeln hoch
+        for file in upgrade_filaman_firmware_v${VERSION}.bin upgrade_filaman_website_v${VERSION}.bin filaman_full_${VERSION}.bin; do
+          if [ -f "$file" ]; then
+            echo "Debug: Uploading $file..."
+            UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "${GITEA_API_URL}/api/v1/repos/${GITEA_OWNER}/${GITEA_REPO}/releases/${RELEASE_ID}/assets?name=${file}")
+            
+            UPLOAD_STATUS=$(echo "$UPLOAD_RESPONSE" | tail -n1)
+            if [ "$UPLOAD_STATUS" != "201" ]; then
+              echo "Warning: Failed to upload $file"
+              echo "Response: $(echo "$UPLOAD_RESPONSE" | head -n -1)"
+            else
+              echo "Successfully uploaded $file"
+            fi
+          fi
+        done
