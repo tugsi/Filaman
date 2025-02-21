@@ -35,31 +35,17 @@ jobs:
             echo "gitea_ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
             echo "gitea_server_url=${GITHUB_SERVER_URL}" >> "$GITHUB_OUTPUT"
             echo "gitea_repository=${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
-          elif [ "${GITHUB_ACTIONS}" = "true" ]; then
-            echo "provider=github" >> "$GITHUB_OUTPUT"
           else
-            echo "provider=unknown" >> "$GITHUB_OUTPUT"
-          fi
-
-  verify-provider:
-    needs: route
-    runs-on: ubuntu-latest
-    steps:
-      - name: Echo detected provider
-        run: |
-          echo "Detected CI Provider: ${{ needs.route.outputs.provider }}"
-          if [ "${{ needs.route.outputs.provider }}" = "unknown" ]; then
-            echo "::error::Failed to detect CI provider!"
-            exit 1
+            echo "provider=github" >> "$GITHUB_OUTPUT"
           fi
 
   github-release:
-    needs: [route, verify-provider]
+    needs: route
     if: needs.route.outputs.provider == 'github'
     uses: ./.github/workflows/github-release.yml
 
   gitea-release:
-    needs: [route, verify-provider]
+    needs: route
     if: needs.route.outputs.provider == 'gitea'
     uses: ./.github/workflows/gitea-release.yml
     with:
