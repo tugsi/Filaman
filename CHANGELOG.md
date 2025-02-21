@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.19] - 2025-02-21
+### Changed
+- update webpages for version v1.3.19
+- workflow: enable git push for version tagging in Gitea release
+
+
 ## [1.3.18] - 2025-02-21
 ### Changed
 - ACHTUNG: Installiere einmal das filaman_full.bin danach kannst du über die upgrade Files aktualisieren und deine Settings bleiben auch erhalten.
