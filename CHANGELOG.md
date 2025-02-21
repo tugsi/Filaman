@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.97] - 2025-02-21
+### Changed
+- update webpages for version v1.2.97
+- streamline Gitea and GitHub release workflows to check for data changes and update binary handling
+
+
 ## [1.2.96] - 2025-02-21
 ### Added
 - add SPIFFS build step to Gitea and GitHub release workflows
