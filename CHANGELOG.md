@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.0] - 2025-02-21
+### Changed
+- bump version to 1.3.0 in platformio.ini
+
+
 ## [1.2.102] - 2025-02-21
 ### Changed
 - update webpages for version v1.2.102
