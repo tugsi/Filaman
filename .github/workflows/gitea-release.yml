@@ -71,12 +71,35 @@ jobs:
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
+    - name: Determine Gitea URL
+      id: gitea_url
+      run: |
+        echo "Debug Environment:"
+        echo "GITHUB_SERVER_URL=${GITHUB_SERVER_URL:-not set}"
+        echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
+        echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-not set}"
+        echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
+        
+        # Set API URL based on environment
+        if [ -n "${GITEA_SERVER_URL}" ]; then
+          GITEA_API_URL="${GITEA_SERVER_URL}"
+          GITEA_REPO=$(echo "${GITEA_REPOSITORY}" | cut -d'/' -f2)
+          GITEA_OWNER=$(echo "${GITEA_REPOSITORY}" | cut -d'/' -f1)
+        else
+          echo "Error: Could not determine Gitea server URL"
+          exit 1
+        fi
+        
+        echo "GITEA_API_URL=${GITEA_API_URL}" >> $GITHUB_OUTPUT
+        echo "GITEA_REPO=${GITEA_REPO}" >> $GITHUB_OUTPUT
+        echo "GITEA_OWNER=${GITEA_OWNER}" >> $GITHUB_OUTPUT
+
     - name: Create Gitea Release
       env:
         GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
-        GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
-        GITEA_REPO: ${{ secrets.GITEA_REPO }}
-        GITEA_OWNER: ${{ secrets.GITEA_OWNER }}
+        GITEA_API_URL: ${{ steps.gitea_url.outputs.GITEA_API_URL }}
+        GITEA_REPO: ${{ steps.gitea_url.outputs.GITEA_REPO }}
+        GITEA_OWNER: ${{ steps.gitea_url.outputs.GITEA_OWNER }}
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
         cd .pio/build/esp32dev
