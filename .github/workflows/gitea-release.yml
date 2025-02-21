@@ -2,6 +2,10 @@ name: Gitea Release
 
 on:
   workflow_call:
+    secrets:
+      GITEA_TOKEN:
+        description: 'Token für Gitea API-Zugriff'
+        required: true
 
 jobs:
   create-release:
