@@ -72,6 +72,9 @@ jobs:
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Create Gitea Release
+      env:
+        GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        GITEA_API_URL: ${{ secrets.GITEA_API_URL }}
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
         cd .pio/build/esp32dev
@@ -84,6 +87,35 @@ jobs:
           fi
         done
         
-        # Create release using git command
-        git tag -a "v${VERSION}" -m "Release ${VERSION}"
-        git push origin "v${VERSION}"
+        # Check if tag exists
+        if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+          # Create tag if it doesn't exist
+          git tag -a "v${VERSION}" -m "Release ${VERSION}"
+          git push origin "v${VERSION}"
+        fi
+
+        # Create Gitea release using API
+        RELEASE_DATA="{
+          \"tag_name\": \"v${VERSION}\",
+          \"name\": \"v${VERSION}\",
+          \"body\": \"${{ steps.changelog.outputs.CHANGES }}\"
+        }"
+
+        # Create release
+        RESPONSE=$(curl -X POST \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "$RELEASE_DATA" \
+          "${GITEA_API_URL}/repos/owner/repo/releases")
+
+        # Upload assets
+        RELEASE_ID=$(echo $RESPONSE | jq -r .id)
+        for file in upgrade_filaman_firmware_v${VERSION}.bin upgrade_filaman_website_v${VERSION}.bin filaman_full_${VERSION}.bin; do
+          if [ -f "$file" ]; then
+            curl -X POST \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "${GITEA_API_URL}/repos/owner/repo/releases/${RELEASE_ID}/assets?name=${file}"
+          fi
+        done
