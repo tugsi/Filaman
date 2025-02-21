@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.98] - 2025-02-21
+### Changed
+- update webpages for version v1.2.98
+
+
 ## [1.2.97] - 2025-02-21
 ### Changed
 - update webpages for version v1.2.97
