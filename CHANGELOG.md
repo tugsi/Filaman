@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2] - 2025-02-21
+### Added
+- add missing conditional exit in release workflow
+
+### Changed
+- update webpages for version v1.3.2
+
+
 ## [1.3.1] - 2025-02-21
 ### Added
 - enhance GitHub and Gitea release workflows with Python setup and binary preparation
