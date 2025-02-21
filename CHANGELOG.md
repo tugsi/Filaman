@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.29] - 2025-02-21
+### Changed
+- update webpages for version v1.3.29
+- workflow: update Gitea release workflow to create release before file uploads
+
+
 ## [1.3.28] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.28
