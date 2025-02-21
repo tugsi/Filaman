@@ -10,6 +10,10 @@
 #include "ota.h"
 #include <Update.h>
 
+#ifndef VERSION
+  #define VERSION "1.1.0"
+#endif
+
 // Cache-Control Header definieren
 #define CACHE_CONTROL "max-age=604800" // Cache für 1 Woche
 
@@ -45,7 +49,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         }
 
         else if (doc["type"] == "writeNfcTag") {
-            if (doc.containsKey("payload")) {
+            if (doc["payload"].is<JsonObject>()) {
                 // Versuche NFC-Daten zu schreiben
                 String payloadString;
                 serializeJson(doc["payload"], payloadString);
@@ -152,7 +156,7 @@ void sendNfcData(AsyncWebSocketClient *client) {
 
 void sendAmsData(AsyncWebSocketClient *client) {
     if (ams_count > 0) {
-        ws.textAll("{\"type\":\"amsData\", \"payload\":" + amsJsonData + "}");
+        ws.textAll("{\"type\":\"amsData\",\"payload\":" + amsJsonData + "}");
     }
 }
 
@@ -231,7 +235,7 @@ void setupWebserver(AsyncWebServer &server) {
         html.replace("{{spoolmanUrl}}", spoolmanUrl);
 
         JsonDocument doc;
-        if (loadJsonValue("/bambu_credentials.json", doc) && doc.containsKey("bambu_ip")) {
+        if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<JsonObject>()) {
             String bambuIp = doc["bambu_ip"].as<String>();
             String bambuSerial = doc["bambu_serialnr"].as<String>();
             String bambuCode = doc["bambu_accesscode"].as<String>();
@@ -417,7 +421,8 @@ void setupWebserver(AsyncWebServer &server) {
     );
 
     server.on("/api/version", HTTP_GET, [](AsyncWebServerRequest *request){
-        String jsonResponse = "{\"version\": \"" VERSION "\"}";
+        String fm_version = VERSION;
+        String jsonResponse = "{\"version\": \""+ fm_version +"\"}";
         request->send(200, "application/json", jsonResponse);
     });
 
