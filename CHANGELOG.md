@@ -6,6 +6,15 @@
 - ATTENTION: Install the filaman_full.bin once, then you can update via the upgrade files and your settings will also be retained.
 
 
+
+## [1.3.18] - 2025-02-21
+### Added
+- add note about filaman_full.bin installation in changelog
+
+### Changed
+- update webpages for version v1.3.18
+- update changelog for version 1.3.18 and enhance update script for existing entries
+
 ## [1.3.17] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.17
