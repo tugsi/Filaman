@@ -122,29 +122,29 @@ def update_changelog():
                 f.write(updated_content)
             push_changes(version)
         else:
-            # Version existiert bereits, füge neue Einträge unter der existierenden Version ein
+            # Version existiert bereits, aktualisiere die bestehenden Einträge
             version_pattern = f"## \\[{version}\\] - \\d{{4}}-\\d{{2}}-\\d{{2}}"
             next_version_pattern = "## \\[.*?\\] - \\d{4}-\\d{2}-\\d{2}"
             
             # Finde den Start der aktuellen Version
             version_match = re.search(version_pattern, content)
             if version_match:
-                version_start = version_match.end()
+                version_start = version_match.start()
                 # Suche nach der nächsten Version
-                next_version_match = re.search(next_version_pattern, content[version_start:])
+                next_version_match = re.search(next_version_pattern, content[version_start + 1:])
                 
                 if next_version_match:
-                    # Füge zwischen aktueller und nächster Version ein
-                    insert_pos = version_start + next_version_match.start()
-                    updated_content = content[:insert_pos] + "\n" + changelog_entry + content[insert_pos:]
+                    # Ersetze den Inhalt zwischen aktueller und nächster Version
+                    next_version_pos = version_start + 1 + next_version_match.start()
+                    updated_content = content[:version_start] + changelog_entry + content[next_version_pos:]
                 else:
-                    # Füge am Ende des Abschnitts ein
-                    updated_content = content[:version_start] + "\n" + changelog_entry + content[version_start:]
+                    # Wenn keine nächste Version existiert, ersetze bis zum Ende
+                    updated_content = content[:version_start] + changelog_entry + "\n"
                 
                 with open(changelog_path, 'w') as f:
                     f.write(updated_content)
                 push_changes(version)
-                print(f"Added new entries to existing version {version}")
+                print(f"Updated entries for version {version}")
 
 if __name__ == "__main__":
     update_changelog()
