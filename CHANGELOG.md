@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.100] - 2025-02-21
+### Changed
+- update webpages for version v1.2.100
+- remove OTA handling and JSON backup/restore functions
+
+
 ## [1.2.99] - 2025-02-21
 ### Added
 - add SPIFFS change detection and binary copying to release workflows
