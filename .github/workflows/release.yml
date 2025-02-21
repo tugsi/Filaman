@@ -119,7 +119,7 @@ jobs:
         echo "EOF" >> $GITHUB_OUTPUT
     - name: Create GitHub Release
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
         cd .pio/build/esp32dev
@@ -210,7 +210,7 @@ jobs:
         pio run -e esp32dev
         pio run -t buildfs
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
-        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
+        cp .pio/build/esp32dev/spiffs.bin .pio.build/esp32dev/webpage_${VERSION}.bin
         (cd .pio/build/esp32dev && esptool.py --chip esp32 merge_bin --fill-flash-size 4MB --flash_mode dio --flash_freq 40m --flash_size 4MB -o filaman_full_${VERSION}.bin 0x1000 bootloader.bin 0x8000 partitions.bin 0x10000 firmware.bin 0x390000 spiffs.bin)
         echo "File sizes:"
         (cd .pio/build/esp32dev && ls -lh *.bin)
@@ -232,8 +232,6 @@ jobs:
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
     - name: Create Release
-      env:
-        TOKEN: ${{ secrets.GITEA_TOKEN }}
       run: |
         API_URL="${{ needs.route.outputs.gitea_server_url }}/api/v1"
         REPO="${{ needs.route.outputs.gitea_repository }}"
