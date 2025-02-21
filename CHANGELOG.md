@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.95] - 2025-02-21
+### Added
+- enhance update process with separate forms for firmware and webpage uploads, including validation and improved UI
+- add API endpoint for version retrieval and update HTML to display dynamic version
+
+### Changed
+- update webpages for version v1.2.95
+- bump version to 1.2.94 in platformio.ini
+
+
 ## [1.2.91] - 2025-02-20
 ### Added
 - add file existence checks before uploading binaries in release workflows
