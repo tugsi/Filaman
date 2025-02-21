@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.10] - 2025-02-21
+### Changed
+- update webpages for version v1.3.10
+- ci: simplify GitHub release workflow by removing provider verification step
+
+
 ## [1.3.9] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.9
