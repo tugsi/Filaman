@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.96] - 2025-02-21
+### Added
+- add SPIFFS build step to Gitea and GitHub release workflows
+
+### Changed
+- update webpages for version v1.2.96
+
+
 ## [1.2.95] - 2025-02-21
 ### Added
 - enhance update process with separate forms for firmware and webpage uploads, including validation and improved UI
