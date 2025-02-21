@@ -124,7 +124,7 @@ jobs:
         FILES=""
         for file in upgrade_filaman_firmware_v${VERSION}.bin upgrade_filaman_website_v${VERSION}.bin filaman_full_${VERSION}.bin; do
           if [ -f "$file" ]; then
-            FILES="$FILES -a $file"
+            FILES="$FILES -F \"attach[]=@$file\""
             echo "Debug: Found file: $file"
           fi
         done
@@ -143,19 +143,18 @@ jobs:
 
         # Create release using API
         echo "Debug: Creating release..."
-        RELEASE_DATA="{
-          \"tag_name\": \"v${VERSION}\",
-          \"name\": \"v${VERSION}\",
-          \"body\": \"${{ steps.changelog.outputs.CHANGES }}\"
-        }"
+        RELEASE_DATA="{\"tag_name\":\"v${VERSION}\",\"name\":\"v${VERSION}\",\"body\":\"${{ steps.changelog.outputs.CHANGES }}\"}"
 
-        # Create release with explicit token header
-        RESPONSE=$(curl -s -w "\n%{http_code}" \
+        # Create release with explicit token header and file uploads
+        CURL_CMD="curl -s -w \"\n%{http_code}\" \
           -X POST \
-          -H "Authorization: token ${GITEA_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "$RELEASE_DATA" \
-          "${GITEA_API_URL}/api/v1/repos/${GITEA_OWNER}/${GITEA_REPO}/releases")
+          -H \"Authorization: token ${GITEA_TOKEN}\" \
+          -H \"Content-Type: application/json\" \
+          -d '${RELEASE_DATA}' \
+          ${FILES} \
+          \"${GITEA_API_URL}/api/v1/repos/${GITEA_OWNER}/${GITEA_REPO}/releases\""
+        
+        RESPONSE=$(eval $CURL_CMD)
         
         HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
         RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
