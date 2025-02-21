@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.8] - 2025-02-21
+### Added
+- add Gitea and GitHub release workflows
+
+### Changed
+- update webpages for version v1.3.8
+
+
 ## [1.3.7] - 2025-02-21
 ### Added
 - add GitHub and Gitea release workflows
