@@ -85,5 +85,5 @@ jobs:
         done
         
         # Create release using git command
-        #git tag -a "v${VERSION}" -m "Release ${VERSION}"
+        git tag -a "v${VERSION}" -m "Release ${VERSION}"
         git push origin "v${VERSION}"
