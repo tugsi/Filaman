@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.102] - 2025-02-21
+### Changed
+- update webpages for version v1.2.102
+
+### Fixed
+- adjust bootloader offset in binary merge for Gitea and GitHub workflows
+
+
 ## [1.2.101] - 2025-02-21
 ### Changed
 - update webpages for version v1.2.101
