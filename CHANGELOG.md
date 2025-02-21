@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.20] - 2025-02-21
+### Changed
+- update webpages for version v1.3.20
+- workflow: enable git tagging and pushing for Gitea releases
+
+
 ## [1.3.19] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.19
