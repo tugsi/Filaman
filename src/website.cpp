@@ -11,7 +11,7 @@
 #include <Update.h>
 
 // Cache-Control Header definieren
-#define CACHE_CONTROL "max-age=604800" // Cache für 1 Jahr
+#define CACHE_CONTROL "max-age=604800" // Cache für 1 Woche
 
 AsyncWebServer server(webserverPort);
 AsyncWebSocket ws("/ws");
