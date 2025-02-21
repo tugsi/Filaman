@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.5] - 2025-02-21
+### Added
+- enhance release workflow to support Gitea alongside GitHub
+
+### Changed
+- update webpages for version v1.3.5
+
+
 ## [1.3.4] - 2025-02-21
 ### Added
 - add Gitea and GitHub release workflows
