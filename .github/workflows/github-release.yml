@@ -115,12 +115,12 @@ jobs:
         FILES_TO_UPLOAD=""
         
         # Always add firmware
-        if [ -f "update_filaman_firmware_v${VERSION}.bin" ]; then
+        if [ -f "upgrade_filaman_firmware_v${VERSION}.bin" ]; then
           FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_firmware_v${VERSION}.bin"
         fi
         
         # Add SPIFFS and full binary only if they exist
-        if [ -f "update_filaman_website_v${VERSION}.bin" ]; then
+        if [ -f "upgrade_filaman_website_v${VERSION}.bin" ]; then
           FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_website_v${VERSION}.bin"
         fi
         
