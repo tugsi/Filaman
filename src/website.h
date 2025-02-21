@@ -29,4 +29,8 @@ void sendNfcData(AsyncWebSocketClient *client);
 void foundNfcTag(AsyncWebSocketClient *client, uint8_t success);
 void sendWriteResult(AsyncWebSocketClient *client, uint8_t success);
 
+// Upgrade-Funktionen
+void backupJsonConfigs();
+void restoreJsonConfigs();
+
 #endif
