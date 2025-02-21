@@ -8,8 +8,11 @@
 #define UPDATE_SIZE_UNKNOWN 0xFFFFFFFF
 #endif
 
-void stopAllTasks();
-void handleOTAUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
+void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final);
 void checkForStagedUpdate();
+void performStageTwo();
+void stopAllTasks();
+void backupJsonConfigs();
+void restoreJsonConfigs();
 
 #endif

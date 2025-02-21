@@ -7,7 +7,6 @@
 #include "nfc.h"
 #include "scale.h"
 #include "esp_task_wdt.h"
-#include "ota.h"
 #include <Update.h>
 
 #ifndef VERSION
@@ -444,26 +443,29 @@ void setupWebserver(AsyncWebServer &server) {
 }
 
 void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+    static bool isSpiffsUpdate = false;
     if (!index) {
         // Start eines neuen Uploads
         Serial.println("Update Start: " + filename);
         
         // Überprüfe den Dateityp basierend auf dem Dateinamen
         bool isFirmware = filename.startsWith("filaman_");
-        bool isWebpage = filename.startsWith("webpage_");
+        isSpiffsUpdate = filename.startsWith("webpage_");
         
-        if (!isFirmware && !isWebpage) {
+        if (!isFirmware && !isSpiffsUpdate) {
             request->send(400, "application/json", "{\"message\":\"Invalid file type. File must start with 'filaman_' or 'webpage_'\"}");
             return;
         }
 
         // Wähle den Update-Typ basierend auf dem Dateinamen
-        if (isWebpage) {
+        if (isSpiffsUpdate) {
             if (!Update.begin(SPIFFS.totalBytes(), U_SPIFFS)) {
                 Update.printError(Serial);
                 request->send(400, "application/json", "{\"message\":\"SPIFFS Update failed: " + String(Update.errorString()) + "\"}");
                 return;
             }
+            // Backup JSON configs before SPIFFS update
+            backupJsonConfigs();
         } else {
             if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
                 Update.printError(Serial);
@@ -485,8 +487,34 @@ void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, siz
             request->send(400, "application/json", "{\"message\":\"Update failed: " + String(Update.errorString()) + "\"}");
             return;
         }
+        if (isSpiffsUpdate) {
+            // Restore JSON configs after SPIFFS update
+            restoreJsonConfigs();
+        }
         request->send(200, "application/json", "{\"message\":\"Update successful!\", \"restart\": true}");
         delay(500);
         ESP.restart();
+    }
+}
+
+void backupJsonConfigs() {
+    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
+    for (const char* config : configs) {
+        if (SPIFFS.exists(config)) {
+            String backupPath = String(config) + ".bak";
+            SPIFFS.remove(backupPath);
+            SPIFFS.rename(config, backupPath);
+        }
+    }
+}
+
+void restoreJsonConfigs() {
+    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
+    for (const char* config : configs) {
+        String backupPath = String(config) + ".bak";
+        if (SPIFFS.exists(backupPath)) {
+            SPIFFS.remove(config);
+            SPIFFS.rename(backupPath, config);
+        }
     }
 }

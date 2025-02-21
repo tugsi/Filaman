@@ -29,11 +29,36 @@ void stopAllTasks() {
     Serial.println("All tasks stopped");
 }
 
+void backupJsonConfigs() {
+    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
+    for (const char* config : configs) {
+        if (SPIFFS.exists(config)) {
+            String backupPath = String(config) + ".bak";
+            SPIFFS.remove(backupPath);
+            SPIFFS.rename(config, backupPath);
+        }
+    }
+}
+
+void restoreJsonConfigs() {
+    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
+    for (const char* config : configs) {
+        String backupPath = String(config) + ".bak";
+        if (SPIFFS.exists(backupPath)) {
+            SPIFFS.remove(config);
+            SPIFFS.rename(backupPath, config);
+        }
+    }
+}
+
 void performStageTwo() {
     if (!SPIFFS.begin(true)) {
         Serial.println("Error: Could not mount SPIFFS for stage 2");
         return;
     }
+
+    // Backup JSON configs before update
+    backupJsonConfigs();
 
     File firmwareFile = SPIFFS.open("/firmware.bin", "r");
     if (!firmwareFile) {
@@ -71,6 +96,10 @@ void performStageTwo() {
 
     firmwareFile.close();
     SPIFFS.remove("/firmware.bin"); // Cleanup
+
+    // Restore JSON configs after update
+    restoreJsonConfigs();
+
     Serial.println("Stage 2 update successful, restarting...");
     delay(500);
     ESP.restart();
