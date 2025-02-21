@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.93] - 2025-02-21
+### Changed
+- update webpages for version v1.2.93
+- update SPIFFS initialization and partition sizes; enhance WiFi setup
+
+
 ## [1.2.92] - 2025-02-21
 ### Added
 - enhance OTA upload handling with chunk validation and timeout checks
