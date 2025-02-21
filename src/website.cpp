@@ -385,3 +385,51 @@ void setupWebserver(AsyncWebServer &server) {
     server.begin();
     Serial.println("Webserver gestartet");
 }
+
+void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+    if (!index) {
+        // Start eines neuen Uploads
+        Serial.println("Update Start: " + filename);
+        
+        // Überprüfe den Dateityp basierend auf dem Dateinamen
+        bool isFirmware = filename.startsWith("filaman_");
+        bool isWebpage = filename.startsWith("webpage_");
+        
+        if (!isFirmware && !isWebpage) {
+            request->send(400, "application/json", "{\"message\":\"Invalid file type. File must start with 'filaman_' or 'webpage_'\"}");
+            return;
+        }
+
+        // Wähle den Update-Typ basierend auf dem Dateinamen
+        if (isWebpage) {
+            if (!Update.begin(SPIFFS.totalBytes(), U_SPIFFS)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", "{\"message\":\"SPIFFS Update failed: " + String(Update.errorString()) + "\"}");
+                return;
+            }
+        } else {
+            if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", "{\"message\":\"Firmware Update failed: " + String(Update.errorString()) + "\"}");
+                return;
+            }
+        }
+    }
+
+    if (Update.write(data, len) != len) {
+        Update.printError(Serial);
+        request->send(400, "application/json", "{\"message\":\"Write failed: " + String(Update.errorString()) + "\"}");
+        return;
+    }
+
+    if (final) {
+        if (!Update.end(true)) {
+            Update.printError(Serial);
+            request->send(400, "application/json", "{\"message\":\"Update failed: " + String(Update.errorString()) + "\"}");
+            return;
+        }
+        request->send(200, "application/json", "{\"message\":\"Update successful!\", \"restart\": true}");
+        delay(500);
+        ESP.restart();
+    }
+}
