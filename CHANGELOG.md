@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.15] - 2025-02-21
+### Changed
+- update webpages for version v1.3.15
+
+### Fixed
+- ci: fix missing 'fi' in GitHub release workflow script
+
+
 ## [1.3.14] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.14
