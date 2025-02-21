@@ -2,16 +2,6 @@ name: Gitea Release
 
 on:
   workflow_call:
-    inputs:
-      gitea_server_url:
-        required: true
-        type: string
-      gitea_repository:
-        required: true
-        type: string
-    secrets:
-      GITEA_TOKEN:
-        required: true
 
 jobs:
   create-release:
@@ -34,39 +24,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install xxd
     
-    - name: Check for SPIFFS changes
-      id: check_spiffs
-      run: |
-        git fetch --unshallow || true
-        CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
-        if echo "$CHANGED_FILES" | grep -q "^data/\|^html/"; then
-          echo "SPIFFS_CHANGED=true" >> $GITHUB_OUTPUT
-        else
-          echo "SPIFFS_CHANGED=false" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Check for Data changes
-      id: check_data
-      run: |
-        git fetch --unshallow || true
-        CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
-        if echo "$CHANGED_FILES" | grep -q "^data/"; then
-          echo "DATA_CHANGED=true" >> $GITHUB_OUTPUT
-        else
-          echo "DATA_CHANGED=false" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Get version from platformio.ini
-      id: get_version
-      run: |
-        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
     - name: Build Firmware
       run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         
-        # Always build firmware and SPIFFS
+        # Build firmware and SPIFFS
         echo "Building firmware and SPIFFS..."
         pio run -e esp32dev
         pio run -t buildfs
@@ -74,10 +36,10 @@ jobs:
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
         
-        # Always create SPIFFS binary
+        # Create SPIFFS binary
         cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
         
-        # Create full binary (always)
+        # Create full binary
         (cd .pio/build/esp32dev && 
         esptool.py --chip esp32 merge_bin \
           --fill-flash-size 4MB \
@@ -93,31 +55,13 @@ jobs:
         # Verify file sizes
         echo "File sizes:"
         (cd .pio/build/esp32dev && ls -lh *.bin)
-        
-    - name: Prepare binaries
+    
+    - name: Get version from platformio.ini
+      id: get_version
       run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        
-        # Create full binary only if SPIFFS changed
-        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
-          echo "Creating full binary..."
-          cd .pio/build/esp32dev && \
-          esptool.py --chip esp32 merge_bin \
-            --fill-flash-size 4MB \
-            --flash_mode dio \
-            --flash_freq 40m \
-            --flash_size 4MB \
-            -o filaman_full_${VERSION}.bin \
-            0x0000 bootloader.bin \
-            0x8000 partitions.bin \
-            0x10000 firmware.bin \
-            0x390000 spiffs.bin
-        fi
-        
-        # Verify file sizes
-        echo "File sizes:"
-        cd .pio/build/esp32dev && ls -lh *.bin
-
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      
     - name: Read CHANGELOG.md
       id: changelog
       run: |
@@ -126,57 +70,20 @@ jobs:
         echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        
-    - name: Create Release
-      env:
-        TOKEN: ${{ secrets.GITEA_TOKEN }}
+
+    - name: Create Gitea Release
       run: |
-        API_URL="${{ inputs.gitea_server_url }}/api/v1"
-        REPO="${{ inputs.gitea_repository }}"
         VERSION=${{ steps.get_version.outputs.VERSION }}
+        cd .pio/build/esp32dev
         
-        # Create release
-        RESPONSE=$(curl -k -s \
-          -X POST \
-          -H "Authorization: token ${TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"tag_name\":\"v${VERSION}\",
-            \"name\":\"Release ${VERSION}\",
-            \"body\":\"${{ steps.changelog.outputs.CHANGES }}\"
-          }" \
-          "${API_URL}/repos/${REPO}/releases")
-        
-        RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
-        
-        if [ -n "$RELEASE_ID" ]; then
-          echo "Release created with ID: $RELEASE_ID"
-          
-          # Always upload firmware and full binary
-          for file in filaman_${VERSION}.bin filaman_full_${VERSION}.bin; do
-            if [ -f ".pio/build/esp32dev/$file" ]; then
-              echo "Uploading $file..."
-              curl -k -s \
-                -X POST \
-                -H "Authorization: token ${TOKEN}" \
-                -H "Content-Type: application/octet-stream" \
-                --data-binary "@.pio/build/esp32dev/$file" \
-                "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
-            fi
-          done
-          
-          # Upload SPIFFS binary only if it exists (data changes)
-          if [ -f ".pio/build/esp32dev/webpage_${VERSION}.bin" ]; then
-            echo "Uploading webpage binary..."
-            curl -k -s \
-              -X POST \
-              -H "Authorization: token ${TOKEN}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary "@.pio/build/esp32dev/webpage_${VERSION}.bin" \
-              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=webpage_${VERSION}.bin"
+        # Prepare files for upload
+        FILES=""
+        for file in filaman_${VERSION}.bin webpage_${VERSION}.bin filaman_full_${VERSION}.bin; do
+          if [ -f "$file" ]; then
+            FILES="$FILES -a $file"
           fi
-        else
-          echo "Failed to create release. Response:"
-          echo "$RESPONSE"
-          exit 1
-        fi
+        done
+        
+        # Create release using git command
+        git tag -a "v${VERSION}" -m "Release ${VERSION}"
+        git push origin "v${VERSION}"
