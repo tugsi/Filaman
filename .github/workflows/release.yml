@@ -134,7 +134,28 @@ jobs:
           FILES_TO_UPLOAD="$FILES_TO_UPLOAD filaman_full_${VERSION}.bin"
         fi
         if [ -n "$FILES_TO_UPLOAD" ]; then
-          gh release create "v${VERSION}" --title "Release ${VERSION}" --notes "${{ steps.changelog.outputs.CHANGES }}" $FILES_TO_UPLOAD
+          if [ "${{ needs.route.outputs.provider }}" = "github" ]; then
+            gh release create "v${VERSION}" --title "Release ${VERSION}" --notes "${{ steps.changelog.outputs.CHANGES }}" $FILES_TO_UPLOAD
+          elif [ "${{ needs.route.outputs.provider }}" = "gitea" ]; then
+            API_URL="${{ needs.route.outputs.gitea_server_url }}/api/v1"
+            REPO="${{ needs.route.outputs.gitea_repository }}"
+            RESPONSE=$(curl -k -s -X POST -H "Authorization: token ${TOKEN}" -H "Content-Type: application/json" -d "{\"tag_name\":\"v${VERSION}\",\"name\":\"Release ${VERSION}\",\"body\":\"${{ steps.changelog.outputs.CHANGES }}\"}" "${API_URL}/repos/${REPO}/releases")
+            RELEASE_ID=$(echo "$RESPONSE" | grep -o '"id":[0-9]*' | cut -d':' -f2 | head -n1)
+            if [ -n "$RELEASE_ID" ]; then
+              echo "Release created with ID: $RELEASE_ID"
+              for file in $FILES_TO_UPLOAD; do
+                echo "Uploading $file..."
+                curl -k -s -X POST -H "Authorization: token ${TOKEN}" -H "Content-Type: application/octet-stream" --data-binary "@.pio/build/esp32dev/$file" "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
+              done
+            else
+              echo "Failed to create release. Response:"
+              echo "$RESPONSE"
+              exit 1
+            fi
+          else
+            echo "Error: Unknown provider"
+            exit 1
+          fi
         else
           echo "Error: No files found to upload"
           exit 1
