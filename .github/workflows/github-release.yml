@@ -17,6 +17,8 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -104,40 +106,34 @@ jobs:
 
     - name: Create GitHub Release
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
         cd .pio/build/esp32dev
         
-        # Create the release first
-        RELEASE_JSON=$(curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" \
-          -d "{
-            \"tag_name\":\"v${VERSION}\",
-            \"name\":\"Release ${VERSION}\",
-            \"body\":\"${{ steps.changelog.outputs.CHANGES }}\",
-            \"draft\":false,
-            \"prerelease\":false
-          }")
+        # Create release with available files
+        FILES_TO_UPLOAD=""
         
-        # Extract the upload URL from the response
-        UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r .upload_url | sed 's/{?name,label}//')
+        # Always add firmware
+        if [ -f "filaman_${VERSION}.bin" ]; then
+          FILES_TO_UPLOAD="$FILES_TO_UPLOAD filaman_${VERSION}.bin"
+        fi
         
-        # Upload the binary files
-        for file in filaman_${VERSION}.bin webpage_${VERSION}.bin filaman_full_${VERSION}.bin; do
-          if [ -f "$file" ]; then
-            echo "Uploading $file..."
-            curl -L \
-              -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -H "Content-Type: application/octet-stream" \
-              "${UPLOAD_URL}?name=${file}" \
-              --data-binary "@${file}"
-          fi
-        done
+        # Add SPIFFS and full binary only if they exist
+        if [ -f "webpage_${VERSION}.bin" ]; then
+          FILES_TO_UPLOAD="$FILES_TO_UPLOAD webpage_${VERSION}.bin"
+        fi
+        
+        if [ -f "filaman_full_${VERSION}.bin" ]; then
+          FILES_TO_UPLOAD="$FILES_TO_UPLOAD filaman_full_${VERSION}.bin"
+        fi
+        
+        # Create release with available files
+        if [ -n "$FILES_TO_UPLOAD" ]; then
+          gh release create "v${VERSION}" \
+            --title "Release ${VERSION}" \
+            --notes "${{ steps.changelog.outputs.CHANGES }}" \
+            $FILES_TO_UPLOAD
+        else
+          echo "Error: No files found to upload"
+          exit 1
