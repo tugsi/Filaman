@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.11] - 2025-02-21
+### Changed
+- update webpages for version v1.3.11
+- ci: refactor Gitea release workflow by simplifying input handling and removing unnecessary checks
+
+
 ## [1.3.10] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.10
