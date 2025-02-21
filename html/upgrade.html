@@ -1,190 +1,116 @@
-<!-- head --><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilaMan - Filament Management Tool</title>
-    <link rel="icon" type="image/png" href="/favicon.ico">
+    <title>FilaMan - Firmware Update</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .debug-log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="navbar">
-        <div style="display: flex; align-items: center; gap: 2rem;">
-            <img src="/logo.png" alt="FilaMan Logo" class="logo">
-            <div class="logo-text">
-                <h1>FilaMan<span class="version">v1.2.92</span></h1>
-                <h4>Filament Management Tool</h4>
-            </div>
-        </div>
-        <nav style="display: flex; gap: 1rem;">
-            <a href="/">Start</a>
-            <a href="/waage">Scale</a>
-            <a href="/spoolman">Spoolman/Bambu</a>
-            <a href="/about">About</a>
-            <a href="/upgrade">Upgrade</a>
-        </nav>
-        <div class="status-container">
-            <div class="status-item">
-                <span class="status-dot" id="bambuDot"></span>B
-            </div>
-            <div class="status-item">
-                <span class="status-dot" id="spoolmanDot"></span>S
-            </div>
-            <div class="ram-status" id="ramStatus"></div>
-        </div>
-    </div>
-
-<!-- head -->
-    
     <div class="content">
-        <h1>Firmware Upgrade</h1>
-
+        <h1>Firmware Update</h1>
+        
         <div class="warning">
-            <strong>Warning:</strong> Please do not turn off or restart the device during the update. 
-            The device will restart automatically after the update.
+            <strong>Warning:</strong> Do not power off the device during update.
         </div>
 
-        <div class="update-form">
-            <form id="updateForm" enctype='multipart/form-data'>
-                <input type='file' name='update' accept='.bin' required>
-                <input type='submit' value='Start Firmware Update'>
-            </form>
+        <form id="updateForm">
+            <input type="file" name="update" accept=".bin">
+            <button type="submit">Update Firmware</button>
+        </form>
+
+        <div class="progress" style="display: none;">
+            <div class="progress-bar"></div>
+            <div class="status"></div>
         </div>
 
-        <div class="progress-container">
-            <div class="progress-bar">0%</div>
-        </div>
-        <div class="status"></div>
+        <div class="debug-log"></div>
     </div>
 
     <script>
-        // Hide status indicators during update
-        const statusContainer = document.querySelector('.status-container');
-        if (statusContainer) {
-            statusContainer.style.display = 'none';
+        const form = document.getElementById('updateForm');
+        const progress = document.querySelector('.progress');
+        const progressBar = document.querySelector('.progress-bar');
+        const status = document.querySelector('.status');
+        const debugLog = document.querySelector('.debug-log');
+
+        function log(message) {
+            debugLog.style.display = 'block';
+            const time = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${time}] ${message}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
         }
 
-        // Größenbeschränkung für Upload
-        const MAX_FILE_SIZE = 4000000; // 4MB
-
-        async function checkMagicByte(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const arr = new Uint8Array(reader.result);
-                    // Prüfe auf Magic Byte 0xE9 für ESP32 Firmware
-                    resolve(arr[0] === 0xE9);
-                };
-                reader.onerror = () => reject(reader.error);
-                reader.readAsArrayBuffer(file.slice(0, 1));
-            });
-        }
-
-        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const form = e.target;
             const file = form.update.files[0];
             if (!file) {
-                alert('Please select a firmware file.');
+                alert('Please select a file');
                 return;
             }
 
-            if (file.size > MAX_FILE_SIZE) {
-                alert('File too large. Maximum size is 4MB.');
-                return;
-            }
-
-            // Prüfe Magic Byte für normale Firmware-Dateien
-            if (!file.name.endsWith('_spiffs.bin')) {
-                try {
-                    const isValidFirmware = await checkMagicByte(file);
-                    if (!isValidFirmware) {
-                        alert('Invalid firmware file. Missing ESP32 magic byte.');
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error checking magic byte:', error);
-                    alert('Could not verify firmware file.');
-                    return;
-                }
-            }
-
-            const progress = document.querySelector('.progress-bar');
-            const progressContainer = document.querySelector('.progress-container');
-            const status = document.querySelector('.status');
+            log(`Selected file: ${file.name} (${file.size} bytes)`);
             
-            progressContainer.style.display = 'block';
-            status.style.display = 'none';
-            status.className = 'status';
-            form.querySelector('input[type=submit]').disabled = true;
+            // Aktiviere Fortschrittsanzeige
+            progress.style.display = 'block';
+            form.style.display = 'none';
 
-            // Chunk-basierter Upload mit Retry-Logik
-            const chunkSize = 8192; // Optimale Chunk-Größe
-            const maxRetries = 3;
-            let offset = 0;
-
-            async function uploadChunk(chunk, retryCount = 0) {
-                try {
-                    const response = await fetch('/update', {
-                        method: 'POST',
-                        body: chunk,
-                        headers: {
-                            'Content-Type': 'application/octet-stream',
-                            'X-File-Name': file.name,
-                            'X-Chunk-Offset': offset.toString(),
-                            'X-Chunk-Size': chunk.size.toString(),
-                            'X-Total-Size': file.size.toString()
-                        },
-                        timeout: 30000 // 30 Sekunden Timeout
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(errorText || response.statusText);
-                    }
-
-                    return true;
-                } catch (error) {
-                    console.error(`Chunk upload failed (attempt ${retryCount + 1}):`, error);
-                    if (retryCount < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // Warte 1 Sekunde vor Retry
-                        return uploadChunk(chunk, retryCount + 1);
-                    }
-                    throw error;
-                }
-            }
+            // Erstelle FormData für den Upload
+            const formData = new FormData();
+            formData.append('update', file);
 
             try {
-                while (offset < file.size) {
-                    const end = Math.min(offset + chunkSize, file.size);
-                    const chunk = file.slice(offset, end);
-                    
-                    await uploadChunk(chunk);
-                    
-                    offset = end;
-                    const percentComplete = (offset / file.size) * 100;
-                    progress.style.width = percentComplete + '%';
-                    progress.textContent = Math.round(percentComplete) + '%';
-                    
-                    // Kleine Pause zwischen den Chunks für bessere Stabilität
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                log('Starting upload...');
+                const response = await fetch('/update', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Server responded with status: ${response.status}`);
+
+                let result;
+                const contentType = response.headers.get('content-type');
+                log(`Response content-type: ${contentType}`);
+
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                    log('Received JSON response');
+                } else {
+                    const text = await response.text();
+                    log(`Received text response: ${text}`);
+                    result = { success: response.ok, message: text };
                 }
-
-                // Final success handler
-                status.textContent = 'Update successful! Device will restart...';
-                status.classList.add('success');
-                status.style.display = 'block';
                 
-                // Warte auf Neustart und Redirect
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 20000);
-
+                log(`Update result: ${JSON.stringify(result)}`);
+                
+                if (response.ok && result.success) {
+                    status.textContent = 'Update successful! Restarting...';
+                    status.className = 'success';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 5000);
+                } else {
+                    throw new Error(result.message || 'Update failed');
+                }
             } catch (error) {
-                status.textContent = 'Update failed: ' + error.message;
-                status.classList.add('error');
-                status.style.display = 'block';
-                form.querySelector('input[type=submit]').disabled = false;
+                log(`Error: ${error.message}`);
+                console.error('Update error:', error);
+                status.textContent = `Error: ${error.message}`;
+                status.className = 'error';
+                form.style.display = 'block';
+                progress.style.display = 'none';
             }
         });
     </script>

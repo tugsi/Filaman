@@ -12,6 +12,7 @@ bool wm_nonblocking = false;
 void initWiFi() {
     WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
     WiFi.setSleep(false); // disable sleep mode
+    esp_wifi_set_ps(WIFI_PS_NONE);
   
     //esp_wifi_set_max_tx_power(72); // Setze maximale Sendeleistung auf 20dBm
   

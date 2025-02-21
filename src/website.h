@@ -6,8 +6,8 @@
 #include "commonFS.h"
 #include "api.h"
 #include <ArduinoJson.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncWebSocket.h>
+#include <Update.h>
+#include <AsyncTCP.h>
 #include "bambu.h"
 #include "nfc.h"
 #include "scale.h"
@@ -17,7 +17,13 @@ extern String spoolmanUrl;
 extern AsyncWebServer server;
 extern AsyncWebSocket ws;
 
+// Server-Initialisierung und Handler
+void initWebServer();
+void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
+void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void setupWebserver(AsyncWebServer &server);
+
+// WebSocket-Funktionen
 void sendAmsData(AsyncWebSocketClient *client);
 void sendNfcData(AsyncWebSocketClient *client);
 void foundNfcTag(AsyncWebSocketClient *client, uint8_t success);

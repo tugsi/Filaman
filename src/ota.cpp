@@ -10,7 +10,7 @@
 #define UPLOAD_TIMEOUT_MS 60000  // 60 Sekunden Timeout für den gesamten Upload
 #define CHUNK_RESPONSE_TIMEOUT_MS 10000  // 10 Sekunden Timeout pro Chunk
 #define MAX_FAILED_CHUNKS 3  // Maximale Anzahl fehlgeschlagener Chunks bevor Abbruch
-#define MAX_FILE_SIZE 4000000    // 4MB Limit
+#define MAX_FILE_SIZE 4194304    // 4MB Limit
 
 static bool tasksAreStopped = false;
 static uint32_t lastChunkTime = 0;

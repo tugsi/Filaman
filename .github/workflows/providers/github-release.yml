@@ -52,7 +52,7 @@ jobs:
         # Create release files
         cp spiffs.bin filaman_spiffs.bin
         
-        # Create full binary
+        # Create full binary with correct partition offsets
         echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
           --fill-flash-size 4MB \
@@ -60,10 +60,10 @@ jobs:
           --flash_freq 40m \
           --flash_size 4MB \
           -o filaman_full.bin \
-          0x0000 bootloader.bin \
+          0x1000 bootloader.bin \
           0x8000 partitions.bin \
           0x10000 firmware.bin \
-          0x390000 spiffs.bin
+          0x310000 spiffs.bin
         
         # Verify file sizes
         echo "File sizes:"

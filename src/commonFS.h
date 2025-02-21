@@ -7,6 +7,6 @@
 
 bool saveJsonValue(const char* filename, const JsonDocument& doc);
 bool loadJsonValue(const char* filename, JsonDocument& doc);
-bool initializeSPIFFS();
+void initializeSPIFFS();
 
 #endif

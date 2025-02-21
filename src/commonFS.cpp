@@ -1,4 +1,5 @@
 #include "commonFS.h"
+#include <SPIFFS.h>
 
 bool saveJsonValue(const char* filename, const JsonDocument& doc) {
     File file = SPIFFS.open(filename, "w");
@@ -35,23 +36,12 @@ bool loadJsonValue(const char* filename, JsonDocument& doc) {
     return true;
 }
 
-bool initializeSPIFFS() {
-    // Erster Versuch
-    if (SPIFFS.begin(true)) {
-        Serial.println("SPIFFS mounted successfully.");
-        return true;
+void initializeSPIFFS() {
+    if (!SPIFFS.begin(true, "/spiffs", 10, "spiffs")) {
+        Serial.println("SPIFFS Mount Failed");
+        return;
     }
-    
-    // Formatierung versuchen
-    Serial.println("Failed to mount SPIFFS. Formatting...");
-    SPIFFS.format();
-    
-    // Zweiter Versuch nach Formatierung
-    if (SPIFFS.begin(true)) {
-        Serial.println("SPIFFS formatted and mounted successfully.");
-        return true;
-    }
-    
-    Serial.println("SPIFFS initialization failed completely.");
-    return false;
+    Serial.printf("SPIFFS Total: %u bytes\n", SPIFFS.totalBytes());
+    Serial.printf("SPIFFS Used: %u bytes\n", SPIFFS.usedBytes());
+    Serial.printf("SPIFFS Free: %u bytes\n", SPIFFS.totalBytes() - SPIFFS.usedBytes());
 }

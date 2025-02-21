@@ -8,9 +8,11 @@
 #include "scale.h"
 #include "esp_task_wdt.h"
 #include "ota.h"
+#include <Update.h>
 
 // Cache-Control Header definieren
 #define CACHE_CONTROL "max-age=31536000" // Cache für 1 Jahr
+#define MAX_UPLOAD_SIZE 4194304  // 4MB maximale Upload-Größe
 
 AsyncWebServer server(webserverPort);
 AsyncWebSocket ws("/ws");
@@ -156,6 +158,10 @@ void sendAmsData(AsyncWebSocketClient *client) {
 }
 
 void setupWebserver(AsyncWebServer &server) {
+    // Konfiguriere Server für große Uploads
+    server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){});
+    server.onFileUpload([](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){});
+
     // Lade die Spoolman-URL beim Booten
     spoolmanUrl = loadSpoolmanUrl();
     Serial.print("Geladene Spoolman-URL: ");
@@ -338,28 +344,72 @@ void setupWebserver(AsyncWebServer &server) {
         Serial.println("RFID.js gesendet");
     });
 
-    // Route for Firmware Update
+    // Vereinfachter Update-Handler
     server.on("/upgrade", HTTP_GET, [](AsyncWebServerRequest *request) {
-        // During OTA, reduce memory usage
-        ws.enable(false);  // Temporarily disable WebSocket
-        ws.cleanupClients();
-        
-        Serial.println("Request for /upgrade received");
         AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/upgrade.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
-        response->addHeader("Cache-Control", CACHE_CONTROL);
+        response->addHeader("Cache-Control", "no-store");
         request->send(response);
     });
 
+    // Update-Handler mit verbesserter Fehlerbehandlung
     server.on("/update", HTTP_POST, 
         [](AsyncWebServerRequest *request) {
-            // The response will be sent from handleOTAUpload when the upload is complete
+            // Nach Update-Abschluss
+            bool success = !Update.hasError();
+            AsyncWebServerResponse *response = request->beginResponse(
+                success ? 200 : 400,
+                "application/json",
+                success ? "{\"success\":true,\"message\":\"Update successful\"}" 
+                       : "{\"success\":false,\"message\":\"Update failed\"}"
+            );
+            response->addHeader("Connection", "close");
+            request->send(response);
+            
+            if (success) {
+                delay(500);
+                ESP.restart();
+            }
         },
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
-            // Free memory before handling update
-            ws.enable(false);
-            ws.cleanupClients();
-            handleOTAUpload(request, filename, index, data, len, final);
+            static size_t updateSize = 0;
+            static int command = 0;
+
+            if (!index) {
+                updateSize = request->contentLength();
+                command = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
+                Serial.printf("Update Start: %s\nSize: %u\nCommand: %d\n", filename.c_str(), updateSize, command);
+
+                if (!Update.begin(updateSize, command)) {
+                    Serial.printf("Update Begin Error: ");
+                    Update.printError(Serial);
+                    String errorMsg = String("Update begin failed: ") + Update.errorString();
+                    request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                    return;
+                }
+            }
+
+            if (len) {
+                if (Update.write(data, len) != len) {
+                    Serial.printf("Update Write Error: ");
+                    Update.printError(Serial);
+                    String errorMsg = String("Write failed: ") + Update.errorString();
+                    request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                    return;
+                }
+                Serial.printf("Progress: %u/%u\r", index + len, updateSize);
+            }
+
+            if (final) {
+                if (!Update.end(true)) {
+                    Serial.printf("Update End Error: ");
+                    Update.printError(Serial);
+                    String errorMsg = String("Update end failed: ") + Update.errorString();
+                    request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                    return;
+                }
+                Serial.printf("\nUpdate Success: %uB\n", index+len);
+            }
         }
     );
 
@@ -378,4 +428,24 @@ void setupWebserver(AsyncWebServer &server) {
     // Starte den Webserver
     server.begin();
     Serial.println("Webserver gestartet");
+}
+
+// Upload-Handler für alle Datei-Uploads
+void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    if (!filename.endsWith(".bin")) {
+        request->send(400, "application/json", "{\"success\":false,\"message\":\"Invalid file type\"}");
+        return;
+    }
+    
+    if (request->url() == "/update") {
+        handleOTAUpload(request, filename, index, data, len, final);
+    }
+}
+
+// Body-Handler für große Anfragen
+void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    // Handler für große POST-Anfragen
+    if (total > MAX_UPLOAD_SIZE) {
+        request->send(413, "application/json", "{\"success\":false,\"message\":\"File too large\"}");
+    }
 }
