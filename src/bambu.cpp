@@ -58,7 +58,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
 
 bool loadBambuCredentials() {
     JsonDocument doc;
-    if (loadJsonValue("/bambu_credentials.json", doc) && doc.containsKey("bambu_ip")) {
+    if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<JsonObject>()) {
         // Temporäre Strings für die Werte
         String ip = doc["bambu_ip"].as<String>();
         String code = doc["bambu_accesscode"].as<String>();
@@ -270,9 +270,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Prüfen, ob "print->upgrade_state" und "print.ams.ams" existieren
-    if (doc["print"].containsKey("upgrade_state")) {
+    if (doc["print"]["upgrade_state"].is<JsonObject>()) {
         // Prüfen ob AMS-Daten vorhanden sind
-        if (!doc["print"].containsKey("ams") || !doc["print"]["ams"].containsKey("ams")) {
+        if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonObject>()) {
             return;
         }
 
@@ -315,7 +315,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         // Prüfe die externe Spule
-        if (!hasChanges && doc["print"].containsKey("vt_tray")) {
+        if (!hasChanges && doc["print"]["vt_tray"].is<JsonObject>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             bool foundExternal = false;
             
@@ -363,7 +363,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         ams_count = amsArray.size();
 
         // Wenn externe Spule vorhanden, füge sie hinzu
-        if (doc["print"].containsKey("vt_tray")) {
+        if (doc["print"]["vt_tray"].is<JsonObject>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             int extIdx = ams_count;  // Index für externe Spule
             ams_data[extIdx].ams_id = 255;  // Spezielle ID für externe Spule
@@ -387,14 +387,14 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         JsonArray wsArray = wsDoc.to<JsonArray>();
 
         for (int i = 0; i < ams_count; i++) {
-            JsonObject amsObj = wsArray.createNestedObject();
+            JsonObject amsObj = wsArray.add<JsonObject>();
             amsObj["ams_id"] = ams_data[i].ams_id;
 
-            JsonArray trays = amsObj.createNestedArray("tray");
+            JsonArray trays = amsObj["tray"].to<JsonArray>();
             int maxTrays = (ams_data[i].ams_id == 255) ? 1 : 4;
             
             for (int j = 0; j < maxTrays; j++) {
-                JsonObject trayObj = trays.createNestedObject();
+                JsonObject trayObj = trays.add<JsonObject>();
                 trayObj["id"] = ams_data[i].trays[j].id;
                 trayObj["tray_info_idx"] = ams_data[i].trays[j].tray_info_idx;
                 trayObj["tray_type"] = ams_data[i].trays[j].tray_type;
@@ -427,14 +427,14 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 JsonArray wsArray = wsDoc.to<JsonArray>();
 
                 for (int j = 0; j < ams_count; j++) {
-                    JsonObject amsObj = wsArray.createNestedObject();
+                    JsonObject amsObj = wsArray.add<JsonObject>();
                     amsObj["ams_id"] = ams_data[j].ams_id;
 
-                    JsonArray trays = amsObj.createNestedArray("tray");
+                    JsonArray trays = amsObj["tray"].to<JsonArray>();
                     int maxTrays = (ams_data[j].ams_id == 255) ? 1 : 4;
                     
                     for (int k = 0; k < maxTrays; k++) {
-                        JsonObject trayObj = trays.createNestedObject();
+                        JsonObject trayObj = trays.add<JsonObject>();
                         trayObj["id"] = ams_data[j].trays[k].id;
                         trayObj["tray_info_idx"] = ams_data[j].trays[k].tray_info_idx;
                         trayObj["tray_type"] = ams_data[j].trays[k].tray_type;

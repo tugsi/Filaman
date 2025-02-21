@@ -60,10 +60,10 @@ JsonDocument fetchSpoolsForWebsite() {
             JsonArray filteredSpools = filteredDoc.to<JsonArray>();
 
             for (JsonObject spool : spools) {
-                JsonObject filteredSpool = filteredSpools.createNestedObject();
+                JsonObject filteredSpool = filteredSpools.add<JsonObject>();
                 filteredSpool["extra"]["nfc_id"] = spool["extra"]["nfc_id"];
 
-                JsonObject filament = filteredSpool.createNestedObject("filament");
+                JsonObject filament = filteredSpool["filament"].to<JsonObject>();
                 filament["sm_id"] = spool["id"];
                 filament["id"] = spool["filament"]["id"];
                 filament["name"] = spool["filament"]["name"];
@@ -73,7 +73,7 @@ JsonDocument fetchSpoolsForWebsite() {
                 filament["price_meter"] = spool["filament"]["extra"]["price_meter"];
                 filament["price_gramm"] = spool["filament"]["extra"]["price_gramm"];
 
-                JsonObject vendor = filament.createNestedObject("vendor");
+                JsonObject vendor = filament["vendor"].to<JsonObject>();
                 vendor["id"] = spool["filament"]["vendor"]["id"];
                 vendor["name"] = spool["filament"]["vendor"]["name"];
             }
@@ -110,13 +110,13 @@ JsonDocument fetchAllSpoolsInfo() {
             JsonArray filteredSpools = filteredDoc.to<JsonArray>();
 
             for (JsonObject spool : spools) {
-                JsonObject filteredSpool = filteredSpools.createNestedObject();
+                JsonObject filteredSpool = filteredSpools.add<JsonObject>();
                 filteredSpool["price"] = spool["price"];
                 filteredSpool["remaining_weight"] = spool["remaining_weight"];
                 filteredSpool["used_weight"] = spool["used_weight"];
                 filteredSpool["extra"]["nfc_id"] = spool["extra"]["nfc_id"];
 
-                JsonObject filament = filteredSpool.createNestedObject("filament");
+                JsonObject filament = filteredSpool["filament"].to<JsonObject>();
                 filament["id"] = spool["filament"]["id"];
                 filament["name"] = spool["filament"]["name"];
                 filament["material"] = spool["filament"]["material"];
@@ -125,11 +125,11 @@ JsonDocument fetchAllSpoolsInfo() {
                 filament["spool_weight"] = spool["filament"]["spool_weight"];
                 filament["color_hex"] = spool["filament"]["color_hex"];
 
-                JsonObject vendor = filament.createNestedObject("vendor");
+                JsonObject vendor = filament["vendor"].to<JsonObject>();
                 vendor["id"] = spool["filament"]["vendor"]["id"];
                 vendor["name"] = spool["filament"]["vendor"]["name"];
 
-                JsonObject extra = filament.createNestedObject("extra");
+                JsonObject extra = filament["extra"].to<JsonObject>();
                 extra["nozzle_temperature"] = spool["filament"]["extra"]["nozzle_temperature"];
                 extra["price_gramm"] = spool["filament"]["extra"]["price_gramm"];
                 extra["price_meter"] = spool["filament"]["extra"]["price_meter"];
@@ -186,7 +186,7 @@ bool updateSpoolTagId(String uidString, const char* payload) {
     }
     
     // Überprüfe, ob die erforderlichen Felder vorhanden sind
-    if (!doc.containsKey("sm_id") || doc["sm_id"] == "") {
+    if (!doc["sm_id"].is<JsonObject>() || doc["sm_id"].as<String>() == "") {
         Serial.println("Keine Spoolman-ID gefunden.");
         return false;
     }
@@ -368,7 +368,7 @@ bool checkSpoolmanExtraFields() {
                 for (uint8_t s = 0; s < extraLength; s++) {
                     bool found = false;
                     for (JsonObject field : doc.as<JsonArray>()) {
-                        if (field.containsKey("key") && field["key"] == extraFields[s]) {
+                        if (field["key"].is<JsonObject>() && field["key"] == extraFields[s]) {
                             Serial.println("Feld gefunden: " + extraFields[s]);
                             found = true;
                             break;
@@ -430,7 +430,7 @@ bool checkSpoolmanInstance(const String& url) {
             String payload = http.getString();
             JsonDocument doc;
             DeserializationError error = deserializeJson(doc, payload);
-            if (!error && doc.containsKey("status")) {
+            if (!error && doc["status"].is<JsonObject>()) {
                 const char* status = doc["status"];
                 http.end();
 
@@ -469,7 +469,7 @@ bool saveSpoolmanUrl(const String& url) {
 
 String loadSpoolmanUrl() {
     JsonDocument doc;
-    if (loadJsonValue("/spoolman_url.json", doc) && doc.containsKey("url")) {
+    if (loadJsonValue("/spoolman_url.json", doc) && doc["url"].is<JsonObject>()) {
         return doc["url"].as<String>();
     }
     Serial.println("Keine gültige Spoolman-URL gefunden.");
