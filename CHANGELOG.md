@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3] - 2025-02-21
+### Changed
+- update webpages for version v1.3.3
+
+### Fixed
+- correct directory path in GitHub workflows for SPIFFS binary
+
+
 ## [1.3.2] - 2025-02-21
 ### Added
 - add missing conditional exit in release workflow
