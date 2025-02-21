@@ -102,12 +102,19 @@ jobs:
         GITEA_REPO: ${{ steps.gitea_url.outputs.GITEA_REPO }}
         GITEA_OWNER: ${{ steps.gitea_url.outputs.GITEA_OWNER }}
       run: |
+        # Debug Token (nur Länge ausgeben für Sicherheit)
+        echo "Debug: Token length: ${#GITEA_TOKEN}"
+        if [ -z "$GITEA_TOKEN" ]; then
+          echo "Error: GITEA_TOKEN is empty"
+          exit 1
+        fi
+
         VERSION=${{ steps.get_version.outputs.VERSION }}
         cd .pio/build/esp32dev
         
         # Debug-Ausgaben
-        echo "Debug: Checking API URL..."
-        echo "GITEA_API_URL=${GITEA_API_URL}"
+        echo "Debug: API URL: ${GITEA_API_URL}"
+        echo "Debug: Repository: ${GITEA_OWNER}/${GITEA_REPO}"
         
         # Prepare files for upload
         FILES=""
@@ -117,19 +124,12 @@ jobs:
             echo "Debug: Found file: $file"
           fi
         done
-        
-        # Check if tag exists
-        if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-          echo "Debug: Creating new tag v${VERSION}"
-          git tag -a "v${VERSION}" -m "Release ${VERSION}"
-          git push origin "v${VERSION}"
-        else
-          echo "Debug: Tag v${VERSION} already exists"
-        fi
 
-        # Test API connection
+        # Test API connection with explicit token header
         echo "Debug: Testing API connection..."
-        TEST_RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: token ${GITEA_TOKEN}" "${GITEA_API_URL}/api/v1/version")
+        TEST_RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          "${GITEA_API_URL}/api/v1/version")
         TEST_STATUS=$(echo "$TEST_RESPONSE" | tail -n1)
         if [ "$TEST_STATUS" != "200" ]; then
           echo "Error: Cannot connect to Gitea API"
@@ -137,7 +137,7 @@ jobs:
           exit 1
         fi
 
-        # Create Gitea release using API
+        # Create release using API
         echo "Debug: Creating release..."
         RELEASE_DATA="{
           \"tag_name\": \"v${VERSION}\",
@@ -145,8 +145,9 @@ jobs:
           \"body\": \"${{ steps.changelog.outputs.CHANGES }}\"
         }"
 
-        # Create release and capture HTTP status
-        RESPONSE=$(curl -v -s -w "\n%{http_code}" -X POST \
+        # Create release with explicit token header
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          -X POST \
           -H "Authorization: token ${GITEA_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "$RELEASE_DATA" \
@@ -156,9 +157,7 @@ jobs:
         RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
 
         echo "Debug: HTTP Status: $HTTP_STATUS"
-        echo "Debug: Response Body: $RESPONSE_BODY"
-
         if [ "$HTTP_STATUS" != "201" ]; then
-          echo "Fehler beim Erstellen des Releases: $RESPONSE_BODY"
+          echo "Error: Failed to create release"
+          echo "Response: $RESPONSE_BODY"
           exit 1
-        fi
