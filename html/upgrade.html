@@ -79,7 +79,7 @@
         </div>
 
         <div class="progress-container" style="display: none;">
-            <div class="progress-bar">0%</</div>
+            <div class="progress-bar">0%</div>
         </div>
         <div class="status"></div>
     </div>
@@ -104,6 +104,42 @@
             color: #666;
             margin-bottom: 1rem;
         }
+        .progress-container {
+            margin: 20px 0;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background: #4CAF50;
+            transition: width 0.3s ease-in-out;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .warning {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
     </style>
 
     <script>
@@ -113,8 +149,13 @@
             statusContainer.style.display = 'none';
         }
 
+        const progress = document.querySelector('.progress-bar');
+        const progressContainer = document.querySelector('.progress-container');
+        const status = document.querySelector('.status');
+
         function handleUpdate(e) {
             e.preventDefault();
+            const form = e.target;
             const file = form.update.files[0];
             const updateType = form.dataset.type;
 
@@ -132,24 +173,14 @@
                 alert('Please select a valid webpage file (webpage_*.bin)');
                 return;
             }
-
-            log(`Selected file: ${file.name} (${file.size} bytes)`);
-            
-            // Aktiviere Fortschrittsanzeige
-            progress.style.display = 'block';
-            form.style.display = 'none';
-
-            // Erstelle FormData für den Upload
-            const formData = new FormData();
-            formData.append('update', file);
-            
-            const progress = document.querySelector('.progress-bar');
-            const progressContainer = document.querySelector('.progress-container');
-            const status = document.querySelector('.status');
             
             progressContainer.style.display = 'block';
             status.style.display = 'none';
             status.className = 'status';
+
+            // Reset progress bar
+            progress.style.width = '0%';
+            progress.textContent = '0%';
 
             // Disable both forms during update
             document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = true);
@@ -215,6 +246,8 @@
                 document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
             };
 
+            const formData = new FormData();
+            formData.append('update', file);
             xhr.send(formData);
         }
 
