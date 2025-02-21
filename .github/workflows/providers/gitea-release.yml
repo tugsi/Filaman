@@ -3,9 +3,6 @@ name: Gitea Release
 on:
   workflow_call:
     inputs:
-      gitea_ref_name:
-        required: true
-        type: string
       gitea_server_url:
         required: true
         type: string
@@ -48,30 +45,66 @@ jobs:
           echo "SPIFFS_CHANGED=false" >> $GITHUB_OUTPUT
         fi
     
+    - name: Check for Data changes
+      id: check_data
+      run: |
+        git fetch --unshallow || true
+        CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
+        if echo "$CHANGED_FILES" | grep -q "^data/"; then
+          echo "DATA_CHANGED=true" >> $GITHUB_OUTPUT
+        else
+          echo "DATA_CHANGED=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Get version from platformio.ini
+      id: get_version
+      run: |
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
     - name: Build Firmware
       run: |
-        # Get version from platformio.ini
-        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        VERSION=${{ steps.get_version.outputs.VERSION }}
         
-        # Always build firmware
+        # Always build firmware and SPIFFS
+        echo "Building firmware and SPIFFS..."
         pio run -e esp32dev
+        pio run -t buildfs
+        
+        # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
         
-        # Only build SPIFFS if changed
-        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
-          echo "Building SPIFFS due to changes..."
-          pio run -t buildfs
+        # Create full binary (always)
+        (cd .pio/build/esp32dev && \
+        esptool.py --chip esp32 merge_bin \
+          --fill-flash-size 4MB \
+          --flash_mode dio \
+          --flash_freq 40m \
+          --flash_size 4MB \
+          -o filaman_full_${VERSION}.bin \
+          0x0000 bootloader.bin \
+          0x8000 partitions.bin \
+          0x10000 firmware.bin \
+          0x390000 spiffs.bin)
+        
+        # Only copy SPIFFS binary if data changed
+        if [[ "${{ steps.check_data.outputs.DATA_CHANGED }}" == "true" ]]; then
+          echo "Data changes detected, copying SPIFFS binary..."
           cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
         fi
         
+        # Verify file sizes
+        echo "File sizes:"
+        (cd .pio/build/esp32dev && ls -lh *.bin)
+        
     - name: Prepare binaries
       run: |
-        cd .pio/build/esp32dev
-        VERSION=$(grep '^version = ' ../../platformio.ini | cut -d'"' -f2)
+        VERSION=${{ steps.get_version.outputs.VERSION }}
         
         # Create full binary only if SPIFFS changed
         if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
           echo "Creating full binary..."
+          cd .pio/build/esp32dev && \
           esptool.py --chip esp32 merge_bin \
             --fill-flash-size 4MB \
             --flash_mode dio \
@@ -86,16 +119,24 @@ jobs:
         
         # Verify file sizes
         echo "File sizes:"
-        ls -lh *.bin
+        cd .pio/build/esp32dev && ls -lh *.bin
+
+    - name: Read CHANGELOG.md
+      id: changelog
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        CHANGELOG=$(awk "/## \\[$VERSION\\]/{p=1;print;next} /## \\[/{p=0} p" CHANGELOG.md)
+        echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Create Release
       env:
         TOKEN: ${{ secrets.GITEA_TOKEN }}
       run: |
-        TAG="${{ inputs.gitea_ref_name }}"
         API_URL="${{ inputs.gitea_server_url }}/api/v1"
         REPO="${{ inputs.gitea_repository }}"
-        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        VERSION=${{ steps.get_version.outputs.VERSION }}
         
         # Create release
         RESPONSE=$(curl -k -s \
@@ -103,8 +144,8 @@ jobs:
           -H "Authorization: token ${TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{
-            \"tag_name\":\"${TAG}\",
-            \"name\":\"Release ${TAG}\",
+            \"tag_name\":\"v${VERSION}\",
+            \"name\":\"Release ${VERSION}\",
             \"body\":\"${{ steps.changelog.outputs.CHANGES }}\"
           }" \
           "${API_URL}/repos/${REPO}/releases")
@@ -113,30 +154,30 @@ jobs:
         
         if [ -n "$RELEASE_ID" ]; then
           echo "Release created with ID: $RELEASE_ID"
-          cd .pio/build/esp32dev
           
-          # Always upload firmware
-          if [ -f "filaman_${VERSION}.bin" ]; then
-            curl -k -s \
-              -X POST \
-              -H "Authorization: token ${TOKEN}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary "@filaman_${VERSION}.bin" \
-              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=filaman_${VERSION}.bin"
-          fi
-          
-          # Upload SPIFFS and full binary only if they exist
-          for file in webpage_${VERSION}.bin filaman_full_${VERSION}.bin; do
-            if [ -f "$file" ]; then
+          # Always upload firmware and full binary
+          for file in filaman_${VERSION}.bin filaman_full_${VERSION}.bin; do
+            if [ -f ".pio/build/esp32dev/$file" ]; then
               echo "Uploading $file..."
               curl -k -s \
                 -X POST \
                 -H "Authorization: token ${TOKEN}" \
                 -H "Content-Type: application/octet-stream" \
-                --data-binary "@$file" \
+                --data-binary "@.pio/build/esp32dev/$file" \
                 "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$file"
             fi
           done
+          
+          # Upload SPIFFS binary only if it exists (data changes)
+          if [ -f ".pio/build/esp32dev/webpage_${VERSION}.bin" ]; then
+            echo "Uploading webpage binary..."
+            curl -k -s \
+              -X POST \
+              -H "Authorization: token ${TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@.pio/build/esp32dev/webpage_${VERSION}.bin" \
+              "${API_URL}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=webpage_${VERSION}.bin"
+          fi
         else
           echo "Failed to create release. Response:"
           echo "$RESPONSE"

@@ -26,61 +26,57 @@ jobs:
         sudo apt-get update
         sudo apt-get install xxd
     
-    - name: Check for SPIFFS changes
-      id: check_spiffs
+    - name: Check for Data changes
+      id: check_data
       run: |
         git fetch --unshallow || true
         CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
-        if echo "$CHANGED_FILES" | grep -q "^data/\|^html/"; then
-          echo "SPIFFS_CHANGED=true" >> $GITHUB_OUTPUT
+        if echo "$CHANGED_FILES" | grep -q "^data/"; then
+          echo "DATA_CHANGED=true" >> $GITHUB_OUTPUT
         else
-          echo "SPIFFS_CHANGED=false" >> $GITHUB_OUTPUT
+          echo "DATA_CHANGED=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Build Firmware
       run: |
-        # Get version from platformio.ini
         VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         
-        # Always build firmware
+        # Always build firmware and SPIFFS
+        echo "Building firmware and SPIFFS..."
         pio run -e esp32dev
+        pio run -t buildfs
+        
+        # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
         
-        # Only build SPIFFS if changed
-        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
-          echo "Building SPIFFS due to changes..."
-          pio run -t buildfs
+        # Create full binary (always)
+        (cd .pio/build/esp32dev && \
+        esptool.py --chip esp32 merge_bin \
+          --fill-flash-size 4MB \
+          --flash_mode dio \
+          --flash_freq 40m \
+          --flash_size 4MB \
+          -o filaman_full_${VERSION}.bin \
+          0x0000 bootloader.bin \
+          0x8000 partitions.bin \
+          0x10000 firmware.bin \
+          0x390000 spiffs.bin)
+        
+        # Only copy SPIFFS binary if data changed
+        if [[ "${{ steps.check_data.outputs.DATA_CHANGED }}" == "true" ]]; then
+          echo "Data changes detected, copying SPIFFS binary..."
           cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
-        fi
-        
-    - name: Prepare binaries
-      run: |
-        cd .pio/build/esp32dev
-        VERSION=$(grep '^version = ' ../../platformio.ini | cut -d'"' -f2)
-        
-        # Create full binary only if SPIFFS changed
-        if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
-          echo "Creating full binary..."
-          esptool.py --chip esp32 merge_bin \
-            --fill-flash-size 4MB \
-            --flash_mode dio \
-            --flash_freq 40m \
-            --flash_size 4MB \
-            -o filaman_full_${VERSION}.bin \
-            0x0000 bootloader.bin \
-            0x8000 partitions.bin \
-            0x10000 firmware.bin \
-            0x390000 spiffs.bin
         fi
         
         # Verify file sizes
         echo "File sizes:"
-        ls -lh *.bin
+        (cd .pio/build/esp32dev && ls -lh *.bin)
     
-    - name: Get version from tag
+    - name: Get version from platformio.ini
       id: get_version
       run: |
-        echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       
     - name: Read CHANGELOG.md
       id: changelog
@@ -95,8 +91,10 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        
+        # Create release with available files
         cd .pio/build/esp32dev
-        VERSION=$(grep '^version = ' ../../platformio.ini | cut -d'"' -f2)
         FILES_TO_UPLOAD=""
         
         # Always add firmware
@@ -115,8 +113,8 @@ jobs:
         
         # Create release with available files
         if [ -n "$FILES_TO_UPLOAD" ]; then
-          gh release create "${{ github.ref_name }}" \
-            --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+          gh release create "v${VERSION}" \
+            --title "Release ${VERSION}" \
             --notes "${{ steps.changelog.outputs.CHANGES }}" \
             $FILES_TO_UPLOAD
         else
