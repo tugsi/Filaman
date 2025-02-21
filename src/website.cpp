@@ -158,6 +158,10 @@ void sendAmsData(AsyncWebSocketClient *client) {
 }
 
 void setupWebserver(AsyncWebServer &server) {
+    // WebSocket-Optimierungen
+    ws.onEvent(onWsEvent);
+    ws.enable(true);
+
     // Konfiguriere Server für große Uploads
     server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){});
     server.onFileUpload([](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){});

@@ -10,11 +10,19 @@ WiFiManager wm;
 bool wm_nonblocking = false;
 
 void initWiFi() {
+    // Optimierte WiFi-Einstellungen
     WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
     WiFi.setSleep(false); // disable sleep mode
     esp_wifi_set_ps(WIFI_PS_NONE);
+    
+    // Maximale Sendeleistung
+    WiFi.setTxPower(WIFI_POWER_19_5dBm); // Set maximum transmit power
   
-    //esp_wifi_set_max_tx_power(72); // Setze maximale Sendeleistung auf 20dBm
+    // Optimiere TCP/IP Stack
+    esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
+    
+    // Aktiviere WiFi-Roaming für bessere Stabilität
+    esp_wifi_set_rssi_threshold(-80);
   
     if(wm_nonblocking) wm.setConfigPortalBlocking(false);
     wm.setConfigPortalTimeout(320); // Portal nach 5min schließen
