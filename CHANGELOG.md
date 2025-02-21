@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.23] - 2025-02-21
+### Changed
+- update webpages for version v1.3.23
+
+### Fixed
+- workflow: enhance Gitea release process with debug outputs and API connection checks
+
+
 ## [1.3.22] - 2025-02-21
 ### Added
 - workflow: improve Gitea release process with additional environment variables and error handling
