@@ -11,7 +11,7 @@
 #include <Update.h>
 
 // Cache-Control Header definieren
-#define CACHE_CONTROL "max-age=31536000" // Cache für 1 Jahr
+#define CACHE_CONTROL "max-age=604800" // Cache für 1 Jahr
 #define VERSION "1.0.0"
 
 AsyncWebServer server(webserverPort);
