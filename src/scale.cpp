@@ -3,9 +3,9 @@
 #include <ArduinoJson.h>
 #include "config.h"
 #include "HX711.h"
-#include <EEPROM.h>
 #include "display.h"
 #include "esp_task_wdt.h"
+#include <Preferences.h>
 
 HX711 scale;
 
@@ -16,6 +16,10 @@ int16_t weight = 0;
 uint8_t weigthCouterToApi = 0;
 uint8_t scale_tare_counter = 0;
 uint8_t pauseMainTask = 0;
+
+Preferences preferences;
+const char* NVS_NAMESPACE = "scale";
+const char* NVS_KEY_CALIBRATION = "cal_value";
 
 // ##### Funktionen für Waage #####
 uint8_t tareScale() {
@@ -48,13 +52,12 @@ void scale_loop(void * parameter) {
 
 void start_scale() {
   Serial.println("Prüfe Calibration Value");
-  long calibrationValue; // calibration value (see example file "Calibration.ino")
-  //calibrationValue = 696.0; // uncomment this if you want to set the calibration value in the sketch
+  long calibrationValue;
 
-  EEPROM.begin(512);
-  EEPROM.get(calVal_eepromAdress, calibrationValue); // uncomment this if you want to fetch the calibration value from eeprom
-
-  //calibrationValue = EEPROM.read(calVal_eepromAdress);
+  // NVS
+  preferences.begin(NVS_NAMESPACE, true); // true = readonly
+  calibrationValue = preferences.getLong(NVS_KEY_CALIBRATION, defaultScaleCalibrationValue);
+  preferences.end();
 
   Serial.print("Read Scale Calibration Value ");
   Serial.println(calibrationValue);
@@ -137,18 +140,19 @@ uint8_t calibrate_scale() {
     {
       Serial.print("New calibration value has been set to: ");
       Serial.println(newCalibrationValue);
-      Serial.print("Save this value to EEPROM adress ");
-      Serial.println(calVal_eepromAdress);
 
-      //EEPROM.put(calVal_eepromAdress, newCalibrationValue);
-      EEPROM.put(calVal_eepromAdress, newCalibrationValue);
-      EEPROM.commit();
+      // Speichern mit NVS
+      preferences.begin(NVS_NAMESPACE, false); // false = readwrite
+      preferences.putLong(NVS_KEY_CALIBRATION, newCalibrationValue);
+      preferences.end();
 
-      EEPROM.get(calVal_eepromAdress, newCalibrationValue);
-      //newCalibrationValue = EEPROM.read(calVal_eepromAdress);
+      // Verifizieren
+      preferences.begin(NVS_NAMESPACE, true);
+      long verifyValue = preferences.getLong(NVS_KEY_CALIBRATION, 0);
+      preferences.end();
 
-      Serial.print("Read Value ");
-      Serial.println(newCalibrationValue);
+      Serial.print("Verified stored value: ");
+      Serial.println(verifyValue);
 
       Serial.println("End calibration, revome weight");
 
