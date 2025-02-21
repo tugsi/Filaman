@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.21] - 2025-02-21
+### Changed
+- update webpages for version v1.3.21
+- workflow: enhance Gitea release process with API integration and token management
+
+
 ## [1.3.20] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.20
