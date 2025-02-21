@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.14] - 2025-02-21
+### Changed
+- update webpages for version v1.3.14
+- ci: update GitHub release workflow to improve file upload handling
+
+
 ## [1.3.13] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.13
