@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.18] - 2025-02-21
+### Changed
+- ACHTUNG: Installiere einmal das filaman_full.bin danach kannst du über die upgrade Files aktualisieren und deine Settings bleiben auch erhalten.
+- ATTENTION: Install the filaman_full.bin once, then you can update via the upgrade files and your settings will also be retained.
+
 ## [1.3.17] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.17
