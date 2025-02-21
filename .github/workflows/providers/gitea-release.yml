@@ -66,10 +66,8 @@ jobs:
         # Create full binary with correct partition offsets
         echo "Creating full binary..."
         esptool.py --chip esp32 merge_bin \
-          --fill-flash-size 4MB \
           --flash_mode dio \
           --flash_freq 40m \
-          --flash_size 4MB \
           -o filaman_full.bin \
           0x1000 bootloader.bin \
           0x8000 partitions.bin \
