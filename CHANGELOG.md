@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.16] - 2025-02-21
+### Changed
+- update webpages for version v1.3.16
+- ci: update filenames for firmware and website binaries in release workflows
+
+
 ## [1.3.15] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.15
