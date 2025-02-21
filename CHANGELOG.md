@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.92] - 2025-02-21
+### Added
+- enhance OTA upload handling with chunk validation and timeout checks
+
+### Changed
+- update webpages for version v1.2.92
+
+
 ## [1.2.91] - 2025-02-20
 ### Added
 - add file existence checks before uploading binaries in release workflows
