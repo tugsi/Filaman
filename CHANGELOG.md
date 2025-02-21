@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.12] - 2025-02-21
+### Changed
+- update webpages for version v1.3.12
+- ci: enhance GitHub release workflow with token handling and file upload improvements
+
+
 ## [1.3.11] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.11
