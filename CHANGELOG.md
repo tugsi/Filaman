@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.9] - 2025-02-21
+### Changed
+- update webpages for version v1.3.9
+- ci: comment out permissions for GitHub release workflow
+
+
 ## [1.3.8] - 2025-02-21
 ### Added
 - add Gitea and GitHub release workflows
