@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1] - 2025-02-21
+### Added
+- enhance GitHub and Gitea release workflows with Python setup and binary preparation
+
+### Changed
+- update webpages for version v1.3.1
+
+
 ## [1.3.0] - 2025-02-21
 ### Changed
 - bump version to 1.3.0 in platformio.ini
