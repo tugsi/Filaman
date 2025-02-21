@@ -1,23 +1,13 @@
 # Changelog
 
-## [1.2.94] - 2025-02-21
-### Changed
-- update webpages for version v1.2.94
-- remove unused flash size parameters in release workflows
-
-
-## [1.2.93] - 2025-02-21
-### Changed
-- update webpages for version v1.2.93
-- update SPIFFS initialization and partition sizes; enhance WiFi setup
-
-
-## [1.2.92] - 2025-02-21
+## [1.2.95] - 2025-02-21
 ### Added
-- enhance OTA upload handling with chunk validation and timeout checks
+- enhance update process with separate forms for firmware and webpage uploads, including validation and improved UI
+- add API endpoint for version retrieval and update HTML to display dynamic version
 
 ### Changed
-- update webpages for version v1.2.92
+- update webpages for version v1.2.95
+- bump version to 1.2.94 in platformio.ini
 
 
 ## [1.2.91] - 2025-02-20

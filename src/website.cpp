@@ -12,7 +12,7 @@
 
 // Cache-Control Header definieren
 #define CACHE_CONTROL "max-age=31536000" // Cache für 1 Jahr
-#define MAX_UPLOAD_SIZE 4194304  // 4MB maximale Upload-Größe
+#define VERSION "1.0.0"
 
 AsyncWebServer server(webserverPort);
 AsyncWebSocket ws("/ws");
@@ -413,6 +413,11 @@ void setupWebserver(AsyncWebServer &server) {
         }
     );
 
+    server.on("/api/version", HTTP_GET, [](AsyncWebServerRequest *request){
+        String jsonResponse = "{\"version\": \"" VERSION "\"}";
+        request->send(200, "application/json", jsonResponse);
+    });
+
     // Fehlerbehandlung für nicht gefundene Seiten
     server.onNotFound([](AsyncWebServerRequest *request){
         Serial.print("404 - Nicht gefunden: ");
@@ -430,22 +435,50 @@ void setupWebserver(AsyncWebServer &server) {
     Serial.println("Webserver gestartet");
 }
 
-// Upload-Handler für alle Datei-Uploads
-void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    if (!filename.endsWith(".bin")) {
-        request->send(400, "application/json", "{\"success\":false,\"message\":\"Invalid file type\"}");
+void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+    if (!index) {
+        // Start eines neuen Uploads
+        Serial.println("Update Start: " + filename);
+        
+        // Überprüfe den Dateityp basierend auf dem Dateinamen
+        bool isFirmware = filename.startsWith("filaman_");
+        bool isWebpage = filename.startsWith("webpage_");
+        
+        if (!isFirmware && !isWebpage) {
+            request->send(400, "application/json", "{\"message\":\"Invalid file type. File must start with 'filaman_' or 'webpage_'\"}");
+            return;
+        }
+
+        // Wähle den Update-Typ basierend auf dem Dateinamen
+        if (isWebpage) {
+            if (!Update.begin(SPIFFS.totalBytes(), U_SPIFFS)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", "{\"message\":\"SPIFFS Update failed: " + String(Update.errorString()) + "\"}");
+                return;
+            }
+        } else {
+            if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+                Update.printError(Serial);
+                request->send(400, "application/json", "{\"message\":\"Firmware Update failed: " + String(Update.errorString()) + "\"}");
+                return;
+            }
+        }
+    }
+
+    if (Update.write(data, len) != len) {
+        Update.printError(Serial);
+        request->send(400, "application/json", "{\"message\":\"Write failed: " + String(Update.errorString()) + "\"}");
         return;
     }
-    
-    if (request->url() == "/update") {
-        handleOTAUpload(request, filename, index, data, len, final);
-    }
-}
 
-// Body-Handler für große Anfragen
-void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    // Handler für große POST-Anfragen
-    if (total > MAX_UPLOAD_SIZE) {
-        request->send(413, "application/json", "{\"success\":false,\"message\":\"File too large\"}");
+    if (final) {
+        if (!Update.end(true)) {
+            Update.printError(Serial);
+            request->send(400, "application/json", "{\"message\":\"Update failed: " + String(Update.errorString()) + "\"}");
+            return;
+        }
+        request->send(200, "application/json", "{\"message\":\"Update successful!\", \"restart\": true}");
+        delay(500);
+        ESP.restart();
     }
 }

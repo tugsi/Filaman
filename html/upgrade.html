@@ -5,59 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FilaMan - Firmware Update</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .debug-log {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: 10px 0;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-    </style>
+    <script>
+        fetch('/api/version')
+            .then(response => response.json())
+            .then(data => {
+                const versionSpan = document.querySelector('.version');
+                if (versionSpan) {
+                    versionSpan.textContent = 'v' + data.version;
+                }
+            })
+            .catch(error => console.error('Error fetching version:', error));
+    </script>
 </head>
 <body>
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <img src="/logo.png" alt="FilaMan Logo" class="logo">
+            <div class="logo-text">
+                <h1>FilaMan<span class="version"></span></h1>
+                <h4>Filament Management Tool</h4>
+            </div>
+        </div>
+        <nav style="display: flex; gap: 1rem;">
+            <a href="/">Start</a>
+            <a href="/waage">Scale</a>
+            <a href="/spoolman">Spoolman/Bambu</a>
+            <a href="/about">About</a>
+            <a href="/upgrade">Upgrade</a>
+        </nav>
+        <div class="status-container">
+            <div class="status-item">
+                <span class="status-dot" id="bambuDot"></span>B
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="spoolmanDot"></span>S
+            </div>
+            <div class="ram-status" id="ramStatus"></div>
+        </div>
+    </div>
+</body>
+</html>
+
+<!-- head -->
+    
     <div class="content">
-        <h1>Firmware Update</h1>
-        
+        <h1>System Update</h1>
         <div class="warning">
             <strong>Warning:</strong> Do not power off the device during update.
         </div>
 
-        <form id="updateForm">
-            <input type="file" name="update" accept=".bin">
-            <button type="submit">Update Firmware</button>
-        </form>
+        <div class="update-options">
+            <div class="update-section">
+                <h2>Firmware Update</h2>
+                <p>Upload a new firmware file (filaman_*.bin)</p>
+                <div class="update-form">
+                    <form id="firmwareForm" enctype='multipart/form-data' data-type="firmware">
+                        <input type='file' name='update' accept='.bin' required>
+                        <input type='submit' value='Start Firmware Update'>
+                    </form>
+                </div>
+            </div>
 
-        <div class="progress" style="display: none;">
-            <div class="progress-bar"></div>
-            <div class="status"></div>
+            <div class="update-section">
+                <h2>Webpage Update</h2>
+                <p>Upload a new webpage file (webpage_*.bin)</p>
+                <div class="update-form">
+                    <form id="webpageForm" enctype='multipart/form-data' data-type="webpage">
+                        <input type='file' name='update' accept='.bin' required>
+                        <input type='submit' value='Start Webpage Update'>
+                    </form>
+                </div>
+            </div>
         </div>
 
-        <div class="debug-log"></div>
+        <div class="progress-container" style="display: none;">
+            <div class="progress-bar">0%</</div>
+        </div>
+        <div class="status"></div>
     </div>
 
-    <script>
-        const form = document.getElementById('updateForm');
-        const progress = document.querySelector('.progress');
-        const progressBar = document.querySelector('.progress-bar');
-        const status = document.querySelector('.status');
-        const debugLog = document.querySelector('.debug-log');
+    <style>
+        .update-options {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .update-section {
+            flex: 1;
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        .update-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .update-section p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+    </style>
 
-        function log(message) {
-            debugLog.style.display = 'block';
-            const time = new Date().toLocaleTimeString();
-            debugLog.innerHTML += `[${time}] ${message}<br>`;
-            debugLog.scrollTop = debugLog.scrollHeight;
+    <script>
+        // Hide status indicators during update
+        const statusContainer = document.querySelector('.status-container');
+        if (statusContainer) {
+            statusContainer.style.display = 'none';
         }
 
-        form.addEventListener('submit', async (e) => {
+        function handleUpdate(e) {
             e.preventDefault();
             const file = form.update.files[0];
+            const updateType = form.dataset.type;
+
             if (!file) {
-                alert('Please select a file');
+                alert('Please select a file.');
+                return;
+            }
+
+            // Validate file name pattern
+            if (updateType === 'firmware' && !file.name.startsWith('filaman_')) {
+                alert('Please select a valid firmware file (filaman_*.bin)');
+                return;
+            }
+            if (updateType === 'webpage' && !file.name.startsWith('webpage_')) {
+                alert('Please select a valid webpage file (webpage_*.bin)');
                 return;
             }
 
@@ -70,49 +142,84 @@
             // Erstelle FormData für den Upload
             const formData = new FormData();
             formData.append('update', file);
+            
+            const progress = document.querySelector('.progress-bar');
+            const progressContainer = document.querySelector('.progress-container');
+            const status = document.querySelector('.status');
+            
+            progressContainer.style.display = 'block';
+            status.style.display = 'none';
+            status.className = 'status';
 
-            try {
-                log('Starting upload...');
-                const response = await fetch('/update', {
-                    method: 'POST',
-                    body: formData
-                });
+            // Disable both forms during update
+            document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = true);
 
-                log(`Server responded with status: ${response.status}`);
-
-                let result;
-                const contentType = response.headers.get('content-type');
-                log(`Response content-type: ${contentType}`);
-
-                if (contentType && contentType.includes('application/json')) {
-                    result = await response.json();
-                    log('Received JSON response');
-                } else {
-                    const text = await response.text();
-                    log(`Received text response: ${text}`);
-                    result = { success: response.ok, message: text };
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update', true);
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progress.style.width = percentComplete + '%';
+                    progress.textContent = Math.round(percentComplete) + '%';
                 }
-                
-                log(`Update result: ${JSON.stringify(result)}`);
-                
-                if (response.ok && result.success) {
-                    status.textContent = 'Update successful! Restarting...';
-                    status.className = 'success';
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 5000);
-                } else {
-                    throw new Error(result.message || 'Update failed');
+            };
+
+            xhr.onload = function() {
+                try {
+                    let response = this.responseText;
+                    try {
+                        const jsonResponse = JSON.parse(response);
+                        response = jsonResponse.message;
+                        
+                        if (jsonResponse.restart) {
+                            status.textContent = response + " Redirecting in 20 seconds...";
+                            let countdown = 20;
+                            const timer = setInterval(() => {
+                                countdown--;
+                                if (countdown <= 0) {
+                                    clearInterval(timer);
+                                    window.location.href = '/';
+                                } else {
+                                    status.textContent = response + ` Redirecting in ${countdown} seconds...`;
+                                }
+                            }, 1000);
+                        }
+                    } catch (e) {
+                        if (!isNaN(response)) {
+                            const percent = parseInt(response);
+                            progress.style.width = percent + '%';
+                            progress.textContent = percent + '%';
+                            return;
+                        }
+                    }
+                    
+                    status.textContent = response;
+                    status.classList.add(xhr.status === 200 ? 'success' : 'error');
+                    status.style.display = 'block';
+                    
+                    if (xhr.status !== 200) {
+                        document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
+                    }
+                } catch (error) {
+                    status.textContent = 'Error: ' + error.message;
+                    status.classList.add('error');
+                    status.style.display = 'block';
+                    document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
                 }
-            } catch (error) {
-                log(`Error: ${error.message}`);
-                console.error('Update error:', error);
-                status.textContent = `Error: ${error.message}`;
-                status.className = 'error';
-                form.style.display = 'block';
-                progress.style.display = 'none';
-            }
-        });
+            };
+
+            xhr.onerror = function() {
+                status.textContent = 'Update failed: Network error';
+                status.classList.add('error');
+                status.style.display = 'block';
+                document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
+            };
+
+            xhr.send(formData);
+        }
+
+        document.getElementById('firmwareForm').addEventListener('submit', handleUpdate);
+        document.getElementById('webpageForm').addEventListener('submit', handleUpdate);
     </script>
 </body>
 </html>
