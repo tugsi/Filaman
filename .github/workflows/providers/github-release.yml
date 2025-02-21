@@ -49,6 +49,7 @@ jobs:
         # Only build SPIFFS if changed
         if [[ "${{ steps.check_spiffs.outputs.SPIFFS_CHANGED }}" == "true" ]]; then
           echo "Building SPIFFS due to changes..."
+          pio run -t buildfs
           cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
         fi
         
