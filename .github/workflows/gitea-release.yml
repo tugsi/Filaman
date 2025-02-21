@@ -79,14 +79,15 @@ jobs:
         echo "GITEA_SERVER_URL=${GITEA_SERVER_URL:-not set}"
         echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-not set}"
         echo "GITEA_REPOSITORY=${GITEA_REPOSITORY:-not set}"
+        echo "RUNNER_NAME=${RUNNER_NAME:-not set}"
         
         # Set API URL based on environment
-        if [ -n "${GITEA_SERVER_URL}" ]; then
-          GITEA_API_URL="${GITEA_SERVER_URL}"
-          GITEA_REPO=$(echo "${GITEA_REPOSITORY}" | cut -d'/' -f2)
-          GITEA_OWNER=$(echo "${GITEA_REPOSITORY}" | cut -d'/' -f1)
+        if [ -n "${GITEA_ACTIONS}" ] || [ -n "${GITEA_REPOSITORY}" ] || [[ "${RUNNER_NAME}" == *"gitea"* ]]; then
+          GITEA_API_URL="${GITHUB_SERVER_URL}"
+          GITEA_REPO=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
+          GITEA_OWNER=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f1)
         else
-          echo "Error: Could not determine Gitea server URL"
+          echo "Error: This workflow is only for Gitea"
           exit 1
         fi
         
