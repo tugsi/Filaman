@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.25] - 2025-02-21
+### Changed
+- update webpages for version v1.3.25
+- workflow: update Gitea release workflow to include RUNNER_NAME and improve error handling
+
+
 ## [1.3.24] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.24
