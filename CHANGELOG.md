@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.13] - 2025-02-21
+### Changed
+- update webpages for version v1.3.13
+- ci: update GitHub release workflow to use RELEASE_TOKEN for improved security
+
+
 ## [1.3.12] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.12
