@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.27] - 2025-02-21
+### Added
+- workflow: add GITEA_TOKEN secret for Gitea API access in release workflows
+
+### Changed
+- update webpages for version v1.3.27
+
+
 ## [1.3.26] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.26
