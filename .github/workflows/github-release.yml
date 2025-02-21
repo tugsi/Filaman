@@ -67,10 +67,10 @@ jobs:
         pio run -t buildfs
         
         # Copy firmware binary
-        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/filaman_${VERSION}.bin
+        cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/upgrade_filaman_firmware_v${VERSION}.bin
         
         # Always create SPIFFS binary
-        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/webpage_${VERSION}.bin
+        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
         # Create full binary (always)
         (cd .pio/build/esp32dev && 
@@ -115,13 +115,13 @@ jobs:
         FILES_TO_UPLOAD=""
         
         # Always add firmware
-        if [ -f "filaman_${VERSION}.bin" ]; then
-          FILES_TO_UPLOAD="$FILES_TO_UPLOAD filaman_${VERSION}.bin"
+        if [ -f "update_filaman_firmware_v${VERSION}.bin" ]; then
+          FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_firmware_v${VERSION}.bin"
         fi
         
         # Add SPIFFS and full binary only if they exist
-        if [ -f "webpage_${VERSION}.bin" ]; then
-          FILES_TO_UPLOAD="$FILES_TO_UPLOAD webpage_${VERSION}.bin"
+        if [ -f "update_filaman_website_v${VERSION}.bin" ]; then
+          FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_website_v${VERSION}.bin"
         fi
         
         if [ -f "filaman_full_${VERSION}.bin" ]; then
