@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.28] - 2025-02-21
+### Changed
+- update webpages for version v1.3.28
+- workflow: update Gitea release workflow to use file uploads with curl
+
+
 ## [1.3.27] - 2025-02-21
 ### Added
 - workflow: add GITEA_TOKEN secret for Gitea API access in release workflows
