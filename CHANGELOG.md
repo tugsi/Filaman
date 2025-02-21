@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.17] - 2025-02-21
+### Changed
+- update webpages for version v1.3.17
+- ci: comment out git tag and push commands in gitea-release workflow
+
+
 ## [1.3.16] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.16
