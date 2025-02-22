@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.62] - 2025-02-22
+### Changed
+- update webpages for version v1.3.62
+- update background colors and improve layout for update sections
+
+
 ## [1.3.61] - 2025-02-22
 ### Added
 - update release notes generation to use previous tag for changes
