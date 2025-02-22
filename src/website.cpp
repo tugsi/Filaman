@@ -8,6 +8,7 @@
 #include "scale.h"
 #include "esp_task_wdt.h"
 #include <Update.h>
+#include "display.h"
 
 #ifndef VERSION
   #define VERSION "1.1.0"
@@ -32,6 +33,10 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         sendWriteResult(client, 3);
     } else if (type == WS_EVT_DISCONNECT) {
         Serial.println("Client getrennt.");
+    } else if (type == WS_EVT_ERROR) {
+        Serial.printf("WebSocket Client #%u error(%u): %s\n", client->id(), *((uint16_t*)arg), (char*)data);
+    } else if (type == WS_EVT_PONG) {
+        Serial.printf("WebSocket Client #%u pong\n", client->id());
     } else if (type == WS_EVT_DATA) {
         String message = String((char*)data);
         JsonDocument doc;
@@ -373,22 +378,36 @@ void setupWebserver(AsyncWebServer &server) {
             request->send(response);
             
             if (success) {
+                oledShowMessage("Upgrade successful Rebooting");
                 delay(500);
                 ESP.restart();
+            }
+            else {
+                oledShowMessage("Upgrade failed");
             }
         },
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
             static size_t updateSize = 0;
             static int command = 0;
 
+            oledShowMessage("Upgrade please wait");
+
+            // TODO: Backup
+
             if (!index) {
                 updateSize = request->contentLength();
                 command = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
-                Serial.printf("Update Start: %s\nSize: %u\nCommand: %d\n", filename.c_str(), updateSize, command);
-
+                
+                if (command == U_SPIFFS) {
+                    // Backup JSON config files before SPIFFS update
+                    backupJsonConfigs();
+                }
+                
                 if (!Update.begin(updateSize, command)) {
-                    Serial.printf("Update Begin Error: ");
-                    Update.printError(Serial);
+                    if (command == U_SPIFFS) {
+                        // Restore JSON config files if update fails at start
+                        restoreJsonConfigs();
+                    }
                     String errorMsg = String("Update begin failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
@@ -397,24 +416,30 @@ void setupWebserver(AsyncWebServer &server) {
 
             if (len) {
                 if (Update.write(data, len) != len) {
-                    Serial.printf("Update Write Error: ");
-                    Update.printError(Serial);
+                    if (command == U_SPIFFS) {
+                        // Restore JSON config files if update fails during write
+                        restoreJsonConfigs();
+                    }
                     String errorMsg = String("Write failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
                 }
-                Serial.printf("Progress: %u/%u\r", index + len, updateSize);
+                
+                // Sende den Fortschritt als JSON, um unerwünschte Zeilenumbrüche zu vermeiden
+                String progress = "{\"progress\":" + String((index + len) * 100 / updateSize) + "}";
+                request->send(200, "application/json", progress);
             }
 
             if (final) {
                 if (!Update.end(true)) {
-                    Serial.printf("Update End Error: ");
-                    Update.printError(Serial);
+                    if (command == U_SPIFFS) {
+                        // Restore JSON config files if update fails at end
+                        restoreJsonConfigs();
+                    }
                     String errorMsg = String("Update end failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
                 }
-                Serial.printf("\nUpdate Success: %uB\n", index+len);
             }
         }
     );
@@ -442,60 +467,6 @@ void setupWebserver(AsyncWebServer &server) {
     Serial.println("Webserver gestartet");
 }
 
-void handleOTAUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
-    static bool isSpiffsUpdate = false;
-    if (!index) {
-        // Start eines neuen Uploads
-        Serial.println("Update Start: " + filename);
-        
-        // Überprüfe den Dateityp basierend auf dem Dateinamen
-        bool isFirmware = filename.startsWith("filaman_");
-        isSpiffsUpdate = filename.startsWith("webpage_");
-        
-        if (!isFirmware && !isSpiffsUpdate) {
-            request->send(400, "application/json", "{\"message\":\"Invalid file type. File must start with 'filaman_' or 'webpage_'\"}");
-            return;
-        }
-
-        // Wähle den Update-Typ basierend auf dem Dateinamen
-        if (isSpiffsUpdate) {
-            if (!Update.begin(SPIFFS.totalBytes(), U_SPIFFS)) {
-                Update.printError(Serial);
-                request->send(400, "application/json", "{\"message\":\"SPIFFS Update failed: " + String(Update.errorString()) + "\"}");
-                return;
-            }
-            // Backup JSON configs before SPIFFS update
-            backupJsonConfigs();
-        } else {
-            if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
-                Update.printError(Serial);
-                request->send(400, "application/json", "{\"message\":\"Firmware Update failed: " + String(Update.errorString()) + "\"}");
-                return;
-            }
-        }
-    }
-
-    if (Update.write(data, len) != len) {
-        Update.printError(Serial);
-        request->send(400, "application/json", "{\"message\":\"Write failed: " + String(Update.errorString()) + "\"}");
-        return;
-    }
-
-    if (final) {
-        if (!Update.end(true)) {
-            Update.printError(Serial);
-            request->send(400, "application/json", "{\"message\":\"Update failed: " + String(Update.errorString()) + "\"}");
-            return;
-        }
-        if (isSpiffsUpdate) {
-            // Restore JSON configs after SPIFFS update
-            restoreJsonConfigs();
-        }
-        request->send(200, "application/json", "{\"message\":\"Update successful!\", \"restart\": true}");
-        delay(500);
-        ESP.restart();
-    }
-}
 
 void backupJsonConfigs() {
     const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
