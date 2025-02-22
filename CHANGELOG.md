@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.43] - 2025-02-22
+### Changed
+- update webpages for version v1.3.43
+- update header title to 'Hollo Lollo Trollo'
+
+
 ## [1.3.42] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.42
