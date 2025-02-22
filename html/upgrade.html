@@ -202,6 +202,16 @@
                     let response = this.responseText;
                     try {
                         const jsonResponse = JSON.parse(response);
+                        
+                        // Handle progress updates
+                        if (jsonResponse.progress !== undefined) {
+                            const percent = jsonResponse.progress;
+                            progress.style.width = percent + '%';
+                            progress.textContent = Math.round(percent) + '%';
+                            return;
+                        }
+                        
+                        // Handle success/error messages
                         response = jsonResponse.message;
                         
                         if (jsonResponse.restart) {
@@ -218,12 +228,9 @@
                             }, 1000);
                         }
                     } catch (e) {
-                        if (!isNaN(response)) {
-                            const percent = parseInt(response);
-                            progress.style.width = percent + '%';
-                            progress.textContent = percent + '%';
-                            return;
-                        }
+                        console.error('JSON parse error:', e);
+                        status.textContent = 'Update failed: Invalid response from server';
+                        status.classList.add('error');
                     }
                     
                     status.textContent = response;
