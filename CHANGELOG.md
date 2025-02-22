@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.42] - 2025-02-22
+### Changed
+- update webpages for version v1.3.42
+
+### Fixed
+- correct path for SPIFFS binary creation in Gitea release workflow
+
+
 ## [1.3.41] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.41
