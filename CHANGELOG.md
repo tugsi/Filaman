@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.48] - 2025-02-22
+### Changed
+- update webpages for version v1.3.48
+- workflow: update SPIFFS binary header for firmware release
+
+
 ## [1.3.47] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.47
