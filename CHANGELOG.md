@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.53] - 2025-02-22
+### Changed
+- version: update to version 1.3.53
+- update changelog for version 1.3.51
+- update changelog for version 1.3.51
+- workflow: update SPIFFS binary magic byte and revert version to 1.3.51
+
+
 ## [1.3.52] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.52
