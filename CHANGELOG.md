@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.44] - 2025-02-22
+### Changed
+- update webpages for version v1.3.44
+- update header title to 'Hollo Lollo Trollo'
+- update header title to 'Filament Management Tool' and improve update response messages
+
+
 ## [1.3.43] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.43
