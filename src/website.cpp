@@ -23,6 +23,10 @@ AsyncWebSocket ws("/ws");
 uint8_t lastSuccess = 0;
 uint8_t lastHasReadRfidTag = 0;
 
+// Globale Variablen für Config Backups hinzufügen
+String bambuCredentialsBackup;
+String spoolmanUrlBackup;
+
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     if (type == WS_EVT_CONNECT) {
         Serial.println("Neuer Client verbunden!");
@@ -490,23 +494,47 @@ void setupWebserver(AsyncWebServer &server) {
 
 
 void backupJsonConfigs() {
-    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
-    for (const char* config : configs) {
-        if (SPIFFS.exists(config)) {
-            String backupPath = String(config) + ".bak";
-            SPIFFS.remove(backupPath);
-            SPIFFS.rename(config, backupPath);
+    // Bambu Credentials backup
+    if (SPIFFS.exists("/bambu_credentials.json")) {
+        File file = SPIFFS.open("/bambu_credentials.json", "r");
+        if (file) {
+            bambuCredentialsBackup = file.readString();
+            file.close();
+            Serial.println("Bambu credentials backed up");
+        }
+    }
+
+    // Spoolman URL backup
+    if (SPIFFS.exists("/spoolman_url.json")) {
+        File file = SPIFFS.open("/spoolman_url.json", "r");
+        if (file) {
+            spoolmanUrlBackup = file.readString();
+            file.close();
+            Serial.println("Spoolman URL backed up");
         }
     }
 }
 
 void restoreJsonConfigs() {
-    const char* configs[] = {"/bambu_credentials.json", "/spoolman_url.json"};
-    for (const char* config : configs) {
-        String backupPath = String(config) + ".bak";
-        if (SPIFFS.exists(backupPath)) {
-            SPIFFS.remove(config);
-            SPIFFS.rename(backupPath, config);
+    // Restore Bambu credentials
+    if (bambuCredentialsBackup.length() > 0) {
+        File file = SPIFFS.open("/bambu_credentials.json", "w");
+        if (file) {
+            file.print(bambuCredentialsBackup);
+            file.close();
+            Serial.println("Bambu credentials restored");
         }
+        bambuCredentialsBackup = ""; // Clear backup
+    }
+
+    // Restore Spoolman URL
+    if (spoolmanUrlBackup.length() > 0) {
+        File file = SPIFFS.open("/spoolman_url.json", "w");
+        if (file) {
+            file.print(spoolmanUrlBackup);
+            file.close();
+            Serial.println("Spoolman URL restored");
+        }
+        spoolmanUrlBackup = ""; // Clear backup
     }
 }
