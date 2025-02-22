@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.32] - 2025-02-22
+### Changed
+- update webpages for version v1.3.32
+- workflow: update magic byte for SPIFFS binary creation
+
+
 ## [1.3.31] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.31
