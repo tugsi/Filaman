@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.41] - 2025-02-22
+### Changed
+- update webpages for version v1.3.41
+
+### Fixed
+- remove redundant buffer size setting in NFC initialization
+- update SPIFFS binary creation and enhance NFC buffer size
+
+
 ## [1.3.40] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.40
