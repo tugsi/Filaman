@@ -166,6 +166,9 @@ void sendAmsData(AsyncWebSocketClient *client) {
 }
 
 void setupWebserver(AsyncWebServer &server) {
+    // Deaktiviere alle Debug-Ausgaben
+    Serial.setDebugOutput(false);
+    
     // WebSocket-Optimierungen
     ws.onEvent(onWsEvent);
     ws.enable(true);

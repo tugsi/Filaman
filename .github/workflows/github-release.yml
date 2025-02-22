@@ -47,8 +47,8 @@ jobs:
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/upgrade_filaman_firmware_v${VERSION}.bin
         
-        # Create SPIFFS binary with correct chip revision (0xEB for Rev 3)
-        ( printf '\xeb\x03\x01\x00' && cat .pio/build/esp32dev/spiffs.bin ) > .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
+        # Create SPIFFS binary with magic byte 0xE9
+        ( printf '\xe9\x03\x01\x00' && cat .pio/build/esp32dev/spiffs.bin ) > .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
         # Create full binary (always)
         (cd .pio/build/esp32dev && 
