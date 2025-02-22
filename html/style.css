@@ -1050,10 +1050,11 @@ input[type="submit"]:disabled,
     border: 1px solid #a5d6a7;
 }
 .update-form {
-    background: var(--background-green);
+    background: var(--primary-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: var(--glass-border);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin: 0 auto;
     width: 400px;
     text-align: center;
@@ -1064,7 +1065,7 @@ input[type="submit"]:disabled,
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    background: white;
+    background-color: #4CAF50;
 }
 .update-form input[type="submit"] {
     background-color: #4CAF50;
