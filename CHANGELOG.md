@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.49] - 2025-02-22
+### Changed
+- update webpages for version v1.3.49
+- workflow: update SPIFFS binary header to use correct chip revision
+
+
 ## [1.3.48] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.48
