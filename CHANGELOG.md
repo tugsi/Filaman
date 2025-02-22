@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.31] - 2025-02-22
+### Changed
+- update webpages for version v1.3.31
+- workflow: remove unnecessary data and SPIFFS change checks from release workflows
+
+
 ## [1.3.30] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.30
