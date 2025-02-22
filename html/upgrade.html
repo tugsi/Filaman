@@ -157,13 +157,43 @@
 
         // WebSocket für Update-Progress
         const ws = new WebSocket('ws://' + window.location.host + '/ws');
+        let updateInProgress = false;
+
         ws.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === "updateProgress") {
+                if (data.type === "updateProgress" && updateInProgress) {
                     progressContainer.style.display = 'block';
-                    progress.style.width = data.progress + '%';
-                    progress.textContent = data.progress + '%';
+                    
+                    // Setze den Fortschritt nur wenn er größer ist als der aktuelle
+                    const currentProgress = parseInt(progress.textContent);
+                    const newProgress = parseInt(data.progress);
+                    if (isNaN(currentProgress) || newProgress > currentProgress) {
+                        progress.style.width = data.progress + '%';
+                        progress.textContent = data.progress + '%';
+                    }
+                    
+                    // Zeige verschiedene Status-Nachrichten
+                    if (data.status === "finalizing") {
+                        status.textContent = "Finalizing update...";
+                        status.classList.add('success');
+                        status.style.display = 'block';
+                    } else if (data.status === "complete" || data.status === "success") {
+                        status.textContent = "Update successful! Device is restarting... Page will reload in 30 seconds.";
+                        status.classList.add('success');
+                        status.style.display = 'block';
+                        
+                        // Versuche die WebSocket-Verbindung sauber zu schließen
+                        try {
+                            ws.close();
+                        } catch (e) {
+                            console.log('WebSocket already closed');
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 30000);
+                    }
                 }
             } catch (e) {
                 console.error('WebSocket message error:', e);
@@ -171,11 +201,26 @@
         };
 
         ws.onclose = function() {
-            // Wenn der WebSocket geschlossen wird während eines Updates, zeige eine Nachricht
-            if (progressContainer.style.display !== 'none' && progress.style.width !== '100%') {
-                status.textContent = "Connection lost. Update may still be in progress...";
-                status.classList.add('warning');
-                status.style.display = 'block';
+            // Wenn das Update läuft und der Fortschritt hoch ist, zeige Success
+            if (updateInProgress) {
+                const currentProgress = parseInt(progress.textContent);
+                if (!isNaN(currentProgress) && currentProgress >= 90) {
+                    status.textContent = "Update appears successful! Device is restarting... Page will reload in 30 seconds.";
+                    status.classList.add('success');
+                    status.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 30000);
+                } else {
+                    status.textContent = "Connection lost. Please wait 30 seconds and check if the update was successful...";
+                    status.classList.add('warning');
+                    status.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 30000);
+                }
             }
         };
 
@@ -188,6 +233,7 @@
                 alert('Please select a file.');
                 return;
             }
+            
             // Validate file name pattern
             if (updateType === 'firmware' && !file.name.startsWith('upgrade_filaman_firmware_')) {
                 alert('Please select a valid firmware file (upgrade_filaman_firmware_*.bin)');
@@ -198,13 +244,13 @@
                 return;
             }
             
+            updateInProgress = true;
             progressContainer.style.display = 'block';
             status.style.display = 'none';
             status.className = 'status';
-            // Reset progress bar
             progress.style.width = '0%';
             progress.textContent = '0%';
-            // Disable both forms during update
+            
             document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = true);
 
             const xhr = new XMLHttpRequest();
@@ -215,44 +261,72 @@
                     try {
                         const response = JSON.parse(xhr.responseText);
                         if (response.success) {
-                            status.textContent = "Update successful! Restarting device... The page will reload in 30 seconds.";
+                            if (progress.textContent !== '100%') {
+                                progress.style.width = '100%';
+                                progress.textContent = '100%';
+                            }
+                            status.textContent = "Update successful! Device is restarting... Page will reload in 30 seconds.";
                             status.classList.add('success');
                             status.style.display = 'block';
-                            
-                            // Setze Progress auf 100%
-                            progress.style.width = '100%';
-                            progress.textContent = '100%';
-                            
-                            // Automatischer Redirect nach 30 Sekunden
                             setTimeout(() => {
                                 window.location.href = '/';
                             }, 30000);
                         } else {
+                            updateInProgress = false;
                             status.textContent = response.message || "Update failed";
                             status.classList.add('error');
                             status.style.display = 'block';
                             document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
                         }
                     } catch (e) {
-                        status.textContent = "Error: Invalid server response";
-                        status.classList.add('error');
-                        status.style.display = 'block';
-                        document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
+                        if (progress.textContent === '100%') {
+                            // Wenn 100% erreicht wurden, nehmen wir an, dass das Update erfolgreich war
+                            status.textContent = "Update appears successful! Device is restarting... Page will reload in 30 seconds.";
+                            status.classList.add('success');
+                            status.style.display = 'block';
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 30000);
+                        } else {
+                            handleUpdateError("Invalid server response");
+                        }
                     }
                 } else {
-                    status.textContent = "Update failed with status: " + xhr.status;
-                    status.classList.add('error');
-                    status.style.display = 'block';
-                    document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
+                    if (progress.textContent === '100%') {
+                        // Bei 100% Fortschritt gehen wir von einem erfolgreichen Update aus
+                        status.textContent = "Update appears successful! Device is restarting... Page will reload in 30 seconds.";
+                        status.classList.add('success');
+                        status.style.display = 'block';
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 30000);
+                    } else {
+                        handleUpdateError("Server error: " + xhr.status);
+                    }
                 }
             };
             
             xhr.onerror = function() {
-                status.textContent = "Network error during update";
+                if (progress.textContent === '100%') {
+                    // Bei 100% Fortschritt gehen wir von einem erfolgreichen Update aus
+                    status.textContent = "Update appears successful! Device is restarting... Page will reload in 30 seconds.";
+                    status.classList.add('success');
+                    status.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 30000);
+                } else {
+                    handleUpdateError("Network error during update");
+                }
+            };
+
+            function handleUpdateError(message) {
+                updateInProgress = false;
+                status.textContent = message;
                 status.classList.add('error');
                 status.style.display = 'block';
                 document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
-            };
+            }
 
             const formData = new FormData();
             formData.append('update', file);

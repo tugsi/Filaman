@@ -376,15 +376,19 @@ void setupWebserver(AsyncWebServer &server) {
     // Update-Handler mit verbesserter Fehlerbehandlung
     server.on("/update", HTTP_POST, 
         [](AsyncWebServerRequest *request) {
-            // Nach Update-Abschluss
             bool success = !Update.hasError();
             
-            // Bei SPIFFS Update und Erfolg: Restore Configs vor dem Neustart
             if (success && currentUpdateCommand == U_SPIFFS) {
                 restoreJsonConfigs();
+                delay(200);  // Warte auf Restore-Abschluss
             }
             
             String message = success ? "Update successful" : String("Update failed: ") + Update.errorString();
+            
+            // Sende finale Bestätigung über WebSocket mit eindeutigem Status
+            ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"complete\",\"success\":true}");
+            delay(1000);  // Längerer Delay für WebSocket
+            
             AsyncWebServerResponse *response = request->beginResponse(
                 success ? 200 : 400,
                 "application/json",
@@ -394,26 +398,26 @@ void setupWebserver(AsyncWebServer &server) {
             request->send(response);
             
             if (success) {
-                oledShowMessage("Upgrade successful Rebooting");
-                delay(500);
+                oledShowMessage("Update successful");
+                delay(2000);  // Noch längerer Delay vor Neustart
                 ESP.restart();
-            }
-            else {
-                oledShowMessage("Upgrade failed");
+            } else {
+                oledShowMessage("Update failed");
             }
         },
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
             static size_t updateSize = 0;
+            static size_t totalWritten = 0;
 
             if (!index) {
                 updateSize = request->contentLength();
+                totalWritten = 0;
                 currentUpdateCommand = (filename.indexOf("website") > -1) ? U_SPIFFS : U_FLASH;
                 
                 if (currentUpdateCommand == U_SPIFFS) {
                     oledShowMessage("SPIFFS Update...");
                     backupJsonConfigs();
                     
-                    // Get the actual SPIFFS partition size from ESP32
                     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, NULL);
                     if (!partition) {
                         String errorMsg = "SPIFFS partition not found";
@@ -443,15 +447,25 @@ void setupWebserver(AsyncWebServer &server) {
                     return;
                 }
                 
-                // Update OLED Display alle 5% und Webseite bei jeder Änderung
+                totalWritten += len;
+                int currentProgress;
+                
+                // Unterschiedliche Fortschrittsberechnung für SPIFFS und Firmware
+                if (currentUpdateCommand == U_SPIFFS) {
+                    // SPIFFS Update: Fortschritt basierend auf Upload-Größe
+                    currentProgress = (totalWritten * 100) / updateSize;
+                    // Skaliere den Fortschritt auf 0-90%, da das Schreiben ins SPIFFS länger dauert
+                    currentProgress = (currentProgress * 90) / 100;
+                } else {
+                    // Firmware Update: Normaler Fortschritt
+                    currentProgress = (totalWritten * 100) / updateSize;
+                }
+                
                 static int lastProgress = -1;
-                int currentProgress = (index + len) * 100 / updateSize;
                 if (currentProgress != lastProgress) {
-                    // OLED nur alle 5% aktualisieren
                     if (currentProgress % 5 == 0) {
                         oledShowMessage(String(currentProgress) + "% complete");
                     }
-                    // Webseite bei jeder Änderung aktualisieren
                     lastProgress = currentProgress;
                     ws.textAll("{\"type\":\"updateProgress\",\"progress\":" + String(currentProgress) + "}");
                 }
@@ -463,8 +477,14 @@ void setupWebserver(AsyncWebServer &server) {
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
                 }
-                // Sende finale Progress-Nachricht
-                ws.textAll("{\"type\":\"updateProgress\",\"progress\":100}");
+                
+                // Bei SPIFFS Update zeige 95% an, da noch das Restore kommt
+                if (currentUpdateCommand == U_SPIFFS) {
+                    ws.textAll("{\"type\":\"updateProgress\",\"progress\":95,\"status\":\"finalizing\"}");
+                } else {
+                    ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"finalizing\"}");
+                }
+                delay(200);
             }
         }
     );
