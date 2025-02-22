@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.57] - 2025-02-22
+### Changed
+- update webpages for version v1.3.57
+- update header title to 'Filament Management Tool' in multiple HTML files
+
+
 ## [1.3.56] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.56
