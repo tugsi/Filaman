@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.54] - 2025-02-22
+### Changed
+- update webpages for version v1.3.54
+- workflow: update SPIFFS binary creation to exclude header
+
+
 ## [1.3.53] - 2025-02-22
 ### Changed
 - version: update to version 1.3.53
