@@ -8,9 +8,7 @@
 
 ## [1.3.51] - 2025-02-22
 ### Changed
-- update webpages for version v1.3.51
-- config: update platformio.ini to specify correct chip revision and remove unused dependencies
-
+- workflow: update SPIFFS binary magic byte and revert version to 1.3.51
 
 ## [1.3.50] - 2025-02-22
 ### Changed
