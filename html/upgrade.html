@@ -189,13 +189,6 @@
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/update', true);
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    progress.style.width = percentComplete + '%';
-                    progress.textContent = Math.round(percentComplete) + '%';
-                }
-            };
 
             xhr.onload = function() {
                 try {
@@ -203,41 +196,27 @@
                     try {
                         const jsonResponse = JSON.parse(response);
                         
-                        // Handle progress updates
-                        if (jsonResponse.progress !== undefined) {
-                            const percent = jsonResponse.progress;
-                            progress.style.width = percent + '%';
-                            progress.textContent = Math.round(percent) + '%';
-                            return;
-                        }
+                        // Zeige finale Nachricht
+                        status.textContent = jsonResponse.message || "Update complete";
+                        status.classList.add(jsonResponse.success ? 'success' : 'error');
+                        status.style.display = 'block';
                         
-                        // Handle success/error messages
-                        response = jsonResponse.message;
-                        
-                        if (jsonResponse.restart) {
-                            status.textContent = response + " Redirecting in 20 seconds...";
-                            let countdown = 20;
-                            const timer = setInterval(() => {
-                                countdown--;
-                                if (countdown <= 0) {
-                                    clearInterval(timer);
-                                    window.location.href = '/';
-                                } else {
-                                    status.textContent = response + ` Redirecting in ${countdown} seconds...`;
-                                }
-                            }, 1000);
+                        if (jsonResponse.success) {
+                            progress.style.width = '100%';
+                            progress.textContent = '100%';
+                            
+                            // Automatischer Neustart nach erfolgreicher Aktualisierung
+                            status.textContent = "Update successful! Restarting device...";
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 5000);
+                        } else {
+                            document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
                         }
                     } catch (e) {
                         console.error('JSON parse error:', e);
                         status.textContent = 'Update failed: Invalid response from server';
                         status.classList.add('error');
-                    }
-                    
-                    status.textContent = response;
-                    status.classList.add(xhr.status === 200 ? 'success' : 'error');
-                    status.style.display = 'block';
-                    
-                    if (xhr.status !== 200) {
                         document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
                     }
                 } catch (error) {

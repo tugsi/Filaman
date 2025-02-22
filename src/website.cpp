@@ -7,6 +7,7 @@
 #include "nfc.h"
 #include "scale.h"
 #include "esp_task_wdt.h"
+#include "esp_log.h"
 #include <Update.h>
 #include "display.h"
 
@@ -393,28 +394,31 @@ void setupWebserver(AsyncWebServer &server) {
             oledShowMessage("Upgrade please wait");
 
             if (!index) {
+                // Reduziere Debug-Level während des Updates
+                esp_log_level_set("*", ESP_LOG_ERROR);
+                
                 updateSize = request->contentLength();
                 command = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
-                Serial.printf("Update Start: %s\nSize: %u\nCommand: %d\n", filename.c_str(), updateSize, command);
                 
                 if (command == U_SPIFFS) {
-                    Serial.println("Backup JSON configs...");
+                    oledShowMessage("SPIFFS Update...");
                     backupJsonConfigs();
                     
-                    // Deaktiviere alle Validierungen für SPIFFS-Updates
-                    if (!Update.begin(UPDATE_SIZE_UNKNOWN, command)) {
-                        Serial.printf("Update Begin Error: %s\n", Update.errorString());
+                    if (!Update.begin(updateSize, command)) {
                         restoreJsonConfigs();
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                        // Stelle Debug-Level wieder her
+                        esp_log_level_set("*", ESP_LOG_INFO);
                         return;
                     }
                 } else {
-                    // Normale Validierung für Firmware-Updates
+                    oledShowMessage("Firmware Update...");
                     if (!Update.begin(updateSize, command)) {
-                        Serial.printf("Update Begin Error: %s\n", Update.errorString());
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                        // Stelle Debug-Level wieder her
+                        esp_log_level_set("*", ESP_LOG_INFO);
                         return;
                     }
                 }
@@ -422,7 +426,6 @@ void setupWebserver(AsyncWebServer &server) {
 
             if (len) {
                 if (Update.write(data, len) != len) {
-                    Serial.printf("Update Write Error: %s\n", Update.errorString());
                     if (command == U_SPIFFS) {
                         restoreJsonConfigs();
                     }
@@ -431,23 +434,28 @@ void setupWebserver(AsyncWebServer &server) {
                     return;
                 }
                 
-                // Sende den Fortschritt als JSON
-                String progress = "{\"progress\":" + String((index + len) * 100 / updateSize) + "}";
-                request->send(200, "application/json", progress);
+                // Update OLED Display alle 25%
+                static int lastProgress = -1;
+                int currentProgress = (index + len) * 100 / updateSize;
+                if (currentProgress % 25 == 0 && currentProgress != lastProgress) {
+                    lastProgress = currentProgress;
+                    oledShowMessage(String(currentProgress) + "% complete");
+                }
             }
 
             if (final) {
                 if (!Update.end(true)) {
-                    Serial.printf("Update End Error: %s\n", Update.errorString());
                     if (command == U_SPIFFS) {
-                        Serial.println("Restoring JSON configs...");
                         restoreJsonConfigs();
                     }
                     String errorMsg = String("Update end failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                    // Stelle Debug-Level wieder her
+                    esp_log_level_set("*", ESP_LOG_INFO);
                     return;
                 }
-                Serial.println("Update Success!");
+                // Stelle Debug-Level wieder her
+                esp_log_level_set("*", ESP_LOG_INFO);
             }
         }
     );
