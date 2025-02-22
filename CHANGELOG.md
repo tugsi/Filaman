@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.63] - 2025-02-22
+### Added
+- update update-form background and add glass border effect
+
+### Changed
+- update webpages for version v1.3.63
+- update release note generation for initial release handling
+
+
 ## [1.3.62] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.62
