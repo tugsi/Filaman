@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.39] - 2025-02-22
+### Changed
+- update webpages for version v1.3.39
+- workflow: update SPIFFS binary creation to set chip version to max supported
+
+
 ## [1.3.38] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.38
