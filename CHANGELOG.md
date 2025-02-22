@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.64] - 2025-02-22
+### Changed
+- update webpages for version v1.3.64
+- remove unnecessary closing tags from header.html
+
+
 ## [1.3.63] - 2025-02-22
 ### Added
 - update update-form background and add glass border effect
