@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.58] - 2025-02-22
+### Added
+- implement backup and restore functionality for Bambu credentials and Spoolman URL
+
+### Changed
+- update webpages for version v1.3.58
+- update upgrade page message and improve progress display logic
+
+
 ## [1.3.57] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.57
