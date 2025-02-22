@@ -1050,7 +1050,7 @@ input[type="submit"]:disabled,
     border: 1px solid #a5d6a7;
 }
 .update-form {
-    background: var(--primary-color);
+    background: var(--background-green);
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -1086,10 +1086,66 @@ input[type="submit"]:disabled,
 .warning {
     background-color: var(--primary-color);
     border: 1px solid #ffe0b2;
-    color: white;
-    padding: 15px;
     margin: 20px auto;
     border-radius: 4px;
     max-width: 600px;
     text-align: center;
+    color: #e65100;
+    padding: 15px;
+}
+
+.update-options {
+    display: flex;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+.update-section {
+    flex: 1;
+    background: var(--background-green);
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+.update-section h2 {
+    margin-top: 0;
+    color: #333;
+}
+.update-section p {
+    color: #666;
+    margin-bottom: 1rem;
+}
+.progress-container {
+    margin: 20px 0;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar {
+    width: 0;
+    height: 20px;
+    background: #4CAF50;
+    transition: width 0.3s ease-in-out;
+    text-align: center;
+    line-height: 20px;
+    color: white;
+}
+.status {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 4px;
+    display: none;
+}
+.status.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.status.error {
+    background: #ffebee;
+    color: #c62828;
+}
+.warning {
+    background: #fff3e0;
+    color: #e65100;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
 }
