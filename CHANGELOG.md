@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.40] - 2025-02-22
+### Changed
+- update webpages for version v1.3.40
+
+### Fixed
+- update SPIFFS binary header and enhance WebSocket error handling
+
+
 ## [1.3.39] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.39
