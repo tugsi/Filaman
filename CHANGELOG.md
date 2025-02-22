@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.65] - 2025-02-22
+### Changed
+- update webpages for version v1.3.65
+- ci: improve release note generation by fetching tags and sorting unique commits
+
+
 ## [1.3.64] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.64
