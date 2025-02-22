@@ -375,6 +375,12 @@ void setupWebserver(AsyncWebServer &server) {
         [](AsyncWebServerRequest *request) {
             // Nach Update-Abschluss
             bool success = !Update.hasError();
+            
+            // Bei SPIFFS Update und Erfolg: Restore Configs vor dem Neustart
+            if (success && Update.command() == U_SPIFFS) {
+                restoreJsonConfigs();
+            }
+            
             String message = success ? "Update successful" : String("Update failed: ") + Update.errorString();
             AsyncWebServerResponse *response = request->beginResponse(
                 success ? 200 : 400,
@@ -397,8 +403,6 @@ void setupWebserver(AsyncWebServer &server) {
             static size_t updateSize = 0;
             static int command = 0;
 
-            //oledShowMessage("Upgrade please wait");
-
             if (!index) {
                 updateSize = request->contentLength();
                 command = (filename.indexOf("website") > -1) ? U_SPIFFS : U_FLASH;
@@ -410,14 +414,12 @@ void setupWebserver(AsyncWebServer &server) {
                     // Get the actual SPIFFS partition size from ESP32
                     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, NULL);
                     if (!partition) {
-                        restoreJsonConfigs();
                         String errorMsg = "SPIFFS partition not found";
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
                     }
                     
                     if (!Update.begin(partition->size, command)) {
-                        restoreJsonConfigs();
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
@@ -434,9 +436,6 @@ void setupWebserver(AsyncWebServer &server) {
 
             if (len) {
                 if (Update.write(data, len) != len) {
-                    if (command == U_SPIFFS) {
-                        restoreJsonConfigs();
-                    }
                     String errorMsg = String("Write failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
@@ -458,9 +457,6 @@ void setupWebserver(AsyncWebServer &server) {
 
             if (final) {
                 if (!Update.end(true)) {
-                    if (command == U_SPIFFS) {
-                        restoreJsonConfigs();
-                    }
                     String errorMsg = String("Update end failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
