@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.37] - 2025-02-22
+### Changed
+- update webpages for version v1.3.37
+- workflow: update ESP32-WROOM image header for SPIFFS binary creation
+
+
 ## [1.3.36] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.36
