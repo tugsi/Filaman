@@ -71,10 +71,14 @@ jobs:
     - name: Generate Release Notes
       id: release_notes
       run: |
+        # Fetch all tags first
+        git fetch --tags
+        
         # Get all tags sorted by version
         TAGS=($(git tag -l 'v*' --sort=-v:refname))
         CURRENT_TAG="${TAGS[0]}"
         
+        # Get previous tag (second in list)
         if [ ${#TAGS[@]} -gt 1 ]; then
           PREVIOUS_TAG="${TAGS[1]}"
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
@@ -83,15 +87,15 @@ jobs:
           
           # Get commits between previous and current tag
           echo "### Added" >> $GITHUB_OUTPUT
-          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Fixed" >> $GITHUB_OUTPUT
-          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Changed" >> $GITHUB_OUTPUT
-          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         else
           # First release or no previous tag
@@ -101,15 +105,15 @@ jobs:
           # Add all commits for initial release
           echo "" >> $GITHUB_OUTPUT
           echo "### Added" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Fixed" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Changed" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' | sort -u >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         fi
 
