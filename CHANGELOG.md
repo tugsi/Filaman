@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.30] - 2025-02-22
+### Changed
+- update webpages for version v1.3.30
+- workflow: update Gitea and GitHub release workflows to create SPIFFS binary with magic byte
+
+
 ## [1.3.29] - 2025-02-21
 ### Changed
 - update webpages for version v1.3.29
