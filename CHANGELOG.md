@@ -8,6 +8,7 @@
 
 ## [1.3.51] - 2025-02-22
 ### Changed
+- update changelog for version 1.3.51
 - workflow: update SPIFFS binary magic byte and revert version to 1.3.51
 
 ## [1.3.50] - 2025-02-22
