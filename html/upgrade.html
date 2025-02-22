@@ -167,12 +167,12 @@
             }
 
             // Validate file name pattern
-            if (updateType === 'firmware' && !file.name.startsWith('filaman_')) {
-                alert('Please select a valid firmware file (filaman_*.bin)');
+            if (updateType === 'firmware' && !file.name.startsWith('upgrade_filaman_firmware_')) {
+                alert('Please select a valid firmware file (upgrade_filaman_firmware_*.bin)');
                 return;
             }
-            if (updateType === 'webpage' && !file.name.startsWith('webpage_')) {
-                alert('Please select a valid webpage file (webpage_*.bin)');
+            if (updateType === 'webpage' && !file.name.startsWith('upgrade_filaman_website_')) {
+                alert('Please select a valid webpage file (upgrade_filaman_website_*.bin)');
                 return;
             }
             
