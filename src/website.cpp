@@ -403,19 +403,20 @@ void setupWebserver(AsyncWebServer &server) {
                     oledShowMessage("SPIFFS Update...");
                     backupJsonConfigs();
                     
-                    // SPIFFS update with pure binary data
-                    if (!Update.begin((updateSize - 4), command)) {  // Exclude header size
+                    // Get the actual SPIFFS partition size from ESP32
+                    const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, NULL);
+                    if (!partition) {
                         restoreJsonConfigs();
-                        String errorMsg = String("Update begin failed: ") + Update.errorString();
+                        String errorMsg = "SPIFFS partition not found";
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
                     }
                     
-                    // Skip initial header completely for SPIFFS update
-                    if (index == 0 && len >= 4) {
-                        data += 4;
-                        len -= 4;
-                        updateSize -= 4;
+                    if (!Update.begin(partition->size, command)) {
+                        restoreJsonConfigs();
+                        String errorMsg = String("Update begin failed: ") + Update.errorString();
+                        request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
+                        return;
                     }
                 } else {
                     oledShowMessage("Firmware Update...");
