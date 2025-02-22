@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.59] - 2025-02-22
+### Added
+- implement enhanced update progress handling and WebSocket notifications
+- improve update progress reporting and enhance WebSocket notifications
+- enhance update progress handling and add WebSocket closure notification
+- implement WebSocket for update progress and enhance update response handling
+
+### Changed
+- update webpages for version v1.3.59
+
+
 ## [1.3.58] - 2025-02-22
 ### Added
 - implement backup and restore functionality for Bambu credentials and Spoolman URL
