@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.38] - 2025-02-22
+### Changed
+- update webpages for version v1.3.38
+- workflow: update SPIFFS binary creation with minimal ESP32 image header
+
+
 ## [1.3.37] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.37
