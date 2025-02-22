@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.56] - 2025-02-22
+### Changed
+- update webpages for version v1.3.56
+- update header title and improve SPIFFS update error handling
+- clarify comments in Gitea and GitHub release workflows
+
+
 ## [1.3.55] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.55
