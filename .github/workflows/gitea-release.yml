@@ -40,7 +40,7 @@ jobs:
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/upgrade_filaman_firmware_v${VERSION}.bin
         
-        # Create SPIFFS binary without header
+        # Create SPIFFS binary - direct copy without header
         cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
         # Create full binary
