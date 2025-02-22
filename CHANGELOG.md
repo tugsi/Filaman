@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.61] - 2025-02-22
+### Added
+- update release notes generation to use previous tag for changes
+
+### Changed
+- update webpages for version v1.3.61
+
+
 ## [1.3.60] - 2025-02-22
 ### Added
 - remove automatic git push from changelog update script
