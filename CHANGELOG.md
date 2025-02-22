@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.33] - 2025-02-22
+### Changed
+- update webpages for version v1.3.33
+- partition: update spiffs offset and app sizes in partition files
+- partition: update spiffs offset in partition files
+- partition: update app sizes and offsets in partitions.csv
+
+
 ## [1.3.32] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.32
