@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.55] - 2025-02-22
+### Changed
+- update webpages for version v1.3.55
+- update component descriptions in README files
+
+
 ## [1.3.54] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.54
