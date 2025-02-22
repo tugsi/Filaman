@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -69,10 +71,12 @@ jobs:
     - name: Generate Release Notes
       id: release_notes
       run: |
-        CURRENT_TAG=$(git describe --tags --abbrev=0)
-        PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${CURRENT_TAG}^)
+        # Get all tags sorted by version
+        TAGS=($(git tag -l 'v*' --sort=-v:refname))
+        CURRENT_TAG="${TAGS[0]}"
         
-        if [ -n "$PREVIOUS_TAG" ]; then
+        if [ ${#TAGS[@]} -gt 1 ]; then
+          PREVIOUS_TAG="${TAGS[1]}"
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
           echo "Changes since $PREVIOUS_TAG:" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
@@ -90,8 +94,22 @@ jobs:
           git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         else
+          # First release or no previous tag
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
           echo "Initial Release" >> $GITHUB_OUTPUT
+          
+          # Add all commits for initial release
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Added" >> $GITHUB_OUTPUT
+          git log --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          echo "" >> $GITHUB_OUTPUT
+          
+          echo "### Fixed" >> $GITHUB_OUTPUT
+          git log --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          echo "" >> $GITHUB_OUTPUT
+          
+          echo "### Changed" >> $GITHUB_OUTPUT
+          git log --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         fi
 
