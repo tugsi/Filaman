@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.52] - 2025-02-22
+### Changed
+- update webpages for version v1.3.52
+- workflow: update SPIFFS binary creation to use correct chip revision (0xEB for Rev 3)
+
+
 ## [1.3.51] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.51
