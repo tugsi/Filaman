@@ -64,29 +64,10 @@ def get_changes_from_git():
     
     return changes
 
-def push_changes(version):
-    """Push changes to upstream"""
-    try:
-        # Stage the CHANGELOG.md
-        subprocess.run(['git', 'add', 'CHANGELOG.md'], check=True)
-        
-        # Commit the changelog
-        commit_msg = f"docs: update changelog for version {version}"
-        subprocess.run(['git', 'commit', '-m', commit_msg], check=True)
-        
-        # Push to origin (local)
-        subprocess.run(['git', 'push', 'origin'], check=True)
-        print("Successfully pushed to origin")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"Error during git operations: {e}")
-        return False
-    return True
-
 def update_changelog():
-    print("Starting changelog update...")  # Add this line
+    print("Starting changelog update...")
     version = get_version()
-    print(f"Current version: {version}")   # Add this line
+    print(f"Current version: {version}")
     today = datetime.now().strftime('%Y-%m-%d')
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -111,7 +92,7 @@ def update_changelog():
     if not os.path.exists(changelog_path):
         with open(changelog_path, 'w') as f:
             f.write(f"# Changelog\n\n{changelog_entry}")
-        push_changes(version)
+        print(f"Created new changelog file with version {version}")
     else:
         with open(changelog_path, 'r') as f:
             content = f.read()
@@ -120,7 +101,7 @@ def update_changelog():
             updated_content = content.replace("# Changelog\n", f"# Changelog\n\n{changelog_entry}")
             with open(changelog_path, 'w') as f:
                 f.write(updated_content)
-            push_changes(version)
+            print(f"Added new version {version} to changelog")
         else:
             # Version existiert bereits, aktualisiere die bestehenden Einträge
             version_pattern = f"## \\[{version}\\] - \\d{{4}}-\\d{{2}}-\\d{{2}}"
@@ -143,7 +124,6 @@ def update_changelog():
                 
                 with open(changelog_path, 'w') as f:
                     f.write(updated_content)
-                push_changes(version)
                 print(f"Updated entries for version {version}")
 
 if __name__ == "__main__":
