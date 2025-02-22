@@ -53,14 +53,14 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
 ### Komponenten
 - **ESP32 Entwicklungsboard:** Jede ESP32-Variante.
 [Amazon Link](https://amzn.eu/d/aXThslf)
-- **HX711 Wägezellen-Verstärker:** Für Gewichtsmessung.
-[Amazon Link](https://amzn.eu/d/1wZ4v0x)
-- **OLED Display:** 128x64 SSD1306.
-[Amazon Link](https://amzn.eu/d/dozAYDU)
-- **PN532 NFC Modul:** Für NFC-Tag-Operationen.
-[Amazon Link](https://amzn.eu/d/8205DDh)
-- **NFC-Tag:** NTAG215
-[Amazon Link](https://amzn.eu/d/fywy4c4)
+- **HX711 5kg Wägezellen-Verstärker:** Für Gewichtsmessung.
+[Amazon Link](https://amzn.eu/d/06A0DLb)
+- **OLED 0.96 Zoll I2C weiß/gelb Display:** 128x64 SSD1306.
+[Amazon Link](https://amzn.eu/d/0AuBp2c)
+- **PN532 NFC NXP RFID-Modul V3:** Für NFC-Tag-Operationen.
+[Amazon Link](https://amzn.eu/d/jfIuQXb)
+- **NFC Tags Ntag215:** RFID Tag
+[Amazon Link](https://amzn.eu/d/9Z6mXc1)
 
 ### Pin-Konfiguration
 | Komponente        | ESP32 Pin |

@@ -56,14 +56,14 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
 ### Components
 - **ESP32 Development Board:** Any ESP32 variant.
 [Amazon Link](https://amzn.eu/d/aXThslf)
-- **HX711 Load Cell Amplifier:** For weight measurement.
-[Amazon Link](https://amzn.eu/d/1wZ4v0x)
-- **OLED Display:** 128x64 SSD1306.
-[Amazon Link](https://amzn.eu/d/dozAYDU)
-- **PN532 NFC Module:** For NFC tag operations.
-[Amazon Link](https://amzn.eu/d/8205DDh)
-- **NFC-Tag:** NTAG215
-[Amazon Link](https://amzn.eu/d/fywy4c4)
+- **HX711 5kg Load Cell Amplifier:** For weight measurement.
+[Amazon Link](https://amzn.eu/d/06A0DLb)
+- **OLED 0.96 Zoll I2C white/yellow Display:** 128x64 SSD1306.
+[Amazon Link](https://amzn.eu/d/0AuBp2c)
+- **PN532 NFC NXP RFID-Modul V3:** For NFC tag operations.
+[Amazon Link](https://amzn.eu/d/jfIuQXb)
+- **NFC Tags Ntag215:** RFID Tag
+[Amazon Link](https://amzn.eu/d/9Z6mXc1)
 
 
 ### Pin Configuration
