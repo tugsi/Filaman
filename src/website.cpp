@@ -438,12 +438,17 @@ void setupWebserver(AsyncWebServer &server) {
                     return;
                 }
                 
-                // Update OLED Display alle 25%
+                // Update OLED Display alle 5% und Webseite bei jeder Änderung
                 static int lastProgress = -1;
                 int currentProgress = (index + len) * 100 / updateSize;
-                if (currentProgress % 25 == 0 && currentProgress != lastProgress) {
+                if (currentProgress != lastProgress) {
+                    // OLED nur alle 5% aktualisieren
+                    if (currentProgress % 5 == 0) {
+                        oledShowMessage(String(currentProgress) + "% complete");
+                    }
+                    // Webseite bei jeder Änderung aktualisieren
                     lastProgress = currentProgress;
-                    oledShowMessage(String(currentProgress) + "% complete");
+                    ws.textAll("{\"type\":\"updateProgress\",\"progress\":" + String(currentProgress) + "}");
                 }
             }
 

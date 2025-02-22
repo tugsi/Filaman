@@ -206,10 +206,10 @@
                             progress.textContent = '100%';
                             
                             // Automatischer Neustart nach erfolgreicher Aktualisierung
-                            status.textContent = "Update successful! Restarting device...";
+                            status.textContent = "Update successful! Restarting device... The page will reload in 30 seconds.";
                             setTimeout(() => {
-                                window.location.reload();
-                            }, 5000);
+                                window.location.href = '/';
+                            }, 30000);
                         } else {
                             document.querySelectorAll('form input[type=submit]').forEach(btn => btn.disabled = false);
                         }
