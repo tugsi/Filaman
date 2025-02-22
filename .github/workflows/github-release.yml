@@ -47,8 +47,8 @@ jobs:
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/upgrade_filaman_firmware_v${VERSION}.bin
         
-        # Create SPIFFS binary with ESP32-WROOM specific image header
-        echo -ne '\xE9\x01\x00\x00\x00\x00\x00\x00\x00\x30\x00\x00\x01\x03\x00\x00' > .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
+        # Create SPIFFS binary with minimal ESP32 image header
+        echo -ne '\xE9\x01\x00\x00\x00\x00\x00\x00\x00\x30\x00\x00\x00\x00\x00\x00' > .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         # Append the actual SPIFFS data
         cat .pio/build/esp32dev/spiffs.bin >> .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
