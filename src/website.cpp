@@ -7,7 +7,6 @@
 #include "nfc.h"
 #include "scale.h"
 #include "esp_task_wdt.h"
-#include "esp_log.h"
 #include <Update.h>
 #include "display.h"
 
@@ -394,34 +393,35 @@ void setupWebserver(AsyncWebServer &server) {
             static size_t updateSize = 0;
             static int command = 0;
 
-            oledShowMessage("Upgrade please wait");
+            //oledShowMessage("Upgrade please wait");
 
             if (!index) {
-                // Reduziere Debug-Level während des Updates
-                esp_log_level_set("*", ESP_LOG_ERROR);
-                
                 updateSize = request->contentLength();
-                command = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
+                command = (filename.indexOf("website") > -1) ? U_SPIFFS : U_FLASH;
                 
                 if (command == U_SPIFFS) {
                     oledShowMessage("SPIFFS Update...");
                     backupJsonConfigs();
                     
-                    if (!Update.begin(updateSize, command)) {
+                    // SPIFFS update with pure binary data
+                    if (!Update.begin((updateSize - 4), command)) {  // Exclude header size
                         restoreJsonConfigs();
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
-                        // Stelle Debug-Level wieder her
-                        esp_log_level_set("*", ESP_LOG_INFO);
                         return;
+                    }
+                    
+                    // Skip initial header completely for SPIFFS update
+                    if (index == 0 && len >= 4) {
+                        data += 4;
+                        len -= 4;
+                        updateSize -= 4;
                     }
                 } else {
                     oledShowMessage("Firmware Update...");
                     if (!Update.begin(updateSize, command)) {
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
-                        // Stelle Debug-Level wieder her
-                        esp_log_level_set("*", ESP_LOG_INFO);
                         return;
                     }
                 }
@@ -453,12 +453,8 @@ void setupWebserver(AsyncWebServer &server) {
                     }
                     String errorMsg = String("Update end failed: ") + Update.errorString();
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
-                    // Stelle Debug-Level wieder her
-                    esp_log_level_set("*", ESP_LOG_INFO);
                     return;
                 }
-                // Stelle Debug-Level wieder her
-                esp_log_level_set("*", ESP_LOG_INFO);
             }
         }
     );
