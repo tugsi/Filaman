@@ -42,7 +42,7 @@ jobs:
         
         # Create SPIFFS binary with magic byte
         echo -ne '\xEA' > .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
-        cat .pio.build/esp32dev/spiffs.bin >> .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
+        cat .pio/build/esp32dev/spiffs.bin >> .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
         # Create full binary
         (cd .pio/build/esp32dev && 
