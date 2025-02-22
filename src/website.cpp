@@ -397,27 +397,20 @@ void setupWebserver(AsyncWebServer &server) {
                 command = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
                 Serial.printf("Update Start: %s\nSize: %u\nCommand: %d\n", filename.c_str(), updateSize, command);
                 
-                // Überprüfe die SPIFFS-Größe
-                if (command == U_SPIFFS && updateSize > 0x30000) {
-                    String errorMsg = "SPIFFS update too large. Maximum size is 192KB";
-                    Serial.println(errorMsg);
-                    request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
-                    return;
-                }
-
                 if (command == U_SPIFFS) {
                     Serial.println("Backup JSON configs...");
                     backupJsonConfigs();
                     
-                    if (!Update.begin(updateSize, command, false)) {
+                    // Deaktiviere alle Validierungen für SPIFFS-Updates
+                    if (!Update.begin(UPDATE_SIZE_UNKNOWN, command)) {
                         Serial.printf("Update Begin Error: %s\n", Update.errorString());
-                        Serial.println("Restoring JSON configs...");
                         restoreJsonConfigs();
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
                     }
                 } else {
+                    // Normale Validierung für Firmware-Updates
                     if (!Update.begin(updateSize, command)) {
                         Serial.printf("Update Begin Error: %s\n", Update.errorString());
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
@@ -431,7 +424,6 @@ void setupWebserver(AsyncWebServer &server) {
                 if (Update.write(data, len) != len) {
                     Serial.printf("Update Write Error: %s\n", Update.errorString());
                     if (command == U_SPIFFS) {
-                        Serial.println("Restoring JSON configs...");
                         restoreJsonConfigs();
                     }
                     String errorMsg = String("Write failed: ") + Update.errorString();
@@ -439,7 +431,7 @@ void setupWebserver(AsyncWebServer &server) {
                     return;
                 }
                 
-                Serial.printf("Progress: %u/%u\n", index + len, updateSize);
+                // Sende den Fortschritt als JSON
                 String progress = "{\"progress\":" + String((index + len) * 100 / updateSize) + "}";
                 request->send(200, "application/json", progress);
             }
