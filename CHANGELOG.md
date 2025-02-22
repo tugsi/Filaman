@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.34] - 2025-02-22
+### Changed
+- update webpages for version v1.3.34
+- partition: update SPIFFS binary creation and offsets in workflow files
+
+
 ## [1.3.33] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.33
