@@ -76,24 +76,25 @@ jobs:
     - name: Generate Release Notes
       id: release_notes
       run: |
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        CURRENT_TAG=$(git describe --tags --abbrev=0)
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${CURRENT_TAG}^)
         
-        if [ -n "$LAST_TAG" ]; then
+        if [ -n "$PREVIOUS_TAG" ]; then
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-          echo "Changes since $LAST_TAG:" >> $GITHUB_OUTPUT
+          echo "Changes since $PREVIOUS_TAG:" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           
-          # Get commits since last tag and categorize them
+          # Get commits between previous and current tag
           echo "### Added" >> $GITHUB_OUTPUT
-          git log $LAST_TAG..HEAD --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Fixed" >> $GITHUB_OUTPUT
-          git log $LAST_TAG..HEAD --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Changed" >> $GITHUB_OUTPUT
-          git log $LAST_TAG..HEAD --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         else
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
