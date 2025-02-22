@@ -27,6 +27,9 @@ uint8_t lastHasReadRfidTag = 0;
 String bambuCredentialsBackup;
 String spoolmanUrlBackup;
 
+// Globale Variable für den Update-Typ
+static int currentUpdateCommand = 0;
+
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     if (type == WS_EVT_CONNECT) {
         Serial.println("Neuer Client verbunden!");
@@ -377,7 +380,7 @@ void setupWebserver(AsyncWebServer &server) {
             bool success = !Update.hasError();
             
             // Bei SPIFFS Update und Erfolg: Restore Configs vor dem Neustart
-            if (success && Update.command() == U_SPIFFS) {
+            if (success && currentUpdateCommand == U_SPIFFS) {
                 restoreJsonConfigs();
             }
             
@@ -401,13 +404,12 @@ void setupWebserver(AsyncWebServer &server) {
         },
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
             static size_t updateSize = 0;
-            static int command = 0;
 
             if (!index) {
                 updateSize = request->contentLength();
-                command = (filename.indexOf("website") > -1) ? U_SPIFFS : U_FLASH;
+                currentUpdateCommand = (filename.indexOf("website") > -1) ? U_SPIFFS : U_FLASH;
                 
-                if (command == U_SPIFFS) {
+                if (currentUpdateCommand == U_SPIFFS) {
                     oledShowMessage("SPIFFS Update...");
                     backupJsonConfigs();
                     
@@ -419,14 +421,14 @@ void setupWebserver(AsyncWebServer &server) {
                         return;
                     }
                     
-                    if (!Update.begin(partition->size, command)) {
+                    if (!Update.begin(partition->size, currentUpdateCommand)) {
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
                     }
                 } else {
                     oledShowMessage("Firmware Update...");
-                    if (!Update.begin(updateSize, command)) {
+                    if (!Update.begin(updateSize, currentUpdateCommand)) {
                         String errorMsg = String("Update begin failed: ") + Update.errorString();
                         request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                         return;
@@ -461,6 +463,8 @@ void setupWebserver(AsyncWebServer &server) {
                     request->send(400, "application/json", "{\"success\":false,\"message\":\"" + errorMsg + "\"}");
                     return;
                 }
+                // Sende finale Progress-Nachricht
+                ws.textAll("{\"type\":\"updateProgress\",\"progress\":100}");
             }
         }
     );

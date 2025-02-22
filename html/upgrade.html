@@ -161,11 +161,21 @@
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === "updateProgress") {
+                    progressContainer.style.display = 'block';
                     progress.style.width = data.progress + '%';
                     progress.textContent = data.progress + '%';
                 }
             } catch (e) {
                 console.error('WebSocket message error:', e);
+            }
+        };
+
+        ws.onclose = function() {
+            // Wenn der WebSocket geschlossen wird während eines Updates, zeige eine Nachricht
+            if (progressContainer.style.display !== 'none' && progress.style.width !== '100%') {
+                status.textContent = "Connection lost. Update may still be in progress...";
+                status.classList.add('warning');
+                status.style.display = 'block';
             }
         };
 
