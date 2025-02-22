@@ -403,7 +403,8 @@ void setupWebserver(AsyncWebServer &server) {
                     backupJsonConfigs();
                 }
                 
-                if (!Update.begin(updateSize, command)) {
+                // Setze spezifische Update-Flags für SPIFFS-Updates
+                if (!Update.begin(updateSize, command, command == U_SPIFFS ? true : false, command == U_SPIFFS ? 0 : -1)) {
                     if (command == U_SPIFFS) {
                         // Restore JSON config files if update fails at start
                         restoreJsonConfigs();

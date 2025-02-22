@@ -431,6 +431,7 @@ void scanRfidTask(void * parameter) {
 }
 
 void startNfc() {
+  Wire.setBufferSize(256);
   nfc.begin();                                           // Beginne Kommunikation mit RFID Leser
   delay(1000);
   unsigned long versiondata = nfc.getFirmwareVersion();  // Lese Versionsnummer der Firmware aus
