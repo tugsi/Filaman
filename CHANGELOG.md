@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.68] - 2025-02-23
+### Changed
+- update webpages for version v1.3.68
+
+### Fixed
+- update release note generation to include commit hash and author
+- remove commented test line from platformio.ini
+
+
 ## [1.3.67] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.67
