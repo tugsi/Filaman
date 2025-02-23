@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.89] - 2025-02-23
+### Changed
+- update webpages for version v1.3.89
+
+### Fixed
+- update Gitea release workflow to use vars for FTP credentials
+
+
 ## [1.3.88] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.88
