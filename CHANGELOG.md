@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.83] - 2025-02-23
+### Changed
+- update webpages for version v1.3.83
+
+### Fixed
+- correct variable interpolation for FTP credentials in Gitea release workflow
+
+
 ## [1.3.82] - 2025-02-23
 ### Added
 - update Gitea release workflow to use variable interpolation for FTP credentials
