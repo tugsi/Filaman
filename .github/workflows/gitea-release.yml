@@ -211,16 +211,16 @@ jobs:
       
     - name: Upload Firmware via FTP
       if: success()
-      secrets:
+      env:
         FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         FTP_USER: ${{ secrets.FTP_USER }}
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: |
-        VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         cd .pio/build/esp32dev
         lftp -c "set ssl:verify-certificate no; \
                  set ftp:ssl-protect-data true; \
                  set ftp:ssl-force true; \
                  set ssl:check-hostname false; \
                  set ftp:ssl-auth TLS; \
-                 open -u ${{ secrets.FTP_USER }},${{ secrets.FTP_PASSWORD }} ftp://filaman.app:21; \
+                 open -u ${FTP_USER},${FTP_PASSWORD} ftp://filaman.app:21; \
                  put -O / filaman_full_${VERSION}.bin -o filaman_full.bin"
