@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.66] - 2025-02-23
+### Changed
+- update webpages for version v1.3.66
+- ci: remove redundant git fetch for tags in release note generation
+
+
 ## [1.3.65] - 2025-02-22
 ### Changed
 - update webpages for version v1.3.65
