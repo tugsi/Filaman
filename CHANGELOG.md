@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.70] - 2025-02-23
+### Changed
+- update webpages for version v1.3.70
+
+
 ## [1.3.69] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.69
