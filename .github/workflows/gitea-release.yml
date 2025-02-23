@@ -211,6 +211,9 @@ jobs:
       
     - name: Upload Firmware via FTP
       if: success()
+      secrets:
+        FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        FTP_USER: ${{ secrets.FTP_USER }}
       run: |
         VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         cd .pio/build/esp32dev
