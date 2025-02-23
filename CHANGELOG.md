@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.88] - 2025-02-23
+### Changed
+- update webpages for version v1.3.88
+
+### Fixed
+- update Gitea release workflow to use secrets for FTP credentials
+
+
 ## [1.3.87] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.87
