@@ -95,9 +95,9 @@ I use the HSPI default PINs + IRQ and RESET at the PN532
 - `Adafruit_SSD1306`: OLED display control
 - `HX711`: Load cell communication
 
-## Installation
+### Installation
 
-### Prerequisites
+## Prerequisites
 - **Software:**
   - [PlatformIO](https://platformio.org/) in VS Code
   - [Spoolman](https://github.com/Donkie/Spoolman) instance
@@ -109,20 +109,20 @@ I use the HSPI default PINs + IRQ and RESET at the PN532
   - PN532 NFC Module
   - Connecting wires
 
-### Step-by-Step Installation
-## Easy Installation
-1. **Go to https://www.filaman.app/installer.html
+## Step-by-Step Installation
+### Easy Installation
+1. **Go to [FilaMan Installer](https://www.filaman.app/installer.html)**
 
-2. **Plug you device in and push Connect button
+2. **Plug you device in and push Connect button**
 
-3. **Select your Device Port and push Intall
+3. **Select your Device Port and push Intall**
 
 4. **Initial Setup:**
     - Connect to the "FilaMan" WiFi access point.
     - Configure WiFi settings through the captive portal.
     - Access the web interface at `http://filaman.local` or the IP address.
 
-## Compile by yourself
+### Compile by yourself
 1. **Clone the Repository:**
     ```bash
     git clone https://github.com/ManuelW77/Filaman.git

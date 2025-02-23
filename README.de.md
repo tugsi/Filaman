@@ -105,21 +105,20 @@ Ich nutze die HSPI default PINs + IRQ und RESET am PN532
   - PN532 NFC Modul
   - Verbindungskabel
 
-### Schritt-für-Schritt Installation
-## Einfache Installation
-1. **Gehe auf https://www.filaman.app/installer.html
+## Schritt-für-Schritt Installation
+### Einfache Installation
+1. **Gehe auf [FilaMan Installer](https://www.filaman.app/installer.html)**
 
-2. **Stecke dein ESP an den Rechner und klicke Connect
+2. **Stecke dein ESP an den Rechner und klicke Connect**
 
-3. **Wähle dein Device Port und klicke Intall
+3. **Wähle dein Device Port und klicke Intall**
 
 4. **Ersteinrichtung:**
     - Mit dem "FilaMan" WLAN-Zugangspunkt verbinden.
     - WLAN-Einstellungen über das Konfigurationsportal vornehmen.
     - Weboberfläche unter `http://filaman.local` oder der IP-Adresse aufrufen.
 
-## Compile by yourself
-
+### Compile by yourself
 1. **Repository klonen:**
     ```bash
     git clone https://github.com/ManuelW77/Filaman.git
