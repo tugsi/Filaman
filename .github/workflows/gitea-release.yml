@@ -6,6 +6,9 @@ on:
       GITEA_TOKEN:
         description: 'Token für Gitea API-Zugriff'
         required: true
+      FTP_PASSWORD:
+        description: 'FTP Password for firmware upload'
+        required: true
 
 jobs:
   create-release:
@@ -199,3 +202,16 @@ jobs:
             fi
           fi
         done
+
+    - name: Upload Firmware via FTP
+      if: success()
+      uses: sebastianpopp/ftp-action@releases/v2
+      with:
+        host: "filaman.app"
+        port: 21
+        user: "firmware"
+        password: ${{ secrets.FTP_PASSWORD }}
+        forceSsl: true
+        localDir: ".pio/build/esp32dev"
+        remoteDir: "/"
+        options: "--ssl-reqd --include 'filaman_full_*.bin' --rename"
