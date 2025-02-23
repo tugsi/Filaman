@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.75] - 2025-02-23
+### Changed
+- update webpages for version v1.3.75
+
+### Fixed
+- update FTP user and enhance SSL options in gitea-release workflow
+
+
 ## [1.3.74] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.74
