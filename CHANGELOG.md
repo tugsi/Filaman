@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.81] - 2025-02-23
+### Added
+- update Gitea release workflow to use environment variables for FTP credentials and version
+
+### Changed
+- update webpages for version v1.3.81
+
+
 ## [1.3.80] - 2025-02-23
 ### Added
 - add FTP_USER and FTP_PASSWORD secrets for firmware upload in Gitea release workflow
