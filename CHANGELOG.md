@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.76] - 2025-02-23
+### Changed
+- update webpages for version v1.3.76
+
+### Fixed
+- replace FTP action with curl for secure firmware upload and install ncftp
+
+
 ## [1.3.75] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.75
