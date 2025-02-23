@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.78] - 2025-02-23
+### Changed
+- update webpages for version v1.3.78
+
+### Fixed
+- change FTP protocol from FTPS to FTP for file upload in workflow
+
+
 ## [1.3.77] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.77
