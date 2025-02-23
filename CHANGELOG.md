@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.73] - 2025-02-23
+### Changed
+- update webpages for version v1.3.73
+- update version to 1.3.72 in platformio.ini
+
+
 ## [1.3.72] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.72
