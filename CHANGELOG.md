@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.90] - 2025-02-23
+### Added
+- update index.html for improved content structure and additional links
+- improve UI for Spoolman and Bambu Lab printer credentials, enhancing layout and styling
+- update README files with HSPI default PINs and add ESP32 pin diagram
+- implement scale calibration checks and update start_scale function to return calibration status
+- add FTP upload functionality to GitHub release workflow and update installation instructions in README
+
+### Changed
+- update webpages for version v1.3.90
+
+### Fixed
+- remove debug secrets check from Gitea release workflow
+
+
 ## [1.3.89] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.89
