@@ -55,7 +55,7 @@ uint8_t start_scale() {
   Serial.println("Prüfe Calibration Value");
   long calibrationValue;
 
-  // NVS
+  // NVS lesen
   preferences.begin(NVS_NAMESPACE, true); // true = readonly
   calibrationValue = preferences.getLong(NVS_KEY_CALIBRATION, defaultScaleCalibrationValue);
   preferences.end();
