@@ -6,15 +6,7 @@ on:
       GITEA_TOKEN:
         description: 'Token für Gitea API-Zugriff'
         required: true
-      FTP_PASSWORD:
-        description: 'FTP Password for firmware upload'
-        required: true
-      FTP_USER:
-        description: 'FTP User for firmware upload'
-        required: true
-      FTP_HOST:
-        description: 'FTP Host for firmware upload'
-        required: true
+
     outputs:
       version:
         description: 'The version that was released'
@@ -219,6 +211,11 @@ jobs:
       run: sudo apt-get install -y lftp
       
     - name: Debug Secrets
+      env:
+        FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        FTP_USER: ${{ secrets.FTP_USER }}
+        FTP_HOST: ${{ secrets.FTP_HOST }}
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: |
         echo "Check if secrets are defined:"
         if [ -n "${{ secrets.FTP_USER }}" ]; then echo "FTP_USER is defined"; else echo "FTP_USER is empty"; fi
