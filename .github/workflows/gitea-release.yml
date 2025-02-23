@@ -203,18 +203,18 @@ jobs:
           fi
         done
 
-    - name: Install ncftp
-      run: sudo apt-get install -y ncftp
-
+    - name: Install lftp
+      run: sudo apt-get install -y lftp
+      
     - name: Upload Firmware via FTP
       if: success()
       run: |
         VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         cd .pio/build/esp32dev
-        curl --ftp-ssl-reqd \
-          --ftp-ssl-control \
-          --ssl-reqd \
-          --insecure \
-          --user "${{ secrets.FTP_USER }}:${{ secrets.FTP_PASSWORD }}" \
-          -T "filaman_full_${VERSION}.bin" \
-          "ftps://filaman.app:21/filaman_full.bin"
+        lftp -c "set ssl:verify-certificate no; \
+                 set ftp:ssl-protect-data true; \
+                 set ftp:ssl-force true; \
+                 set ssl:check-hostname false; \
+                 set ftp:ssl-auth TLS; \
+                 open -u ${{ secrets.FTP_USER }},${{ secrets.FTP_PASSWORD }} ftps://filaman.app:21; \
+                 put -O / filaman_full_${VERSION}.bin -o filaman_full.bin"
