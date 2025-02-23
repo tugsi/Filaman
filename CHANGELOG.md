@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.86] - 2025-02-23
+### Changed
+- update webpages for version v1.3.86
+
+### Fixed
+- streamline FTP credentials usage in Gitea release workflow
+
+
 ## [1.3.85] - 2025-02-23
 ### Added
 - add FTP_USER variable for Gitea release workflow
