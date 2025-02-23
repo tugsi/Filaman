@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.72] - 2025-02-23
+### Changed
+- update webpages for version v1.3.72
+
+### Fixed
+- update FTP options for Gitea release workflow
+
+
 ## [1.3.71] - 2025-02-23
 ### Added
 - add FTP upload step for firmware in Gitea release workflow
