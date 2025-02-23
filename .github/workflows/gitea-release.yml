@@ -209,9 +209,9 @@ jobs:
       with:
         host: "filaman.app"
         port: 21
-        user: "firmware"
-        password: "${{ secrets.FTP_PASSWORD }}"
+        user: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
         forceSsl: true
         localDir: ".pio/build/esp32dev"
         remoteDir: "/"
-        options: "set ssl:verify-certificate no; mirror -R --include-glob filaman_full_*.bin --parallel=1"
+        options: "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no; set ftp:ssl-auth TLS; put filaman_full_*.bin -o filaman_full.bin"
