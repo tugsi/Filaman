@@ -12,6 +12,9 @@ on:
       FTP_USER:
         description: 'FTP User for firmware upload'
         required: true
+      FTP_HOST:
+        description: 'FTP Host for firmware upload'
+        required: true
 
 jobs:
   create-release:
@@ -214,13 +217,14 @@ jobs:
       env:
         FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         FTP_USER: ${{ secrets.FTP_USER }}
+        FTP_HOST: ${{ secrets.FTP_HOST }}
         VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: |
         cd .pio/build/esp32dev
-        lftp -c 'set ssl:verify-certificate no; \
+        lftp -c "set ssl:verify-certificate no; \
                  set ftp:ssl-protect-data true; \
                  set ftp:ssl-force true; \
                  set ssl:check-hostname false; \
                  set ftp:ssl-auth TLS; \
-                 open -u '$FTP_USER','$FTP_PASSWORD' ftp://filaman.app:21; \
-                 put -O / filaman_full_'$VERSION'.bin -o filaman_full.bin'
+                 open -u $FTP_USER,$FTP_PASSWORD $FTP_HOST; \
+                 put -O / filaman_full_$VERSION.bin -o filaman_full.bin"
