@@ -220,10 +220,7 @@ jobs:
         FTP_HOST: ${{ secrets.FTP_HOST }}
         VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: |
-        echo $FTP_USER
-        export FTP_USER=${{ secrets.FTP_USER }}
-        echo $FTP_USER
-
+        echo ${{ secrets.FTP_USER }}
 
         cd .pio/build/esp32dev
         lftp -c "set ssl:verify-certificate no; \
@@ -231,5 +228,5 @@ jobs:
                  set ftp:ssl-force true; \
                  set ssl:check-hostname false; \
                  set ftp:ssl-auth TLS; \
-                 open -u $FTP_USER,$FTP_PASSWORD $FTP_HOST; \
-                 put -O / filaman_full_$VERSION.bin -o filaman_full.bin"
+                 open -u ${{ secrets.FTP_USER }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_HOST }}; \
+                 put -O / filaman_full_${{ steps.get_version.outputs.VERSION }}.bin -o filaman_full.bin"
