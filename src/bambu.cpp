@@ -218,37 +218,6 @@ bool setBambuSpool(String payload) {
         doc.clear();
         yield();
     }
-/*
-    if (setting_id != "") {
-        yield();
-        doc["print"]["sequence_id"] = 0;
-        doc["print"]["command"] = "ams_filament_setting";
-        doc["print"]["nozzle_temp_min"] = minTemp;
-        doc["print"]["nozzle_temp_max"] = maxTemp;
-        doc["print"]["setting_id"] = setting_id;
-        doc["print"]["tray_color"] = color.length() == 8 ? color : color+"FF";
-        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
-        doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
-        doc["print"]["tray_info_idx"] = tray_info_idx;
-        doc["print"]["tray_type"] = type;
-
-        // Serialize the JSON
-        String output;
-        serializeJson(doc, output);
-
-        if (sendMqttMessage(output)) {
-            Serial.println("Filament Setting successfully set");
-        }
-        else
-        {
-            Serial.println("Failed to set Filament setting");
-            return false;
-        }
-
-        doc.clear();
-        yield();
-    }
-*/
 
     return true;
 }
