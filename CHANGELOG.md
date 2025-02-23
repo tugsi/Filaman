@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.79] - 2025-02-23
+### Added
+- add FTP_USER input for firmware upload in Gitea release workflow
+
+### Changed
+- update webpages for version v1.3.79
+
+
 ## [1.3.78] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.78
