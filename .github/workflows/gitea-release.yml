@@ -209,13 +209,6 @@ jobs:
 
     - name: Install lftp
       run: sudo apt-get install -y lftp
-      
-    - name: Debug Secrets
-      run: |
-        echo "Check if secrets are defined:"
-        if [ -n "${{ vars.FTP_USER }}" ]; then echo "FTP_USER is defined"; else echo "FTP_USER is empty"; fi
-        if [ -n "${{ vars.FTP_PASSWORD }}" ]; then echo "FTP_PASSWORD is defined"; else echo "FTP_PASSWORD is empty"; fi
-        if [ -n "${{ vars.FTP_HOST }}" ]; then echo "FTP_HOST is defined"; else echo "FTP_HOST is empty"; fi
         
     - name: Upload Firmware via FTP
       if: success()
