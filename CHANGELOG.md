@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.67] - 2025-02-23
+### Changed
+- update webpages for version v1.3.67
+- ci: update release note generation to use the latest tag
+
+
 ## [1.3.66] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.66
