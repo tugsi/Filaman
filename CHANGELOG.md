@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.87] - 2025-02-23
+### Changed
+- update webpages for version v1.3.87
+
+### Fixed
+- enhance FTP upload workflow with credential checks and version output
+
+
 ## [1.3.86] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.86
