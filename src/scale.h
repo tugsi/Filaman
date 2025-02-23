@@ -5,7 +5,7 @@
 #include "HX711.h"
 
 
-void start_scale();
+uint8_t start_scale();
 uint8_t calibrate_scale();
 uint8_t tareScale();
 
@@ -14,6 +14,7 @@ extern int16_t weight;
 extern uint8_t weigthCouterToApi;
 extern uint8_t scale_tare_counter;
 extern uint8_t pauseMainTask;
+extern uint8_t scaleCalibrated;
 
 extern TaskHandle_t ScaleTask;
 

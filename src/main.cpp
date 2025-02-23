@@ -58,7 +58,22 @@ void setup() {
   
   startNfc();
 
-  start_scale();
+  uint8_t scaleCalibrated = start_scale();
+  if (scaleCalibrated == 3) {
+    oledShowMessage("Scale not calibrated!");
+    for (uint16_t i = 0; i < 50000; i++) {
+      yield();
+      vTaskDelay(pdMS_TO_TICKS(1));
+      esp_task_wdt_reset();
+    }
+  } else if (scaleCalibrated == 0) {
+    oledShowMessage("HX711 not found");
+    for (uint16_t i = 0; i < 50000; i++) {
+      yield();
+      vTaskDelay(pdMS_TO_TICKS(1));
+      esp_task_wdt_reset();
+    }
+  }
   
   // WDT initialisieren mit 10 Sekunden Timeout
   bool panic = true; // Wenn true, löst ein WDT-Timeout einen System-Panik aus
@@ -84,32 +99,32 @@ uint8_t wifiErrorCounter = 0;
 
 // ##### PROGRAM START #####
 void loop() {
-
-  /*
-  // Überprüfe den WLAN-Status
-  if (WiFi.status() != WL_CONNECTED) {
-    wifiErrorCounter++;
-    wifiOn = false;
-  } else {
-    wifiErrorCounter = 0;
-    wifiOn = true;
-  }
-  if (wifiErrorCounter > 20) ESP.restart();
-  */
- 
   unsigned long currentMillis = millis();
 
   // Send AMS Data min every Minute
-  if (currentMillis - lastAmsSendTime >= amsSendInterval) {
+  if (currentMillis - lastAmsSendTime >= amsSendInterval) 
+  {
     lastAmsSendTime = currentMillis;
     sendAmsData(nullptr);
   }
+
+  // Wenn Waage nicht Kalibriert
+  if (scaleCalibrated == 3) 
+  {
+    oledShowMessage("Scale not calibrated!");
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    yield();
+    esp_task_wdt_reset();
+    
+    return;
+  } 
 
   // Ausgabe der Waage auf Display
   if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0)
   {
     (weight < 0) ? oledShowMessage("!! -1") : oledShowWeight(weight);
   }
+
 
   // Wenn Timer abgelaufen und nicht gerade ein RFID-Tag geschrieben wird
   if (currentMillis - lastWeightReadTime >= weightReadInterval && hasReadRfidTag < 3)

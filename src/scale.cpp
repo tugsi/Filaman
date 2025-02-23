@@ -16,6 +16,7 @@ int16_t weight = 0;
 uint8_t weigthCouterToApi = 0;
 uint8_t scale_tare_counter = 0;
 uint8_t pauseMainTask = 0;
+uint8_t scaleCalibrated = 1;
 
 Preferences preferences;
 const char* NVS_NAMESPACE = "scale";
@@ -50,7 +51,7 @@ void scale_loop(void * parameter) {
   }
 }
 
-void start_scale() {
+uint8_t start_scale() {
   Serial.println("Prüfe Calibration Value");
   long calibrationValue;
 
@@ -64,7 +65,10 @@ void start_scale() {
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 
-  if (isnan(calibrationValue) || calibrationValue < 1) calibrationValue = defaultScaleCalibrationValue;
+  if (isnan(calibrationValue) || calibrationValue < 1) {
+    calibrationValue = defaultScaleCalibrationValue;
+    scaleCalibrated = 0;
+  }
 
   oledShowMessage("Scale Tare Please remove all");
   for (uint16_t i = 0; i < 2000; i++) {
@@ -97,6 +101,8 @@ void start_scale() {
   } else {
       Serial.println("ScaleLoop-Task erfolgreich erstellt");
   }
+
+  return (scaleCalibrated == 1) ? 1 : 3;
 }
 
 uint8_t calibrate_scale() {
