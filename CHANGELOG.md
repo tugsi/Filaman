@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.77] - 2025-02-23
+### Changed
+- update webpages for version v1.3.77
+
+### Fixed
+- replace ncftp with lftp for secure firmware upload
+
+
 ## [1.3.76] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.76
