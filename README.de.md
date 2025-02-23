@@ -76,6 +76,10 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
 | PN532 MISO        | 12        |
 | PN532 CS/SS       | 15        |
 
+Ich nutze die HSPI default PINs + IRQ und RESET am PN532
+
+![ESP32](./img/ESP32-SPI-Pins.png)
+
 ## Software-Abhängigkeiten
 
 ### ESP32-Bibliotheken

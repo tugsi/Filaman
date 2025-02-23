@@ -80,6 +80,10 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
 | PN532 MISO       	| 12        |
 | PN532 CS/SS       | 15        |
 
+I use the HSPI default PINs + IRQ and RESET at the PN532
+
+![ESP32](./img/ESP32-SPI-Pins.png)
+
 ## Software Dependencies
 
 ### ESP32 Libraries
