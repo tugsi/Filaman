@@ -210,7 +210,7 @@ jobs:
         host: "filaman.app"
         port: 21
         user: "firmware"
-        password: ${{ secrets.FTP_PASSWORD }}
+        password: "${{ secrets.FTP_PASSWORD }}"
         forceSsl: true
         localDir: ".pio/build/esp32dev"
         remoteDir: "/"
