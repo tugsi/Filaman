@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.91] - 2025-02-23
+### Added
+- update GitHub Actions workflow for FTP firmware upload with improved credential checks
+
+### Changed
+- update webpages for version v1.3.91
+
+
 ## [1.3.90] - 2025-02-23
 ### Added
 - update index.html for improved content structure and additional links
