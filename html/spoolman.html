@@ -95,27 +95,36 @@
     
     <div class="content">
         <h1>Spoolman API URL / Bambu Credentials</h1>
-        <label for="spoolmanUrl">Set URL/IP to your Spoolman-Instanz:</label>
-        <input type="text" id="spoolmanUrl" placeholder="http://ip-or-url-of-your-spoolman-instanz:port">
-        <button onclick="checkSpoolmanInstance()">Save Spoolman URL</button>
-        <p id="statusMessage"></p>
 
-        <h2>Bambu Lab Printer Credentials</h2>
-        <div class="bambu-settings">
-            <div class="input-group">
-                <label for="bambuIp">Bambu Drucker IP-Adresse:</label>
-                <input type="text" id="bambuIp" placeholder="192.168.1.xxx" value="{{bambuIp}}">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Set URL/IP to your Spoolman-Instanz</h5>
+                <input type="text" id="spoolmanUrl" placeholder="http://ip-or-url-of-your-spoolman-instanz:port">
+                <button onclick="checkSpoolmanInstance()">Save Spoolman URL</button>
+                <p id="statusMessage"></p>
             </div>
-            <div class="input-group">
-                <label for="bambuSerial">Drucker Seriennummer:</label>
-                <input type="text" id="bambuSerial" placeholder="BBLXXXXXXXX" value="{{bambuSerial}}">
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Bambu Lab Printer Credentials</h5>
+                <div class="bambu-settings">
+                    <div class="input-group">
+                        <label for="bambuIp">Bambu Drucker IP-Adresse:</label>
+                        <input type="text" id="bambuIp" placeholder="192.168.1.xxx" value="{{bambuIp}}">
+                    </div>
+                    <div class="input-group">
+                        <label for="bambuSerial">Drucker Seriennummer:</label>
+                        <input type="text" id="bambuSerial" placeholder="BBLXXXXXXXX" value="{{bambuSerial}}">
+                    </div>
+                    <div class="input-group">
+                        <label for="bambuCode">Access Code:</label>
+                        <input type="text" id="bambuCode" placeholder="Access Code vom Drucker" value="{{bambuCode}}">
+                    </div>
+                    <button onclick="saveBambuCredentials()">Save Bambu Credentials</button>
+                    <p id="bambuStatusMessage"></p>
+                </div>
             </div>
-            <div class="input-group">
-                <label for="bambuCode">Access Code:</label>
-                <input type="text" id="bambuCode" placeholder="Access Code vom Drucker" value="{{bambuCode}}">
-            </div>
-            <button onclick="saveBambuCredentials()">Save Bambu Credentials</button>
-            <p id="bambuStatusMessage"></p>
         </div>
     </div>
 </body>

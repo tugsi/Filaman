@@ -384,7 +384,8 @@ void setupWebserver(AsyncWebServer &server) {
         html.replace("{{spoolmanUrl}}", spoolmanUrl);
 
         JsonDocument doc;
-        if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<String>()) {
+        if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<String>()) 
+        {
             String bambuIp = doc["bambu_ip"].as<String>();
             String bambuSerial = doc["bambu_serialnr"].as<String>();
             String bambuCode = doc["bambu_accesscode"].as<String>();
@@ -395,7 +396,13 @@ void setupWebserver(AsyncWebServer &server) {
             html.replace("{{bambuIp}}", bambuIp ? bambuIp : "");            
             html.replace("{{bambuSerial}}", bambuSerial ? bambuSerial : "");
             html.replace("{{bambuCode}}", bambuCode ? bambuCode : "");
-        }   
+        }
+        else
+        {
+            html.replace("{{bambuIp}}", "");
+            html.replace("{{bambuSerial}}", "");
+            html.replace("{{bambuCode}}", "");
+        }
 
         request->send(200, "text/html", html);
     });

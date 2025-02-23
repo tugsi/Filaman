@@ -279,9 +279,10 @@ a:hover {
 
 /* Karten-Stil für optische Trennung */
 .card {
-    background: #f9f9f9;
+    background: var(--primary-color);
+    width: 500px;
     padding: 15px;
-    margin: 20px 0;
+    margin: 20px auto;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -959,7 +960,6 @@ input[type="submit"]:disabled,
 
 /* Bambu Settings Erweiterung */
 .bambu-settings {
-    background: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
