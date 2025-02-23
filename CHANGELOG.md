@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.84] - 2025-02-23
+### Added
+- add FTP_HOST variable for firmware upload in Gitea release workflow
+
+### Changed
+- update webpages for version v1.3.84
+
+
 ## [1.3.83] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.83
