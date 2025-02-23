@@ -214,4 +214,4 @@ jobs:
         forceSsl: true
         localDir: ".pio/build/esp32dev"
         remoteDir: "/"
-        options: "--ssl-reqd --include 'filaman_full_*.bin' --rename"
+        options: "set ssl:verify-certificate no; mirror -R --include-glob filaman_full_*.bin --parallel=1"
