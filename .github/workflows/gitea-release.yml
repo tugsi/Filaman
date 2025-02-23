@@ -75,24 +75,21 @@ jobs:
         LATEST_TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | head -n 1)
         
         if [ -n "$LATEST_TAG" ]; then
-          # Get the commit hash of the latest tag
-          LAST_RELEASE_HASH=$(git rev-list -n 1 ${LATEST_TAG})
-          
           echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
           echo "Changes since ${LATEST_TAG}:" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           
-          # Get all commits since last release
+          # Get all commits since last release with commit hash and author
           echo "### Added" >> $GITHUB_OUTPUT
-          git log ${LAST_RELEASE_HASH}..HEAD --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          git log ${LATEST_TAG}..HEAD --pretty=format:"%h - %s (%an)" | grep -iE '^[a-f0-9]+ - (feat|add|new)' | sed 's/^[a-f0-9]* - feat: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Fixed" >> $GITHUB_OUTPUT
-          git log ${LAST_RELEASE_HASH}..HEAD --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          git log ${LATEST_TAG}..HEAD --pretty=format:"%h - %s (%an)" | grep -iE '^[a-f0-9]+ - fix' | sed 's/^[a-f0-9]* - fix: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Changed" >> $GITHUB_OUTPUT
-          git log ${LAST_RELEASE_HASH}..HEAD --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
+          git log ${LATEST_TAG}..HEAD --pretty=format:"%h - %s (%an)" | grep -ivE '^[a-f0-9]+ - (feat|fix|add|new)' | sed 's/^[a-f0-9]* - /- /' >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         else
           # First release
@@ -102,15 +99,15 @@ jobs:
           
           # Add all commits for initial release
           echo "### Added" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -iE '^(feat|add|new)' | sed 's/^feat: /- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:"%h - %s (%an)" | grep -iE '^[a-f0-9]+ - (feat|add|new)' | sed 's/^[a-f0-9]* - feat: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Fixed" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -iE '^fix' | sed 's/^fix: /- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:"%h - %s (%an)" | grep -iE '^[a-f0-9]+ - fix' | sed 's/^[a-f0-9]* - fix: /- /' >> $GITHUB_OUTPUT || true
           echo "" >> $GITHUB_OUTPUT
           
           echo "### Changed" >> $GITHUB_OUTPUT
-          git log --pretty=format:%s | grep -ivE '^(feat|fix|add|new)' | sed 's/^/- /' >> $GITHUB_OUTPUT || true
+          git log --pretty=format:"%h - %s (%an)" | grep -ivE '^[a-f0-9]+ - (feat|fix|add|new)' | sed 's/^[a-f0-9]* - /- /' >> $GITHUB_OUTPUT || true
           echo "EOF" >> $GITHUB_OUTPUT
         fi
 
