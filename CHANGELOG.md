@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.74] - 2025-02-23
+### Changed
+- update webpages for version v1.3.74
+
+### Fixed
+- update password syntax in gitea-release workflow
+
+
 ## [1.3.73] - 2025-02-23
 ### Changed
 - update webpages for version v1.3.73
