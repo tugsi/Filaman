@@ -9,6 +9,9 @@ on:
       FTP_PASSWORD:
         description: 'FTP Password for firmware upload'
         required: true
+      FTP_USER:
+        description: 'FTP User for firmware upload'
+        required: true
 
 jobs:
   create-release:
