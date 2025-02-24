@@ -420,7 +420,7 @@ void scanRfidTask(void * parameter) {
         //uidString = "";
         nfcJsonData = "";
         Serial.println("Tag entfernt");
-        oledShowWeight(0);
+        if (!autoSendToBambu) oledShowWeight(weight);
       }
 
       // aktualisieren der Website wenn sich der Status ändert

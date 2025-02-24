@@ -117,7 +117,6 @@ std::vector<String> splitTextIntoLines(String text, uint8_t textSize) {
         lines.push_back(currentLine);
     }
     
-    Serial.println(lines.size());
     return lines;
 }
 
