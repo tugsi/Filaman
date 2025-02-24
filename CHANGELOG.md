@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.92] - 2025-02-24
+### Changed
+- update webpages for version v1.3.92
+- remove commented-out code in setBambuSpool function
+- update installation instructions and formatting in README files
+
+### Fixed
+- configure CPU frequency settings in setup function only for testing
+- update comment to clarify NVS reading process
+- adjust weight display logic to handle cases for weight less than 2
+- update weight display logic to handle negative and specific weight cases
+
+
 ## [1.3.91] - 2025-02-23
 ### Added
 - update GitHub Actions workflow for FTP firmware upload with improved credential checks
