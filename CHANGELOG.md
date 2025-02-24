@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.94] - 2025-02-24
+### Changed
+- update webpages for version v1.3.94
+
+### Fixed
+- correct payload type check in NFC write event handling
+
+
 ## [1.3.93] - 2025-02-24
 ### Added
 - implement auto send feature for Bambu spool management and update related configurations
