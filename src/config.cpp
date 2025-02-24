@@ -40,6 +40,10 @@ const uint8_t webserverPort = 80;
 const char* apiUrl = "/api/v1";
 // ***** API
 
+// ***** Bambu Auto Set Spool
+uint8_t autoSetBambuAmsCounter = 60;
+// ***** Bambu Auto Set Spool
+
 // ***** Task Prios
 uint8_t rfidTaskCore = 1;
 uint8_t rfidTaskPrio = 1;

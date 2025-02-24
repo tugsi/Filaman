@@ -74,8 +74,9 @@
             const ip = document.getElementById('bambuIp').value;
             const serial = document.getElementById('bambuSerial').value;
             const code = document.getElementById('bambuCode').value;
+            const autoSend = document.getElementById('autoSend').checked;
 
-            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}`)
+            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}&autoSend=${autoSend}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.healthy) {
@@ -121,6 +122,12 @@
                         <label for="bambuCode">Access Code:</label>
                         <input type="text" id="bambuCode" placeholder="Access Code vom Drucker" value="{{bambuCode}}">
                     </div>
+                    <div class="input-group">
+                        If activated, FilaMan will automatically update the next filled tray with the last scanned and weighed spool.
+                        <label for="autoSend">Auto Send to Bambu:</label>
+                        <input type="checkbox" id="autoSend">
+                    </div>
+
                     <button onclick="saveBambuCredentials()">Save Bambu Credentials</button>
                     <p id="bambuStatusMessage"></p>
                 </div>

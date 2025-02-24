@@ -24,13 +24,15 @@ const char* bambu_ip = nullptr;
 const char* bambu_accesscode = nullptr;
 const char* bambu_serialnr = nullptr;
 bool bambu_connected = false;
+bool autoSendToBambu = false;
+int autoSetToBambuSpoolId = 0;
 
 // Globale Variablen für AMS-Daten
 int ams_count = 0;
 String amsJsonData;  // Speichert das fertige JSON für WebSocket-Clients
-AMSData ams_data[MAX_AMS];  // Definition des Arrays
+AMSData ams_data[MAX_AMS];  // Definition des Arrays;
 
-bool saveBambuCredentials(const String& ip, const String& serialnr, const String& accesscode) {
+bool saveBambuCredentials(const String& ip, const String& serialnr, const String& accesscode, bool autoSend) {
     if (BambuMqttTask) {
         vTaskDelete(BambuMqttTask);
     }
@@ -39,6 +41,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
     doc["bambu_ip"] = ip;
     doc["bambu_accesscode"] = accesscode;
     doc["bambu_serialnr"] = serialnr;
+    doc["autoSendToBambu"] = autoSend;
 
     if (!saveJsonValue("/bambu_credentials.json", doc)) {
         Serial.println("Fehler beim Speichern der Bambu-Credentials.");
@@ -49,6 +52,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
     bambu_ip = ip.c_str();
     bambu_accesscode = accesscode.c_str();
     bambu_serialnr = serialnr.c_str();
+    autoSendToBambu = autoSend;
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
     if (!setupMqtt()) return false;
@@ -63,6 +67,7 @@ bool loadBambuCredentials() {
         String ip = doc["bambu_ip"].as<String>();
         String code = doc["bambu_accesscode"].as<String>();
         String serial = doc["bambu_serialnr"].as<String>();
+        autoSendToBambu = doc["autoSendToBambu"].as<bool>();
 
         ip.trim();
         code.trim();
@@ -256,6 +261,26 @@ bool setBambuSpool(String payload) {
     return true;
 }
 
+void autoSetSpool(int spoolId, uint8_t trayId) {
+    // wenn neue spule erkannt und autoSetToBambu > 0
+    JsonDocument spoolInfo = fetchSingleSpoolInfo(spoolId);
+
+    if (!spoolInfo.isNull())
+    {
+        // AMS und TRAY id ergänzen
+        spoolInfo["amsId"] = 0;
+        spoolInfo["trayId"] = trayId;
+
+        Serial.println("Auto set spool");
+        Serial.println(spoolInfo.as<String>());
+
+        setBambuSpool(spoolInfo.as<String>());
+    }
+
+    // id wieder zurücksetzen damit abgeschlossen
+    autoSetToBambuSpoolId = 0;
+}
+
 // init
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     String message;
@@ -267,16 +292,27 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     // JSON-Dokument parsen
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, message);
-    if (error) {
+    if (error) 
+    {
         Serial.print("Fehler beim Parsen des JSON: ");
         Serial.println(error.c_str());
         return;
     }
 
+    // Wenn bambu auto set spool aktiv und eine spule erkannt und mqtt meldung das neue spule im ams
+    if (autoSendToBambu && autoSetToBambuSpoolId > 0 && 
+        doc["print"]["command"].as<String>() == "push_status" && doc["print"]["ams"]["tray_pre"].as<uint8_t>()
+        && !doc["print"]["ams"]["ams"].as<JsonArray>())
+    {
+        autoSetSpool(autoSetToBambuSpoolId, doc["print"]["ams"]["tray_pre"].as<uint8_t>());
+    }
+
     // Prüfen, ob "print->upgrade_state" und "print.ams.ams" existieren
-    if (doc["print"]["upgrade_state"].is<JsonObject>()) {
+    if (doc["print"]["upgrade_state"].is<JsonObject>()) 
+    {
         // Prüfen ob AMS-Daten vorhanden sind
-        if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonArray>()) {
+        if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonArray>()) 
+        {
             return;
         }
 
@@ -470,7 +506,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 void reconnect() {
     // Loop until we're reconnected
     while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
+        Serial.println("Attempting MQTT connection...");
         bambu_connected = false;
         oledShowTopRow();
 

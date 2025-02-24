@@ -90,6 +90,10 @@ void setup() {
 unsigned long lastWeightReadTime = 0;
 const unsigned long weightReadInterval = 1000; // 1 second
 
+unsigned long lastAutoSetBambuAmsTime = 0;
+const unsigned long autoSetBambuAmsInterval = 1000; // 1 second
+uint8_t autoAmsCounter = 0;
+
 unsigned long lastAmsSendTime = 0;
 const unsigned long amsSendInterval = 60000; // 1 minute
 
@@ -108,6 +112,22 @@ void loop() {
     sendAmsData(nullptr);
   }
 
+  // Wenn Bambu auto set Spool aktiv
+  if (autoSendToBambu && autoSetToBambuSpoolId > 0 && currentMillis - lastAutoSetBambuAmsTime >= autoSetBambuAmsInterval) 
+  {
+    lastAutoSetBambuAmsTime = currentMillis;
+    oledShowMessage("Auto Set         " + String(autoSetBambuAmsCounter - autoAmsCounter) + "s");
+    autoAmsCounter++;
+
+    if (autoAmsCounter >= autoSetBambuAmsCounter) 
+    {
+      autoSetToBambuSpoolId = 0;
+      autoAmsCounter = 0;
+      oledShowWeight(weight);
+    }
+  }
+  
+
   // Wenn Waage nicht Kalibriert
   if (scaleCalibrated == 3) 
   {
@@ -120,7 +140,7 @@ void loop() {
   } 
 
   // Ausgabe der Waage auf Display
-  if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0)
+  if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0 && (!autoSendToBambu || autoSetToBambuSpoolId == 0))
   {
     (weight < 2) ? ((weight < -2) ? oledShowMessage("!! -0") : oledShowWeight(0)) : oledShowWeight(weight);
   }
@@ -169,6 +189,7 @@ void loop() {
       oledShowIcon("success");
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       weightSend = 1;
+      autoSetToBambuSpoolId = spoolId.toInt();
     }
     else
     {

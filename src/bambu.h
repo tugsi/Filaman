@@ -28,9 +28,11 @@ extern bool bambu_connected;
 
 extern int ams_count;
 extern AMSData ams_data[MAX_AMS];
+extern bool autoSendToBambu;
+extern int autoSetToBambuSpoolId;
 
 bool loadBambuCredentials();
-bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, const String& bambu_accesscode);
+bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, const String& bambu_accesscode, const bool autoSend);
 bool setupMqtt();
 void mqtt_loop(void * parameter);
 bool setBambuSpool(String payload);

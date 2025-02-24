@@ -351,17 +351,6 @@ void setupWebserver(AsyncWebServer &server) {
         Serial.println("RFID-Seite gesendet");
     });
 
-    /*
-    // Neue API-Route für das Abrufen der Spool-Daten
-    server.on("/api/spools", HTTP_GET, [](AsyncWebServerRequest *request){
-        Serial.println("API-Aufruf: /api/spools");
-        JsonDocument spoolsData = fetchSpoolsForWebsite();
-        String response;
-        serializeJson(spoolsData, response);
-        request->send(200, "application/json", response);
-    });
-    */
-
     server.on("/api/url", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("API-Aufruf: /api/url");
         String jsonResponse = "{\"spoolman_url\": \"" + String(spoolmanUrl) + "\"}";
@@ -389,6 +378,7 @@ void setupWebserver(AsyncWebServer &server) {
             String bambuIp = doc["bambu_ip"].as<String>();
             String bambuSerial = doc["bambu_serialnr"].as<String>();
             String bambuCode = doc["bambu_accesscode"].as<String>();
+            autoSendToBambu = doc["autoSendToBambu"].as<bool>();
             bambuIp.trim();
             bambuSerial.trim();
             bambuCode.trim();
@@ -396,12 +386,14 @@ void setupWebserver(AsyncWebServer &server) {
             html.replace("{{bambuIp}}", bambuIp ? bambuIp : "");            
             html.replace("{{bambuSerial}}", bambuSerial ? bambuSerial : "");
             html.replace("{{bambuCode}}", bambuCode ? bambuCode : "");
+            html.replace("{{autoSendToBambu}}", autoSendToBambu ? "checked" : "");
         }
         else
         {
             html.replace("{{bambuIp}}", "");
             html.replace("{{bambuSerial}}", "");
             html.replace("{{bambuCode}}", "");
+            html.replace("{{autoSendToBambu}}", "");
         }
 
         request->send(200, "text/html", html);
@@ -433,6 +425,8 @@ void setupWebserver(AsyncWebServer &server) {
         String bambu_ip = request->getParam("bambu_ip")->value();
         String bambu_serialnr = request->getParam("bambu_serialnr")->value();
         String bambu_accesscode = request->getParam("bambu_accesscode")->value();
+        bool autoSend = (request->getParam("autoSend")->value() == "true") ? true : false;
+        Serial.println(autoSend);
         bambu_ip.trim();
         bambu_serialnr.trim();
         bambu_accesscode.trim();
@@ -442,7 +436,7 @@ void setupWebserver(AsyncWebServer &server) {
             return;
         }
 
-        bool success = saveBambuCredentials(bambu_ip, bambu_serialnr, bambu_accesscode);
+        bool success = saveBambuCredentials(bambu_ip, bambu_serialnr, bambu_accesscode, autoSend);
 
         request->send(200, "application/json", "{\"healthy\": " + String(success ? "true" : "false") + "}");
     });

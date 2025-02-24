@@ -37,9 +37,9 @@ struct SendToApiParams {
     }
 */
 
-JsonDocument fetchSpoolsForWebsite() {
+JsonDocument fetchSingleSpoolInfo(int spoolId) {
     HTTPClient http;
-    String spoolsUrl = spoolmanUrl + apiUrl + "/spool";
+    String spoolsUrl = spoolmanUrl + apiUrl + "/spool/" + spoolId;
 
     Serial.print("Rufe Spool-Daten von: ");
     Serial.println(spoolsUrl);
@@ -56,84 +56,45 @@ JsonDocument fetchSpoolsForWebsite() {
             Serial.print("Fehler beim Parsen der JSON-Antwort: ");
             Serial.println(error.c_str());
         } else {
-            JsonArray spools = doc.as<JsonArray>();
-            JsonArray filteredSpools = filteredDoc.to<JsonArray>();
+            String filamentType = doc["filament"]["material"].as<String>();
+            String filamentBrand = doc["filament"]["vendor"]["name"].as<String>();
 
-            for (JsonObject spool : spools) {
-                JsonObject filteredSpool = filteredSpools.add<JsonObject>();
-                filteredSpool["extra"]["nfc_id"] = spool["extra"]["nfc_id"];
+            int nozzle_temp_min = 0;
+            int nozzle_temp_max = 0;
+            if (doc["filament"]["extra"]["nozzle_temperature"].is<String>()) {
+                String tempString = doc["filament"]["extra"]["nozzle_temperature"].as<String>();
+                tempString.replace("[", "");
+                tempString.replace("]", "");
+                int commaIndex = tempString.indexOf(',');
+                
+                if (commaIndex != -1) {
+                    nozzle_temp_min = tempString.substring(0, commaIndex).toInt();
+                    nozzle_temp_max = tempString.substring(commaIndex + 1).toInt();
+                }
+            } 
 
-                JsonObject filament = filteredSpool["filament"].to<JsonObject>();
-                filament["sm_id"] = spool["id"];
-                filament["id"] = spool["filament"]["id"];
-                filament["name"] = spool["filament"]["name"];
-                filament["material"] = spool["filament"]["material"];
-                filament["color_hex"] = spool["filament"]["color_hex"];
-                filament["nozzle_temperature"] = spool["filament"]["extra"]["nozzle_temperature"]; // [190,230]
-                filament["price_meter"] = spool["filament"]["extra"]["price_meter"];
-                filament["price_gramm"] = spool["filament"]["extra"]["price_gramm"];
+            String filamentColor = doc["filament"]["color_hex"].as<String>();
+            filamentColor.toUpperCase();
 
-                JsonObject vendor = filament["vendor"].to<JsonObject>();
-                vendor["id"] = spool["filament"]["vendor"]["id"];
-                vendor["name"] = spool["filament"]["vendor"]["name"];
-            }
-        }
-    } else {
-        Serial.print("Fehler beim Abrufen der Spool-Daten. HTTP-Code: ");
-        Serial.println(httpCode);
-    }
+            String tray_info_idx = doc["filament"]["extra"]["bambu_idx"].as<String>();
+            tray_info_idx.replace("\"", "");
+            
+            String cali_idx = doc["filament"]["extra"]["bambu_cali_id"].as<String>(); // "\"153\""
+            cali_idx.replace("\"", "");
+            
+            String bambu_setting_id = doc["filament"]["extra"]["bambu_setting_id"].as<String>(); // "\"PFUSf40e9953b40d3d\""
+            bambu_setting_id.replace("\"", "");
 
-    http.end();
-    return filteredDoc;
-}
+            doc.clear();
 
-JsonDocument fetchAllSpoolsInfo() {
-    HTTPClient http;
-    String spoolsUrl = spoolmanUrl + apiUrl + "/spool";
-
-    Serial.print("Rufe Spool-Daten von: ");
-    Serial.println(spoolsUrl);
-
-    http.begin(spoolsUrl);
-    int httpCode = http.GET();
-
-    JsonDocument filteredDoc;
-    if (httpCode == HTTP_CODE_OK) {
-        String payload = http.getString();
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, payload);
-        if (error) {
-            Serial.print("Fehler beim Parsen der JSON-Antwort: ");
-            Serial.println(error.c_str());
-        } else {
-            JsonArray spools = doc.as<JsonArray>();
-            JsonArray filteredSpools = filteredDoc.to<JsonArray>();
-
-            for (JsonObject spool : spools) {
-                JsonObject filteredSpool = filteredSpools.add<JsonObject>();
-                filteredSpool["price"] = spool["price"];
-                filteredSpool["remaining_weight"] = spool["remaining_weight"];
-                filteredSpool["used_weight"] = spool["used_weight"];
-                filteredSpool["extra"]["nfc_id"] = spool["extra"]["nfc_id"];
-
-                JsonObject filament = filteredSpool["filament"].to<JsonObject>();
-                filament["id"] = spool["filament"]["id"];
-                filament["name"] = spool["filament"]["name"];
-                filament["material"] = spool["filament"]["material"];
-                filament["density"] = spool["filament"]["density"];
-                filament["diameter"] = spool["filament"]["diameter"];
-                filament["spool_weight"] = spool["filament"]["spool_weight"];
-                filament["color_hex"] = spool["filament"]["color_hex"];
-
-                JsonObject vendor = filament["vendor"].to<JsonObject>();
-                vendor["id"] = spool["filament"]["vendor"]["id"];
-                vendor["name"] = spool["filament"]["vendor"]["name"];
-
-                JsonObject extra = filament["extra"].to<JsonObject>();
-                extra["nozzle_temperature"] = spool["filament"]["extra"]["nozzle_temperature"];
-                extra["price_gramm"] = spool["filament"]["extra"]["price_gramm"];
-                extra["price_meter"] = spool["filament"]["extra"]["price_meter"];
-            }
+            filteredDoc["color"] = filamentColor;
+            filteredDoc["type"] = filamentType;
+            filteredDoc["nozzle_temp_min"] = nozzle_temp_min;
+            filteredDoc["nozzle_temp_max"] = nozzle_temp_max;
+            filteredDoc["brand"] = filamentBrand;
+            filteredDoc["tray_info_idx"] = tray_info_idx;
+            filteredDoc["cali_idx"] = cali_idx;
+            filteredDoc["bambu_setting_id"] = bambu_setting_id;
         }
     } else {
         Serial.print("Fehler beim Abrufen der Spool-Daten. HTTP-Code: ");

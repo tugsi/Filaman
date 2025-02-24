@@ -23,6 +23,8 @@ extern const uint8_t OLED_DATA_END;
 extern const char* apiUrl;
 extern const uint8_t webserverPort;
 
+extern uint8_t autoSetBambuAmsCounter;
+
 extern const unsigned char wifi_on[];
 extern const unsigned char wifi_off[];
 extern const unsigned char cloud_on[];
