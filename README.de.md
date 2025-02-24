@@ -71,14 +71,10 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
 | OLED SCL          | 22        |
 | PN532 IRQ         | 32        |
 | PN532 RESET       | 33        |
-| PN532 SCK         | 14        |
-| PN532 MOSI        | 13        |
-| PN532 MISO        | 12        |
-| PN532 CS/SS       | 15        |
+| PN532 SDA         | 21        |
+| PN532 SCL         | 22        |
 
-Ich nutze die HSPI default PINs + IRQ und RESET am PN532
-
-![ESP32](./img/ESP32-SPI-Pins.png)
+**Achte darauf, dass am PN532 die DIP-Schalter auf I2C gestellt sind**
 
 ## Software-Abhängigkeiten
 
