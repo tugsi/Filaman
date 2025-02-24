@@ -122,7 +122,7 @@ void loop() {
   // Ausgabe der Waage auf Display
   if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0)
   {
-    (weight < 2) ? oledShowMessage("0") : oledShowWeight(weight);
+    (weight < 2) ? ((weight < -2) ? oledShowMessage("!! -0") : oledShowWeight(0)) : oledShowWeight(weight);
   }
 
 
