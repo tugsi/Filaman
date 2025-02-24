@@ -110,6 +110,18 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
   - PN532 NFC Module
   - Connecting wires
 
+## Important Note
+You have to activate Spoolman in debug mode, because you are not able to set CORS Domains in Spoolman yet.
+
+```
+# Enable debug mode
+# If enabled, the client will accept requests from any host
+# This can be useful when developing, but is also a security risk
+# Default: FALSE
+#SPOOLMAN_DEBUG_MODE=TRUE
+```
+
+
 ## Step-by-Step Installation
 ### Easy Installation
 1. **Go to [FilaMan Installer](https://www.filaman.app/installer.html)**

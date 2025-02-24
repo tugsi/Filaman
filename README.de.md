@@ -106,6 +106,17 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
   - PN532 NFC Modul
   - Verbindungskabel
 
+## Wichtiger Hinweis
+Du musst Spoolman auf DEBUG Modus setzten, da man bisher in Spoolman keine CORS Domains setzen kann!
+
+```
+# Enable debug mode
+# If enabled, the client will accept requests from any host
+# This can be useful when developing, but is also a security risk
+# Default: FALSE
+#SPOOLMAN_DEBUG_MODE=TRUE
+```
+
 ## Schritt-für-Schritt Installation
 ### Einfache Installation
 1. **Gehe auf [FilaMan Installer](https://www.filaman.app/installer.html)**
