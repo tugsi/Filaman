@@ -84,7 +84,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         String message = String((char*)data);
         JsonDocument doc;
         deserializeJson(doc, message);
-        
+
         if (doc["type"] == "heartbeat") {
             // Sende Heartbeat-Antwort
             ws.text(client->id(), "{"
@@ -96,7 +96,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         }
 
         else if (doc["type"] == "writeNfcTag") {
-            if (doc["payload"].is<String>()) {
+            if (doc["payload"].is<JsonObject>()) {
                 // Versuche NFC-Daten zu schreiben
                 String payloadString;
                 serializeJson(doc["payload"], payloadString);
