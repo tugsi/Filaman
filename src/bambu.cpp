@@ -81,19 +81,23 @@ bool loadBambuCredentials() {
     return false;
 }
 
-String findFilamentIdx(String brand, String type) {
+struct FilamentResult {
+    String key;
+    String type;
+};
+
+FilamentResult findFilamentIdx(String brand, String type) {
     // JSON-Dokument für die Filament-Daten erstellen
     JsonDocument doc;
     
     // Laden der bambu_filaments.json
     if (!loadJsonValue("/bambu_filaments.json", doc)) {
         Serial.println("Fehler beim Laden der Filament-Daten");
-        return "GFL99"; // Fallback auf Generic PLA
+        return {"GFL99", "PLA"}; // Fallback auf Generic PLA
     }
 
+    // 1. Erst versuchen wir die exakte Brand + Type Kombination zu finden
     String searchKey;
-    
-    // 1. Suche nach Brand + Type Kombination
     if (brand == "Bambu" || brand == "Bambulab") {
         searchKey = "Bambu " + type;
     } else if (brand == "PolyLite") {
@@ -109,20 +113,43 @@ String findFilamentIdx(String brand, String type) {
     // Durchsuche alle Einträge nach der Brand + Type Kombination
     for (JsonPair kv : doc.as<JsonObject>()) {
         if (kv.value().as<String>() == searchKey) {
-            return kv.key().c_str();
+            return {kv.key().c_str(), kv.value().as<String>()};
         }
     }
 
-    // 2. Wenn nicht gefunden, suche nach Generic + Type
-    searchKey = "Generic " + type;
+    // 2. Wenn nicht gefunden, zerlege den type String in Wörter und suche nach jedem Wort
+    // Sammle alle vorhandenen Filamenttypen aus der JSON
+    std::vector<String> knownTypes;
     for (JsonPair kv : doc.as<JsonObject>()) {
-        if (kv.value().as<String>() == searchKey) {
-            return kv.key().c_str();
+        String value = kv.value().as<String>();
+        // Extrahiere den Typ ohne Markennamen
+        if (value.indexOf(" ") != -1) {
+            value = value.substring(value.indexOf(" ") + 1);
+        }
+        if (!value.isEmpty()) {
+            knownTypes.push_back(value);
+        }
+    }
+
+    // Zerlege den Input-Type in Wörter
+    String typeStr = type;
+    typeStr.trim();
+    
+    // Durchsuche für jedes bekannte Filament, ob es im Input vorkommt
+    for (const String& knownType : knownTypes) {
+        if (typeStr.indexOf(knownType) != -1) {
+            // Suche nach diesem Typ in der Original-JSON
+            for (JsonPair kv : doc.as<JsonObject>()) {
+                String value = kv.value().as<String>();
+                if (value.indexOf(knownType) != -1) {
+                    return {kv.key().c_str(), knownType};
+                }
+            }
         }
     }
 
     // 3. Wenn immer noch nichts gefunden, gebe GFL99 zurück (Generic PLA)
-    return "GFL99";
+    return {"GFL99", "PLA"};
 }
 
 bool sendMqttMessage(String payload) {
@@ -156,15 +183,22 @@ bool setBambuSpool(String payload) {
     int minTemp = doc["nozzle_temp_min"];
     int maxTemp = doc["nozzle_temp_max"];
     String type = doc["type"].as<String>();
+    (type == "PLA+") ? type = "PLA" : type;
     String brand = doc["brand"].as<String>();
     String tray_info_idx = (doc["tray_info_idx"].as<String>() != "-1") ? doc["tray_info_idx"].as<String>() : "";
-    if (tray_info_idx == "") tray_info_idx = (brand != "" && type != "") ? findFilamentIdx(brand, type) : "";
+    if (tray_info_idx == "") {
+        if (brand != "" && type != "") {
+            FilamentResult result = findFilamentIdx(brand, type);
+            tray_info_idx = result.key;
+            type = result.type;  // Aktualisiere den type mit dem gefundenen Basistyp
+        }
+    }
     String setting_id = doc["bambu_setting_id"].as<String>();
     String cali_idx = doc["cali_idx"].as<String>();
 
     doc.clear();
 
-    doc["print"]["sequence_id"] = 0;
+    doc["print"]["sequence_id"] = "0";
     doc["print"]["command"] = "ams_filament_setting";
     doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
     doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
@@ -172,10 +206,10 @@ bool setBambuSpool(String payload) {
     doc["print"]["nozzle_temp_min"] = minTemp;
     doc["print"]["nozzle_temp_max"] = maxTemp;
     doc["print"]["tray_type"] = type;
-    doc["print"]["cali_idx"] = (cali_idx != "") ? cali_idx : "";
+    //doc["print"]["cali_idx"] = (cali_idx != "") ? cali_idx : "";
     doc["print"]["tray_info_idx"] = tray_info_idx;
     doc["print"]["setting_id"] = setting_id;
-
+    
     // Serialize the JSON
     String output;
     serializeJson(doc, output);
@@ -194,13 +228,13 @@ bool setBambuSpool(String payload) {
 
     if (cali_idx != "") {
         yield();
-        doc["print"]["sequence_id"] = 0;
+        doc["print"]["sequence_id"] = "0";
         doc["print"]["command"] = "extrusion_cali_sel";
         doc["print"]["filament_id"] = tray_info_idx;
         doc["print"]["nozzle_diameter"] = "0.4";
         doc["print"]["cali_idx"] = cali_idx.toInt();
         doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
-        doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
+        //doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
 
         // Serialize the JSON
         String output;
@@ -225,6 +259,7 @@ bool setBambuSpool(String payload) {
 // init
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     String message;
+
     for (int i = 0; i < length; i++) {
         message += (char)payload[i];
     }
@@ -239,9 +274,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Prüfen, ob "print->upgrade_state" und "print.ams.ams" existieren
-    if (doc["print"]["upgrade_state"].is<String>()) {
+    if (doc["print"]["upgrade_state"].is<JsonObject>()) {
         // Prüfen ob AMS-Daten vorhanden sind
-        if (!doc["print"]["ams"].is<String>() || !doc["print"]["ams"]["ams"].is<String>()) {
+        if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonArray>()) {
             return;
         }
 
@@ -284,7 +319,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         // Prüfe die externe Spule
-        if (!hasChanges && doc["print"]["vt_tray"].is<String>()) {
+        if (!hasChanges && doc["print"]["vt_tray"].is<JsonObject>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             bool foundExternal = false;
             
@@ -332,7 +367,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         ams_count = amsArray.size();
 
         // Wenn externe Spule vorhanden, füge sie hinzu
-        if (doc["print"]["vt_tray"].is<String>()) {
+        if (doc["print"]["vt_tray"].is<JsonObject>()) {
             JsonObject vtTray = doc["print"]["vt_tray"];
             int extIdx = ams_count;  // Index für externe Spule
             ams_data[extIdx].ams_id = 255;  // Spezielle ID für externe Spule
@@ -343,8 +378,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
             ams_data[extIdx].trays[0].tray_color = vtTray["tray_color"].as<String>();
             ams_data[extIdx].trays[0].nozzle_temp_min = vtTray["nozzle_temp_min"].as<int>();
             ams_data[extIdx].trays[0].nozzle_temp_max = vtTray["nozzle_temp_max"].as<int>();
-            ams_data[extIdx].trays[0].setting_id = vtTray["setting_id"].as<String>();
-            ams_data[extIdx].trays[0].cali_idx = vtTray["cali_idx"].as<String>();
+
+            if (doc["print"]["vt_tray"]["tray_type"].as<String>() != "")
+            {
+                ams_data[extIdx].trays[0].setting_id = vtTray["setting_id"].as<String>();
+                ams_data[extIdx].trays[0].cali_idx = vtTray["cali_idx"].as<String>();
+            }
             ams_count++;  // Erhöhe ams_count für die externe Spule
         }
 
@@ -384,7 +423,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         int amsId = doc["print"]["ams_id"].as<int>();
         int trayId = doc["print"]["tray_id"].as<int>();
         String settingId = doc["print"]["setting_id"].as<String>();
-        
+
         // Finde das entsprechende AMS und Tray
         for (int i = 0; i < ams_count; i++) {
             if (ams_data[i].ams_id == amsId) {
