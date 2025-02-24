@@ -76,6 +76,11 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
 
 **Achte darauf, dass am PN532 die DIP-Schalter auf I2C gestellt sind**
 
+![Wiring](./img/Schaltplan.png)
+
+![myWiring](./img/IMG_2589.jpeg)
+![myWiring](./img/IMG_2590.jpeg)
+
 ## Software-Abhängigkeiten
 
 ### ESP32-Bibliotheken

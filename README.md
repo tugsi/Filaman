@@ -80,6 +80,11 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
 
 **Make sure that the DIP switches on the PN532 are set to I2C**
 
+![Wiring](./img/Schaltplan.png)
+
+![myWiring](./img/IMG_2589.jpeg)
+![myWiring](./img/IMG_2590.jpeg)
+
 ## Software Dependencies
 
 ### ESP32 Libraries
