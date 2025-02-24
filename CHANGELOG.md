@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.93] - 2025-02-24
+### Added
+- implement auto send feature for Bambu spool management and update related configurations
+- add debug mode instructions for Spoolman in README
+- add wiring diagrams to README for PN532 I2C setup
+
+### Changed
+- update webpages for version v1.3.93
+- simplify filament names in JSON configuration
+- update findFilamentIdx to return structured result and improve type searching logic
+- update README to reflect PN532 I2C configuration and remove SPI pin details
+
+### Fixed
+- remove debug output from splitTextIntoLines and update weight display logic in scanRfidTask
+- enhance weight display logic for negative values
+- remove unnecessary CPU frequency configuration from setup function
+
+
 ## [1.3.92] - 2025-02-24
 ### Changed
 - update webpages for version v1.3.92
