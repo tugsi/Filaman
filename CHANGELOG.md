@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.95] - 2025-02-24
+### Changed
+- update webpages for version v1.3.95
+
+### Fixed
+- bind autoSendToBambu variable to checkbox in spoolman.html
+
+
 ## [1.3.94] - 2025-02-24
 ### Changed
 - update webpages for version v1.3.94
