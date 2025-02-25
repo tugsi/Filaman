@@ -75,8 +75,9 @@
             const serial = document.getElementById('bambuSerial').value;
             const code = document.getElementById('bambuCode').value;
             const autoSend = document.getElementById('autoSend').checked;
+            const autoSendTime = document.getElementById('autoSendTime').value;
 
-            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}&autoSend=${autoSend}$autoSendTime=${autoSendTime}`)
+            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}&autoSend=${autoSend}&autoSendTime=${autoSendTime}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.healthy) {

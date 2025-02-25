@@ -247,6 +247,7 @@ void setupWebserver(AsyncWebServer &server) {
             html.replace("{{bambuSerial}}", bambuSerial ? bambuSerial : "");
             html.replace("{{bambuCode}}", bambuCode ? bambuCode : "");
             html.replace("{{autoSendToBambu}}", autoSendToBambu ? "checked" : "");
+            html.replace("{{autoSendTime}}", String(autoSetBambuAmsCounter));
         }
         else
         {
@@ -254,6 +255,7 @@ void setupWebserver(AsyncWebServer &server) {
             html.replace("{{bambuSerial}}", "");
             html.replace("{{bambuCode}}", "");
             html.replace("{{autoSendToBambu}}", "");
+            html.replace("{{autoSendTime}}", String(autoSetBambuAmsCounter));
         }
 
         request->send(200, "text/html", html);
@@ -287,7 +289,7 @@ void setupWebserver(AsyncWebServer &server) {
         String bambu_accesscode = request->getParam("bambu_accesscode")->value();
         bool autoSend = (request->getParam("autoSend")->value() == "true") ? true : false;
         String autoSendTime = request->getParam("autoSendTime")->value();
-        Serial.println(autoSend);
+        
         bambu_ip.trim();
         bambu_serialnr.trim();
         bambu_accesscode.trim();

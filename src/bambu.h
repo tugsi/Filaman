@@ -32,7 +32,7 @@ extern bool autoSendToBambu;
 extern int autoSetToBambuSpoolId;
 
 bool loadBambuCredentials();
-bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, const String& bambu_accesscode, const bool autoSend);
+bool saveBambuCredentials(const String& bambu_ip, const String& bambu_serialnr, const String& bambu_accesscode, const bool autoSend, const String& autoSendTime);
 bool setupMqtt();
 void mqtt_loop(void * parameter);
 bool setBambuSpool(String payload);

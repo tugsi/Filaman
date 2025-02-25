@@ -86,6 +86,12 @@ void sendUpdateProgress(int progress, const char* status = nullptr, const char* 
     }
     progressMsg += "}";
     
+    if (progress == 100) {
+        // Sende die Nachricht nur einmal für den Abschluss
+        ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"success\",\"message\":\"Update successful! Restarting device...\"}");
+        delay(50);
+    }
+
     // Sende die Nachricht mehrmals mit Verzögerung für wichtige Updates
     if (status || abs(progress - lastSentProgress) >= 10 || progress == 100) {
         for (int i = 0; i < 2; i++) {
@@ -148,7 +154,7 @@ void handleUpdate(AsyncWebServer &server) {
             // Berechne den Fortschritt basierend auf dem Update-Typ
             if (isSpiffsUpdate) {
                 // SPIFFS: 5-75% für Upload
-                currentProgress = 5 + (updateWritten * 100) / updateTotalSize;
+                currentProgress = 6 + (updateWritten * 100) / updateTotalSize;
             } else {
                 // Firmware: 0-100% für Upload
                 currentProgress = 1 + (updateWritten * 100) / updateTotalSize;
