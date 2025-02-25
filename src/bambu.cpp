@@ -95,10 +95,35 @@ FilamentResult findFilamentIdx(String brand, String type) {
     // JSON-Dokument für die Filament-Daten erstellen
     JsonDocument doc;
     
+    // Laden der own_filaments.json
+    String ownFilament = "";
+    if (!loadJsonValue("/own_filaments.json", doc)) 
+    {
+        Serial.println("Fehler beim Laden der eigenen Filament-Daten");
+    }
+    else
+    {
+        // Durchsuche direkt nach dem Type als Schlüssel
+        if (doc[type].is<String>()) {
+            ownFilament = doc[type].as<String>();
+        }
+        doc.clear();
+    }
+
     // Laden der bambu_filaments.json
-    if (!loadJsonValue("/bambu_filaments.json", doc)) {
+    if (!loadJsonValue("/bambu_filaments.json", doc)) 
+    {
         Serial.println("Fehler beim Laden der Filament-Daten");
         return {"GFL99", "PLA"}; // Fallback auf Generic PLA
+    }
+
+    // Wenn eigener Typ
+    if (ownFilament != "")
+    {
+        if (doc[ownFilament].is<String>()) 
+        {
+            return {ownFilament, doc[ownFilament].as<String>()};
+        }
     }
 
     // 1. Erst versuchen wir die exakte Brand + Type Kombination zu finden
