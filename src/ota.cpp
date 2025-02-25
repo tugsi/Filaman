@@ -61,6 +61,14 @@ void restoreJsonConfigs() {
     }
 }
 
+void espRestart() {
+    yield();
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+
+    ESP.restart();
+}
+
+
 void sendUpdateProgress(int progress, const char* status = nullptr, const char* message = nullptr) {
     static int lastSentProgress = -1;
     
@@ -174,7 +182,7 @@ void handleUpdate(AsyncWebServer &server) {
 
         // Erste 100% Nachricht
         ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"success\",\"message\":\"Update successful! Restarting device...\"}");
-        delay(2000);  // Längerer Delay für die erste Nachricht
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
         
         AsyncWebServerResponse *response = request->beginResponse(200, "application/json", 
             "{\"success\":true,\"message\":\"Update successful! Restarting device...\"}");
@@ -183,9 +191,8 @@ void handleUpdate(AsyncWebServer &server) {
         
         // Zweite 100% Nachricht zur Sicherheit
         ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"success\",\"message\":\"Update successful! Restarting device...\"}");
-        delay(3000);  // Noch längerer Delay vor dem Neustart
         
-        ESP.restart();
+        espRestart();
     });
 
     server.addHandler(updateHandler);
