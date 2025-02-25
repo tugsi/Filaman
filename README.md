@@ -13,6 +13,8 @@ More Images can be found in the [img Folder](/img/)
 or my website:[FilaMan Website](https://www.filaman.app)  
 german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)
 
+### Now more detailed informations about the usage: [Wiki](https://github.com/ManuelW77/Filaman/wiki)
+
 ### ESP32 Hardware Features
 - **Weight Measurement:** Using a load cell with HX711 amplifier for precise weight tracking.
 - **NFC Tag Reading/Writing:** PN532 module for reading and writing filament data to NFC tags.

@@ -6,9 +6,11 @@ Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/
 
 ![Scale](./img/scale_trans.png)
 
-Weitere Bilder finden Sie im [img Ordner](/img/)  
+Weitere Bilder finden Sie im [img Ordner](/img/)
 oder auf meiner Website: [FilaMan Website](https://www.filaman.app)  
 Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)
+
+### Es gibt jetzt auch ein Wiki, dort sind nochmal alle Funktionen beschrieben: [Wiki](https://github.com/ManuelW77/Filaman/wiki)
 
 ### ESP32 Hardware-Funktionen
 - **Gewichtsmessung:** Verwendung einer Wägezelle mit HX711-Verstärker für präzise Gewichtsverfolgung.
