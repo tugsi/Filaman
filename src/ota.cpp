@@ -86,7 +86,7 @@ void sendUpdateProgress(int progress, const char* status = nullptr, const char* 
     }
     progressMsg += "}";
     
-    if (progress == 100) {
+    if (progress >= 100) {
         // Sende die Nachricht nur einmal für den Abschluss
         ws.textAll("{\"type\":\"updateProgress\",\"progress\":100,\"status\":\"success\",\"message\":\"Update successful! Restarting device...\"}");
         delay(50);
