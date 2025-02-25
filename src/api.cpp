@@ -122,9 +122,9 @@ void sendToApi(void *parameter) {
     if (httpType == "PATCH") httpCode = http.PATCH(updatePayload);
 
     if (httpCode == HTTP_CODE_OK) {
-        Serial.println("Gewicht der Spule erfolgreich aktualisiert");
+        Serial.println("Spoolman erfolgreich aktualisiert");
     } else {
-        Serial.println("Fehler beim Aktualisieren des Gewichts der Spule");
+        Serial.println("Fehler beim Senden an Spoolman!");
         oledShowMessage("Spoolman update failed");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
@@ -221,6 +221,52 @@ uint8_t updateSpoolWeight(String spoolId, uint16_t weight) {
     );
 
     return 1;
+}
+
+bool updateSpoolBambuData(String payload) {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error) {
+        Serial.print("Fehler beim JSON-Parsing: ");
+        Serial.println(error.c_str());
+        return false;
+    }
+
+    String spoolsUrl = spoolmanUrl + apiUrl + "/filament/" + doc["filament_id"].as<String>();
+    Serial.print("Update Spule mit URL: ");
+    Serial.println(spoolsUrl);
+
+    JsonDocument updateDoc;
+    updateDoc["extra"]["bambu_setting_id"] = "\"" + doc["setting_id"].as<String>() + "\"";
+    updateDoc["extra"]["bambu_cali_id"] = "\"" + doc["cali_idx"].as<String>() + "\"";
+    updateDoc["extra"]["bambu_idx"] = "\"" + doc["tray_info_idx"].as<String>() + "\"";
+    updateDoc["extra"]["nozzle_temperature"] = "[" + doc["temp_min"].as<String>() + "," + doc["temp_max"].as<String>() + "]";
+
+    String updatePayload;
+    serializeJson(updateDoc, updatePayload);
+    Serial.print("Update Payload: ");
+    Serial.println(updatePayload);
+
+    SendToApiParams* params = new SendToApiParams();
+    if (params == nullptr) {
+        Serial.println("Fehler: Kann Speicher für Task-Parameter nicht allokieren.");
+        return false;
+    }
+    params->httpType = "PATCH";
+    params->spoolsUrl = spoolsUrl;
+    params->updatePayload = updatePayload;
+
+    // Erstelle die Task
+    BaseType_t result = xTaskCreate(
+        sendToApi,                // Task-Funktion
+        "SendToApiTask",          // Task-Name
+        4096,                     // Stackgröße in Bytes
+        (void*)params,            // Parameter
+        0,                        // Priorität
+        NULL                      // Task-Handle (nicht benötigt)
+    );
+
+    return true;
 }
 
 // #### Spoolman init

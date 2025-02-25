@@ -18,5 +18,6 @@ JsonDocument fetchSingleSpoolInfo(int spoolId); // API-Funktion für die Webseit
 bool updateSpoolTagId(String uidString, const char* payload); // Neue Funktion zum Aktualisieren eines Spools
 uint8_t updateSpoolWeight(String spoolId, uint16_t weight); // Neue Funktion zum Aktualisieren des Gewichts
 bool initSpoolman(); // Neue Funktion zum Initialisieren von Spoolman
+bool updateSpoolBambuData(String payload); // Neue Funktion zum Aktualisieren der Bambu-Daten
 
 #endif

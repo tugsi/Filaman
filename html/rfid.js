@@ -150,6 +150,13 @@ function initWebSocket() {
                     ramStatus.textContent = `${data.freeHeap}k`;
                 }
             }
+            else if (data.type === 'setSpoolmanSettings') {
+                if (data.payload == 'success') {
+                    showNotification(`Spoolman Settings set successfully`, true);
+                } else {
+                    showNotification(`Error setting Spoolman Settings`, false);
+                }
+            }
         };
     } catch (error) {
         isConnected = false;
@@ -285,6 +292,14 @@ function displayAmsData(amsData) {
                     <img src="spool_in.png" alt="Spool In" style="width: 48px; height: 48px; transform: rotate(180deg) scaleX(-1);">
                 </button>`;
 
+            const spoolmanButtonHtml = `
+                <button class="spool-button" onclick="handleSpoolmanSettings('${tray.tray_info_idx}', '${tray.setting_id}', '${tray.cali_idx}', '${tray.nozzle_temp_min}', '${tray.nozzle_temp_max}')" 
+                        style="position: absolute; bottom: 0px; right: 0px; 
+                               background: none; border: none; padding: 0; 
+                               cursor: pointer; display: none;">
+                    <img src="set_spoolman.png" alt="Spool In" style="width: 38px; height: 38px;">
+                </button>`;
+
             if (!hasAnyContent) {
                 return `
                     <div class="tray">
@@ -348,6 +363,7 @@ function displayAmsData(amsData) {
                         ${trayDetails}
                         ${tempHTML}
                         ${(ams.ams_id === 255 && tray.tray_type !== '') ? outButtonHtml : ''}
+                        ${(tray.setting_id != "" && tray.setting_id != "null") ? spoolmanButtonHtml : ''}
                     </div>
                     
                 </div>`;
@@ -371,6 +387,36 @@ function updateSpoolButtons(show) {
     spoolButtons.forEach(button => {
         button.style.display = show ? 'block' : 'none';
     });
+}
+
+function handleSpoolmanSettings(tray_info_idx, setting_id, cali_idx, nozzle_temp_min, nozzle_temp_max) {
+    // Hole das ausgewählte Filament
+    const selectedText = document.getElementById("selected-filament").textContent;
+
+    // Finde die ausgewählte Spule in den Daten
+    const selectedSpool = spoolsData.find(spool => 
+        `${spool.id} | ${spool.filament.name} (${spool.filament.material})` === selectedText
+    );
+
+    const payload = {
+        type: 'setSpoolmanSettings',
+        payload: {
+            filament_id: selectedSpool.filament.id,
+            tray_info_idx: tray_info_idx,
+            setting_id: setting_id,
+            cali_idx: cali_idx,
+            temp_min: nozzle_temp_min,
+            temp_max: nozzle_temp_max
+        }
+    };
+
+    try {
+        socket.send(JSON.stringify(payload));
+        showNotification(`Setting send to Spoolman`, true);
+    } catch (error) {
+        console.error("Error while sending settings to Spoolman:", error);
+        showNotification("Error while sending!", false);
+    }
 }
 
 function handleSpoolOut() {

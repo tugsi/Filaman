@@ -95,6 +95,15 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
             setBambuSpool(doc["payload"]);
         }
 
+        else if (doc["type"] == "setSpoolmanSettings") {
+            Serial.println(doc["payload"].as<String>());
+            if (updateSpoolBambuData(doc["payload"].as<String>())) {
+                ws.textAll("{\"type\":\"setSpoolmanSettings\",\"payload\":\"success\"}");
+            } else {
+                ws.textAll("{\"type\":\"setSpoolmanSettings\",\"payload\":\"error\"}");
+            }
+        }
+
         else {
             Serial.println("Unbekannter WebSocket-Typ: " + doc["type"].as<String>());
         }
@@ -344,6 +353,15 @@ void setupWebserver(AsyncWebServer &server) {
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
         Serial.println("spool_in.png gesendet");
+    });
+
+    // Route für set_spoolman.png
+    server.on("/set_spoolman.png", HTTP_GET, [](AsyncWebServerRequest *request){
+        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/set_spoolman.png.gz", "image/png");
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", CACHE_CONTROL);
+        request->send(response);
+        Serial.println("set_spoolman.png gesendet");
     });
 
     // Route für JavaScript Dateien

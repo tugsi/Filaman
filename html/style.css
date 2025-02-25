@@ -761,17 +761,19 @@ a:hover {
     right: 20px;
     padding: 15px 25px;
     border-radius: 4px;
-    color: white;
+    color: black;
     z-index: 1000;
     animation: slideIn 0.3s ease-out;
 }
 
 .notification.success {
     background-color: #28a745;
+    color: black !important;
 }
 
 .notification.error {
     background-color: #dc3545;
+    color: white !important;
 }
 
 .notification.fade-out {
@@ -1013,6 +1015,7 @@ input[type="submit"]:disabled,
     color: #000;
     vertical-align: middle;
     margin-left: 0.5rem;
+    text-shadow: 0 !important;
 }
 
 .progress-container {
