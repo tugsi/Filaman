@@ -115,15 +115,22 @@ void loop() {
   // Wenn Bambu auto set Spool aktiv
   if (autoSendToBambu && autoSetToBambuSpoolId > 0 && currentMillis - lastAutoSetBambuAmsTime >= autoSetBambuAmsInterval) 
   {
-    lastAutoSetBambuAmsTime = currentMillis;
-    oledShowMessage("Auto Set         " + String(autoSetBambuAmsCounter - autoAmsCounter) + "s");
-    autoAmsCounter++;
-
-    if (autoAmsCounter >= autoSetBambuAmsCounter) 
+    if (hasReadRfidTag == 0)
     {
-      autoSetToBambuSpoolId = 0;
+      lastAutoSetBambuAmsTime = currentMillis;
+      oledShowMessage("Auto Set         " + String(autoSetBambuAmsCounter - autoAmsCounter) + "s");
+      autoAmsCounter++;
+
+      if (autoAmsCounter >= autoSetBambuAmsCounter) 
+      {
+        autoSetToBambuSpoolId = 0;
+        autoAmsCounter = 0;
+        oledShowWeight(weight);
+      }
+    }
+    else
+    {
       autoAmsCounter = 0;
-      oledShowWeight(weight);
     }
   }
   
