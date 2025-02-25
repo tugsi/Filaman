@@ -19,7 +19,6 @@ extern AsyncWebSocket ws;
 
 // Server-Initialisierung und Handler
 void initWebServer();
-void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);
 void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 void setupWebserver(AsyncWebServer &server);
 
@@ -28,9 +27,5 @@ void sendAmsData(AsyncWebSocketClient *client);
 void sendNfcData(AsyncWebSocketClient *client);
 void foundNfcTag(AsyncWebSocketClient *client, uint8_t success);
 void sendWriteResult(AsyncWebSocketClient *client, uint8_t success);
-
-// Upgrade-Funktionen
-void backupJsonConfigs();
-void restoreJsonConfigs();
 
 #endif
