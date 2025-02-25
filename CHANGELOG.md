@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.96] - 2025-02-25
+### Added
+- füge Unterstützung für Spoolman-Einstellungen hinzu und aktualisiere die Benutzeroberfläche
+- entferne die sendAmsData-Funktion aus der API-Schnittstelle
+- erweitere Bambu-Credentials um AutoSend-Zeit und aktualisiere die Benutzeroberfläche
+- erweitere Bambu-Credentials mit AutoSend-Wartezeit und aktualisiere die Benutzeroberfläche
+- add espRestart function and replace delay with vTaskDelay for OTA update process
+- implement OTA update functionality with backup and restore for configurations
+- add own_filaments.json and integrate custom filament loading in bambu.cpp
+
+### Changed
+- update platformio.ini for version v1.3.96
+
+### Fixed
+- aktualisiere Bedingungen für die AMS-Datenaktualisierung und entferne unnötige Aufrufe
+- aktualisiere Bedingung für den Fortschritt der OTA-Update-Nachricht
+- update auto set logic to check RFID tag before setting Bambu spool
+
+
 ## [1.3.95] - 2025-02-24
 ### Changed
 - update webpages for version v1.3.95
