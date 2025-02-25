@@ -286,17 +286,19 @@ void setupWebserver(AsyncWebServer &server) {
         String bambu_serialnr = request->getParam("bambu_serialnr")->value();
         String bambu_accesscode = request->getParam("bambu_accesscode")->value();
         bool autoSend = (request->getParam("autoSend")->value() == "true") ? true : false;
+        String autoSendTime = request->getParam("autoSendTime")->value();
         Serial.println(autoSend);
         bambu_ip.trim();
         bambu_serialnr.trim();
         bambu_accesscode.trim();
+        autoSendTime.trim();
 
         if (bambu_ip.length() == 0 || bambu_serialnr.length() == 0 || bambu_accesscode.length() == 0) {
             request->send(400, "application/json", "{\"success\": false, \"error\": \"Empty parameter\"}");
             return;
         }
 
-        bool success = saveBambuCredentials(bambu_ip, bambu_serialnr, bambu_accesscode, autoSend);
+        bool success = saveBambuCredentials(bambu_ip, bambu_serialnr, bambu_accesscode, autoSend, autoSendTime);
 
         request->send(200, "application/json", "{\"healthy\": " + String(success ? "true" : "false") + "}");
     });

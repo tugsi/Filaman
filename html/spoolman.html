@@ -76,7 +76,7 @@
             const code = document.getElementById('bambuCode').value;
             const autoSend = document.getElementById('autoSend').checked;
 
-            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}&autoSend=${autoSend}`)
+            fetch(`/api/bambu?bambu_ip=${encodeURIComponent(ip)}&bambu_serialnr=${encodeURIComponent(serial)}&bambu_accesscode=${encodeURIComponent(code)}&autoSend=${autoSend}$autoSendTime=${autoSendTime}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.healthy) {
@@ -122,13 +122,18 @@
                         <label for="bambuCode">Access Code:</label>
                         <input type="text" id="bambuCode" placeholder="Access Code vom Drucker" value="{{bambuCode}}">
                     </div>
-                    <div class="input-group">
-                        If activated, FilaMan will automatically update the next filled tray with the last scanned and weighed spool.
-                        <label for="autoSend">Auto Send to Bambu:</label>
-                        <input type="checkbox" id="autoSend" {{autoSendToBambu}}>
+                    <hr>
+                    <p>If activated, FilaMan will automatically update the next filled tray with the last scanned and weighed spool.</p>
+                    <div class="input-group" style="display: flex; margin-bottom: 0;">
+                        <label for="autoSend" style="width: 250px; margin-right: 5px;">Auto Send to Bambu:</label>
+                        <label for="autoSendTime" style="width: 250px; margin-right: 5px;">Wait time in Seconds:</label>
+                    </div>
+                    <div class="input-group" style="display: flex;">
+                        <input type="checkbox" id="autoSend" {{autoSendToBambu}} style="width: 190px; margin-right: 10px;">
+                        <input type="text" id="autoSendTime" placeholder="Time to wait for new Spool" value="{{autoSendTime}}" style="width: 100px;">
                     </div>
 
-                    <button onclick="saveBambuCredentials()">Save Bambu Credentials</button>
+                    <button style="margin: 0;" onclick="saveBambuCredentials()">Save Bambu Credentials</button>
                     <p id="bambuStatusMessage"></p>
                 </div>
             </div>

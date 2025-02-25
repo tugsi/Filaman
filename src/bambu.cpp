@@ -32,7 +32,7 @@ int ams_count = 0;
 String amsJsonData;  // Speichert das fertige JSON für WebSocket-Clients
 AMSData ams_data[MAX_AMS];  // Definition des Arrays;
 
-bool saveBambuCredentials(const String& ip, const String& serialnr, const String& accesscode, bool autoSend) {
+bool saveBambuCredentials(const String& ip, const String& serialnr, const String& accesscode, bool autoSend, const String& autoSendTime) {
     if (BambuMqttTask) {
         vTaskDelete(BambuMqttTask);
     }
@@ -42,6 +42,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
     doc["bambu_accesscode"] = accesscode;
     doc["bambu_serialnr"] = serialnr;
     doc["autoSendToBambu"] = autoSend;
+    doc["autoSendTime"] = (autoSendTime != "") ? autoSendTime.toInt() : autoSetBambuAmsCounter;
 
     if (!saveJsonValue("/bambu_credentials.json", doc)) {
         Serial.println("Fehler beim Speichern der Bambu-Credentials.");
@@ -53,6 +54,7 @@ bool saveBambuCredentials(const String& ip, const String& serialnr, const String
     bambu_accesscode = accesscode.c_str();
     bambu_serialnr = serialnr.c_str();
     autoSendToBambu = autoSend;
+    autoSetBambuAmsCounter = autoSendTime.toInt();
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
     if (!setupMqtt()) return false;
@@ -67,7 +69,8 @@ bool loadBambuCredentials() {
         String ip = doc["bambu_ip"].as<String>();
         String code = doc["bambu_accesscode"].as<String>();
         String serial = doc["bambu_serialnr"].as<String>();
-        autoSendToBambu = doc["autoSendToBambu"].as<bool>();
+        if (doc["autoSendToBambu"].is<bool>()) autoSendToBambu = doc["autoSendToBambu"].as<bool>();
+        if (doc["autoSendTime"].is<int>()) autoSetBambuAmsCounter = doc["autoSendTime"].as<int>();
 
         ip.trim();
         code.trim();
