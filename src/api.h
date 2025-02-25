@@ -15,7 +15,6 @@ bool saveSpoolmanUrl(const String& url);
 String loadSpoolmanUrl(); // Neue Funktion zum Laden der URL
 bool checkSpoolmanExtraFields(); // Neue Funktion zum Überprüfen der Extrafelder
 JsonDocument fetchSingleSpoolInfo(int spoolId); // API-Funktion für die Webseite
-void sendAmsData(AsyncWebSocketClient *client); // Neue Funktion zum Senden von AMS-Daten
 bool updateSpoolTagId(String uidString, const char* payload); // Neue Funktion zum Aktualisieren eines Spools
 uint8_t updateSpoolWeight(String spoolId, uint16_t weight); // Neue Funktion zum Aktualisieren des Gewichts
 bool initSpoolman(); // Neue Funktion zum Initialisieren von Spoolman
