@@ -109,7 +109,7 @@ void loop() {
   if (currentMillis - lastAmsSendTime >= amsSendInterval) 
   {
     lastAmsSendTime = currentMillis;
-    sendAmsData(nullptr);
+    //sendAmsData(nullptr);
   }
 
   // Wenn Bambu auto set Spool aktiv

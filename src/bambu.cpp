@@ -393,13 +393,13 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                     if (vtTray["tray_info_idx"].as<String>() != ams_data[i].trays[0].tray_info_idx ||
                         vtTray["tray_type"].as<String>() != ams_data[i].trays[0].tray_type ||
                         vtTray["tray_color"].as<String>() != ams_data[i].trays[0].tray_color ||
-                        vtTray["cali_idx"].as<String>() != ams_data[i].trays[0].cali_idx) {
+                        (vtTray["tray_type"].as<String>() != "" && vtTray["cali_idx"].as<String>() != ams_data[i].trays[0].cali_idx)) {
                         hasChanges = true;
                     }
                     break;
                 }
             }
-            if (!foundExternal) hasChanges = true;
+            //if (!foundExternal) hasChanges = true;
         }
 
         if (!hasChanges) return;
@@ -448,11 +448,13 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 ams_data[extIdx].trays[0].setting_id = vtTray["setting_id"].as<String>();
                 ams_data[extIdx].trays[0].cali_idx = vtTray["cali_idx"].as<String>();
             }
+            else
+            {
+                ams_data[extIdx].trays[0].setting_id = "";
+                ams_data[extIdx].trays[0].cali_idx = "";
+            }
             ams_count++;  // Erhöhe ams_count für die externe Spule
         }
-
-        // Sende die aktualisierten AMS-Daten
-        //sendAmsData(nullptr);
 
         // Erstelle JSON für WebSocket-Clients
         JsonDocument wsDoc;
@@ -480,10 +482,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         serializeJson(wsArray, amsJsonData);
+        Serial.println("AMS data updated");
         sendAmsData(nullptr);
     }
+    
     // Neue Bedingung für ams_filament_setting
-    else if (doc["print"]["command"] == "ams_filament_setting") {
+    if (doc["print"]["command"] == "ams_filament_setting") {
         int amsId = doc["print"]["ams_id"].as<int>();
         int trayId = doc["print"]["tray_id"].as<int>();
         String settingId = doc["print"]["setting_id"].as<String>();
@@ -524,6 +528,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 serializeJson(wsArray, amsJsonData);
                 
                 // Sende an WebSocket Clients
+                Serial.println("Filament setting updated");
                 sendAmsData(nullptr);
                 break;
             }
