@@ -1015,7 +1015,7 @@ input[type="submit"]:disabled,
     color: #000;
     vertical-align: middle;
     margin-left: 0.5rem;
-    text-shadow: 0 !important;
+    text-shadow: none !important;
 }
 
 .progress-container {
