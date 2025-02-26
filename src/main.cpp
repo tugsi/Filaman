@@ -30,6 +30,7 @@ void setup() {
 
   // Start Display
   setupDisplay();
+  oledShowMessage("FilaMan v"+String(VERSION));
 
   // WiFiManager
   initWiFi();
