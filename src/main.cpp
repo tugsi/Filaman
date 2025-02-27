@@ -100,11 +100,19 @@ const unsigned long amsSendInterval = 60000; // 1 minute
 
 uint8_t weightSend = 0;
 int16_t lastWeight = 0;
-uint8_t wifiErrorCounter = 0;
+
+unsigned long lastWifiCheckTime = 0;
+const unsigned long wifiCheckInterval = 60000; // Überprüfe alle 60 Sekunden (60000 ms)
 
 // ##### PROGRAM START #####
 void loop() {
   unsigned long currentMillis = millis();
+
+  // Überprüfe regelmäßig die WLAN-Verbindung
+  if (millis() - lastWifiCheckTime > wifiCheckInterval) {
+    checkWiFiConnection();
+    lastWifiCheckTime = millis();
+  }
 
   // Send AMS Data min every Minute
   if (currentMillis - lastAmsSendTime >= amsSendInterval) 

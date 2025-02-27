@@ -4,5 +4,6 @@
 #include <Arduino.h>
 
 void initWiFi();
+void checkWiFiConnection();
 
 #endif
