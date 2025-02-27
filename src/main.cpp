@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <DNSServer.h>
-#include <ESPmDNS.h>
 #include <Wire.h>
 #include <WiFi.h>
 
@@ -30,13 +28,11 @@ void setup() {
 
   // Start Display
   setupDisplay();
-  oledShowMessage("FilaMan v"+String(VERSION));
 
   // WiFiManager
   initWiFi();
 
   // Webserver
-  Serial.println("Starte Webserver");
   setupWebserver(server);
 
   // Spoolman API
@@ -44,19 +40,9 @@ void setup() {
   initSpoolman();
 
   // Bambu MQTT
-  // bambu.cpp
   setupMqtt();
 
-  // mDNS
-  Serial.println("Starte MDNS");
-  if (!MDNS.begin("filaman")) {   // Set the hostname to "esp32.local"
-    Serial.println("Error setting up MDNS responder!");
-    while(1) {
-      delay(1000);
-    }
-  }
-  Serial.println("mDNS responder started");
-  
+  // NFC Reader
   startNfc();
 
   uint8_t scaleCalibrated = start_scale();
