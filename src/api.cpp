@@ -410,11 +410,12 @@ bool checkSpoolmanExtraFields() {
                 }
             }
         }
-        http.end();  
     }
     
     Serial.println("-------- ENDE Prüfe Felder --------");
     Serial.println();
+
+    http.end();
 
     return true;
 }
