@@ -314,6 +314,8 @@ void autoSetSpool(int spoolId, uint8_t trayId) {
         Serial.println(spoolInfo.as<String>());
 
         setBambuSpool(spoolInfo.as<String>());
+
+        oledShowMessage("Spool set");
     }
 
     // id wieder zurücksetzen damit abgeschlossen
