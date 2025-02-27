@@ -20,9 +20,9 @@ void setupDisplay() {
     // the library initializes this with an Adafruit splash screen.
     display.setTextColor(WHITE);
     display.display();
-    delay(1000); // Pause for 2 seconds
     oledShowTopRow();
-    delay(2000);
+    oledShowMessage("FilaMan v" + String(VERSION));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
 
 void oledclearline() {
@@ -139,8 +139,9 @@ void oledShowMultilineMessage(String message, uint8_t size) {
     int totalHeight = lines.size() * lineHeight;
     int startY = OLED_DATA_START + ((OLED_DATA_END - OLED_DATA_START - totalHeight) / 2);
     
+    uint8_t lineDistance = (lines.size() == 2) ? 5 : 0;
     for (size_t i = 0; i < lines.size(); i++) {
-        display.setCursor(oled_center_h(lines[i]), startY + (i * lineHeight));
+        display.setCursor(oled_center_h(lines[i]), startY + (i * lineHeight) + (i == 1 ? lineDistance : 0));
         display.print(lines[i]);
     }
     
