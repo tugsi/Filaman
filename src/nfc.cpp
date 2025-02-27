@@ -238,12 +238,14 @@ void writeJsonToTag(void *parameter) {
 
   hasReadRfidTag = 3;
   vTaskSuspend(RfidReaderTask);
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+
   //pauseBambuMqttTask = true;
   // aktualisieren der Website wenn sich der Status ändert
   sendNfcData(nullptr);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
   oledShowMessage("Waiting for NFC-Tag");
-
+  
   // Wait 10sec for tag
   uint8_t success = 0;
   String uidString = "";
@@ -331,7 +333,7 @@ void startWriteJsonToTag(const char* payload) {
     xTaskCreate(
         writeJsonToTag,        // Task-Funktion
         "WriteJsonToTagTask",       // Task-Name
-        4096,                        // Stackgröße in Bytes
+        5115,                        // Stackgröße in Bytes
         (void*)payloadCopy,         // Parameter
         rfidWriteTaskPrio,           // Priorität
         NULL                         // Task-Handle (nicht benötigt)
@@ -456,7 +458,7 @@ void startNfc() {
     BaseType_t result = xTaskCreatePinnedToCore(
       scanRfidTask, /* Function to implement the task */
       "RfidReader", /* Name of the task */
-      10000,  /* Stack size in words */
+      5115,  /* Stack size in words */
       NULL,  /* Task input parameter */
       rfidTaskPrio,  /* Priority of the task */
       &RfidReaderTask,  /* Task handle. */
