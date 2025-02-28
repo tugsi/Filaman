@@ -24,7 +24,7 @@ void setup() {
   Serial.printf("%08X\n", (uint32_t)chipid); //print Low 4bytes.
 
   // Initialize SPIFFS
-  initializeSPIFFS();
+  initializeFileSystem();
 
   // Start Display
   setupDisplay();
@@ -74,15 +74,27 @@ void setup() {
 }
 
 
+/**
+ * Safe interval check that handles millis() overflow
+ * @param currentTime Current millis() value
+ * @param lastTime Last recorded time
+ * @param interval Desired interval in milliseconds
+ * @return True if interval has elapsed
+ */
+bool intervalElapsed(unsigned long currentTime, unsigned long &lastTime, unsigned long interval) {
+  if (currentTime - lastTime >= interval || currentTime < lastTime) {
+    lastTime = currentTime;
+    return true;
+  }
+  return false;
+}
+
 unsigned long lastWeightReadTime = 0;
 const unsigned long weightReadInterval = 1000; // 1 second
 
 unsigned long lastAutoSetBambuAmsTime = 0;
 const unsigned long autoSetBambuAmsInterval = 1000; // 1 second
 uint8_t autoAmsCounter = 0;
-
-unsigned long lastAmsSendTime = 0;
-const unsigned long amsSendInterval = 60000; // 1 minute
 
 uint8_t weightSend = 0;
 int16_t lastWeight = 0;
@@ -95,40 +107,33 @@ void loop() {
   unsigned long currentMillis = millis();
 
   // Überprüfe regelmäßig die WLAN-Verbindung
-  if (millis() - lastWifiCheckTime > wifiCheckInterval) {
+  if (intervalElapsed(currentMillis, lastWifiCheckTime, wifiCheckInterval)) {
     checkWiFiConnection();
-    lastWifiCheckTime = millis();
-  }
-
-  // Send AMS Data min every Minute
-  if (currentMillis - lastAmsSendTime >= amsSendInterval) 
-  {
-    lastAmsSendTime = currentMillis;
-    //sendAmsData(nullptr);
   }
 
   // Wenn Bambu auto set Spool aktiv
-  if (autoSendToBambu && autoSetToBambuSpoolId > 0 && currentMillis - lastAutoSetBambuAmsTime >= autoSetBambuAmsInterval) 
-  {
-    if (hasReadRfidTag == 0)
+  if (autoSendToBambu && autoSetToBambuSpoolId > 0) {
+    if (intervalElapsed(currentMillis, lastAutoSetBambuAmsTime, autoSetBambuAmsInterval)) 
     {
-      lastAutoSetBambuAmsTime = currentMillis;
-      oledShowMessage("Auto Set         " + String(autoSetBambuAmsCounter - autoAmsCounter) + "s");
-      autoAmsCounter++;
-
-      if (autoAmsCounter >= autoSetBambuAmsCounter) 
+      if (hasReadRfidTag == 0)
       {
-        autoSetToBambuSpoolId = 0;
+        lastAutoSetBambuAmsTime = currentMillis;
+        oledShowMessage("Auto Set         " + String(autoSetBambuAmsCounter - autoAmsCounter) + "s");
+        autoAmsCounter++;
+
+        if (autoAmsCounter >= autoSetBambuAmsCounter) 
+        {
+          autoSetToBambuSpoolId = 0;
+          autoAmsCounter = 0;
+          oledShowWeight(weight);
+        }
+      }
+      else
+      {
         autoAmsCounter = 0;
-        oledShowWeight(weight);
       }
     }
-    else
-    {
-      autoAmsCounter = 0;
-    }
   }
-  
 
   // Wenn Waage nicht Kalibriert
   if (scaleCalibrated == 3) 

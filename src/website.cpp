@@ -113,12 +113,12 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 // Funktion zum Laden und Ersetzen des Headers in einer HTML-Datei
 String loadHtmlWithHeader(const char* filename) {
     Serial.println("Lade HTML-Datei: " + String(filename));
-    if (!SPIFFS.exists(filename)) {
+    if (!LittleFS.exists(filename)) {
         Serial.println("Fehler: Datei nicht gefunden!");
         return "Fehler: Datei nicht gefunden!";
     }
 
-    File file = SPIFFS.open(filename, "r");
+    File file = LittleFS.open(filename, "r");
     String html = file.readString();
     file.close();
 
@@ -195,7 +195,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für about
     server.on("/about", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /about erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -204,7 +204,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für Waage
     server.on("/waage", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /waage erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/waage.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/waage.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -213,7 +213,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für RFID
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /rfid erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/rfid.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/rfid.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -229,7 +229,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für WiFi
     server.on("/wifi", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /wifi erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/wifi.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/wifi.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -322,7 +322,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für das Laden der CSS-Datei
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Lade style.css");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/style.css.gz", "text/css");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/style.css.gz", "text/css");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -331,7 +331,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     // Route für das Logo
     server.on("/logo.png", HTTP_GET, [](AsyncWebServerRequest *request){
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/logo.png.gz", "image/png");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/logo.png.gz", "image/png");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -340,7 +340,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     // Route für Favicon
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/favicon.ico", "image/x-icon");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/favicon.ico", "image/x-icon");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
         Serial.println("favicon.ico gesendet");
@@ -348,7 +348,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     // Route für spool_in.png
     server.on("/spool_in.png", HTTP_GET, [](AsyncWebServerRequest *request){
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/spool_in.png.gz", "image/png");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/spool_in.png.gz", "image/png");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -357,7 +357,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     // Route für set_spoolman.png
     server.on("/set_spoolman.png", HTTP_GET, [](AsyncWebServerRequest *request){
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/set_spoolman.png.gz", "image/png");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/set_spoolman.png.gz", "image/png");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -367,7 +367,7 @@ void setupWebserver(AsyncWebServer &server) {
     // Route für JavaScript Dateien
     server.on("/spoolman.js", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /spoolman.js erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/spoolman.js.gz", "text/javascript");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/spoolman.js.gz", "text/javascript");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -376,7 +376,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     server.on("/rfid.js", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /rfid.js erhalten");
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS,"/rfid.js.gz", "text/javascript");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS,"/rfid.js.gz", "text/javascript");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", CACHE_CONTROL);
         request->send(response);
@@ -385,7 +385,7 @@ void setupWebserver(AsyncWebServer &server) {
 
     // Vereinfachter Update-Handler
     server.on("/upgrade", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/upgrade.html.gz", "text/html");
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/upgrade.html.gz", "text/html");
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Cache-Control", "no-store");
         request->send(response);

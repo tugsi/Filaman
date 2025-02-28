@@ -17,8 +17,8 @@ static bool isSpiffsUpdate = false;
 
 void backupJsonConfigs() {
     // Bambu Credentials backup
-    if (SPIFFS.exists("/bambu_credentials.json")) {
-        File file = SPIFFS.open("/bambu_credentials.json", "r");
+    if (LittleFS.exists("/bambu_credentials.json")) {
+        File file = LittleFS.open("/bambu_credentials.json", "r");
         if (file) {
             bambuCredentialsBackup = file.readString();
             file.close();
@@ -27,8 +27,8 @@ void backupJsonConfigs() {
     }
 
     // Spoolman URL backup
-    if (SPIFFS.exists("/spoolman_url.json")) {
-        File file = SPIFFS.open("/spoolman_url.json", "r");
+    if (LittleFS.exists("/spoolman_url.json")) {
+        File file = LittleFS.open("/spoolman_url.json", "r");
         if (file) {
             spoolmanUrlBackup = file.readString();
             file.close();
@@ -40,7 +40,7 @@ void backupJsonConfigs() {
 void restoreJsonConfigs() {
     // Restore Bambu credentials
     if (bambuCredentialsBackup.length() > 0) {
-        File file = SPIFFS.open("/bambu_credentials.json", "w");
+        File file = LittleFS.open("/bambu_credentials.json", "w");
         if (file) {
             file.print(bambuCredentialsBackup);
             file.close();
@@ -51,7 +51,7 @@ void restoreJsonConfigs() {
 
     // Restore Spoolman URL
     if (spoolmanUrlBackup.length() > 0) {
-        File file = SPIFFS.open("/spoolman_url.json", "w");
+        File file = LittleFS.open("/spoolman_url.json", "w");
         if (file) {
             file.print(spoolmanUrlBackup);
             file.close();
