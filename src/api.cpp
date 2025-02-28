@@ -12,31 +12,6 @@ struct SendToApiParams {
     String updatePayload;
 };
 
-/*
-    // Spoolman Data
-    {
-        "version":"1.0",
-        "protocol":"openspool",
-        "color_hex":"AF7933",
-        "type":"ABS",
-        "min_temp":175,
-        "max_temp":275,
-        "brand":"Overture"
-    }
-
-    // FilaMan Data
-    {
-        "version":"1.0",
-        "protocol":"openspool",
-        "color_hex":"AF7933",
-        "type":"ABS",
-        "min_temp":175,
-        "max_temp":275,
-        "brand":"Overture",
-        "sm_id": 
-    }
-*/
-
 JsonDocument fetchSingleSpoolInfo(int spoolId) {
     HTTPClient http;
     String spoolsUrl = spoolmanUrl + apiUrl + "/spool/" + spoolId;
