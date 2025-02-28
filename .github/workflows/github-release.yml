@@ -39,16 +39,16 @@ jobs:
       run: |
         VERSION=$(grep '^version = ' platformio.ini | cut -d'"' -f2)
         
-        # Always build firmware and SPIFFS
-        echo "Building firmware and SPIFFS..."
+        # Always build firmware and LittleFS
+        echo "Building firmware and LittleFS..."
         pio run -e esp32dev
         pio run -t buildfs
         
         # Copy firmware binary
         cp .pio/build/esp32dev/firmware.bin .pio/build/esp32dev/upgrade_filaman_firmware_v${VERSION}.bin
         
-        # Create SPIFFS binary - direct copy without header
-        cp .pio/build/esp32dev/spiffs.bin .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
+        # Create LittleFS binary - direct copy without header
+        cp .pio/build/esp32dev/littlefs.bin .pio/build/esp32dev/upgrade_filaman_website_v${VERSION}.bin
         
         # Create full binary (always)
         (cd .pio/build/esp32dev && 
@@ -61,7 +61,7 @@ jobs:
           0x1000 bootloader.bin \
           0x8000 partitions.bin \
           0x10000 firmware.bin \
-          0x3D0000 spiffs.bin)
+          0x3D0000 littlefs.bin)
         
         # Verify file sizes
         echo "File sizes:"
@@ -131,7 +131,7 @@ jobs:
           FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_firmware_v${VERSION}.bin"
         fi
         
-        # Add SPIFFS and full binary only if they exist
+        # Add LittleFS and full binary only if they exist
         if [ -f "upgrade_filaman_website_v${VERSION}.bin" ]; then
           FILES_TO_UPLOAD="$FILES_TO_UPLOAD upgrade_filaman_website_v${VERSION}.bin"
         fi
