@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.99] - 2025-02-28
+### Changed
+- update platformio.ini for version v1.3.99
+- update workflows to build firmware with LittleFS instead of SPIFFS
+
+
 ## [1.3.98] - 2025-02-28
 ### Changed
 - update platformio.ini for version v1.3.98
