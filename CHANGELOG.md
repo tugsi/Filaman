@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.98] - 2025-02-28
+### Changed
+- update platformio.ini for version v1.3.98
+- migrate from SPIFFS to LittleFS for file handling
+- remove unused VSCode settings file
+- remove commented-out spoolman and filaman data from api.cpp
+
+
 ## [1.3.97] - 2025-02-28
 ### Added
 - füge Bestätigungsmeldung für Spool-Einstellung hinzu
