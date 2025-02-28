@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.3.97] - 2025-02-28
+### Added
+- füge Bestätigungsmeldung für Spool-Einstellung hinzu
+- verbessere WLAN-Konfiguration und füge mDNS-Unterstützung hinzu
+- aktualisiere OLED-Anzeige mit Versionsnummer und verbessere Textausrichtung
+- füge regelmäßige WLAN-Verbindungsüberprüfung hinzu
+- aktualisiere Schaltplan-Bild
+- zeige Versionsnummer im OLED-Display an
+
+### Changed
+- update platformio.ini for version v1.3.97
+- entferne text-shadow von deaktivierten Schaltflächen
+- füge Link zum Wiki für detaillierte Informationen über die Nutzung hinzu
+
+### Fixed
+- Speichernutzung optimiert
+- behebe doppelte http.end() Aufrufe in checkSpoolmanExtraFields
+- optimiere Verzögerungen und Stackgrößen in NFC-Task-Funktionen
+- entferne ungenutzte Bibliotheken und Debug-Ausgaben aus main.cpp
+
+
 ## [1.3.96] - 2025-02-25
 ### Added
 - füge Unterstützung für Spoolman-Einstellungen hinzu und aktualisiere die Benutzeroberfläche
