@@ -47,7 +47,7 @@ void scale_loop(void * parameter) {
       weight = round(scale.get_units());
     }
     
-    vTaskDelay(pdMS_TO_TICKS(100)); // Verzögerung, um die CPU nicht zu überlasten
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
@@ -90,7 +90,7 @@ uint8_t start_scale() {
   BaseType_t result = xTaskCreatePinnedToCore(
     scale_loop, /* Function to implement the task */
     "ScaleLoop", /* Name of the task */
-    10000,  /* Stack size in words */
+    2048,  /* Stack size in words */
     NULL,  /* Task input parameter */
     scaleTaskPrio,  /* Priority of the task */
     &ScaleTask,  /* Task handle. */
@@ -170,6 +170,12 @@ uint8_t calibrate_scale() {
         esp_task_wdt_reset();
       }
 
+      if (scale.wait_ready_timeout(1000))
+      {
+        scale.set_scale(verifyValue); // this value is obtained by calibrating the scale with known weights; see the README for details
+        scale.tare();
+      }
+
       oledShowMessage("Calibration done");
 
       for (uint16_t i = 0; i < 2000; i++) {
@@ -177,8 +183,6 @@ uint8_t calibrate_scale() {
         vTaskDelay(pdMS_TO_TICKS(1));
         esp_task_wdt_reset();
       }
-
-      //ESP.restart();
     }
     else
     {
@@ -211,9 +215,8 @@ uint8_t calibrate_scale() {
   }
 
   oledShowMessage("Scale Ready");
-
   
-  Serial.println("starte Scale Task");
+  Serial.println("restart Scale Task");
   start_scale();
 
   pauseBambuMqttTask = false;
