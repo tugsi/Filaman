@@ -341,7 +341,7 @@ void updateAmsWsData(JsonDocument& doc, JsonArray& amsArray, int& ams_count, Jso
             ams_data[i].trays[j].tray_color = trayObj["tray_color"].as<String>();
             ams_data[i].trays[j].nozzle_temp_min = trayObj["nozzle_temp_min"].as<int>();
             ams_data[i].trays[j].nozzle_temp_max = trayObj["nozzle_temp_max"].as<int>();
-            //ams_data[i].trays[j].setting_id = trayObj["setting_id"].as<String>();
+            if (trayObj["tray_type"].as<String>() == "") ams_data[i].trays[j].setting_id = "";
             ams_data[i].trays[j].cali_idx = trayObj["cali_idx"].as<String>();
         }
     }
@@ -425,16 +425,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         return;
     }
 
-    // Wenn bambu auto set spool aktiv und eine spule erkannt und mqtt meldung das neue spule im ams
-    if (autoSendToBambu && autoSetToBambuSpoolId > 0 && 
-        doc["print"]["command"].as<String>() == "push_status" && doc["print"]["ams"]["tray_pre"].as<uint8_t>()
-        && !doc["print"]["ams"]["ams"].as<JsonArray>())
-    {
-        autoSetSpool(autoSetToBambuSpoolId, doc["print"]["ams"]["tray_pre"].as<uint8_t>());
-    }
-
     // Prüfen, ob "print->upgrade_state" und "print.ams.ams" existieren
-    if (doc["print"]["upgrade_state"].is<JsonObject>()) 
+    if (doc["print"]["upgrade_state"].is<JsonObject>() || (doc["print"]["command"].is<String>() && doc["print"]["command"] == "push_status")) 
     {
         // Prüfen ob AMS-Daten vorhanden sind
         if (!doc["print"]["ams"].is<JsonObject>() || !doc["print"]["ams"]["ams"].is<JsonArray>()) 
@@ -443,7 +435,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         }
 
         JsonArray amsArray = doc["print"]["ams"]["ams"].as<JsonArray>();
-        
+
         // Prüfe ob sich die AMS-Daten geändert haben
         bool hasChanges = false;
         
@@ -479,6 +471,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                     (trayObj["setting_id"].as<String>() != "" && trayObj["setting_id"].as<String>() != ams_data[storedIndex].trays[j].setting_id) ||
                     trayObj["cali_idx"].as<String>() != ams_data[storedIndex].trays[j].cali_idx) {
                     hasChanges = true;
+
+                    if (autoSendToBambu && autoSetToBambuSpoolId > 0 && hasChanges)
+                    {
+                        autoSetSpool(autoSetToBambuSpoolId, ams_data[storedIndex].trays[j].id);
+                    }
+
                     break;
                 }
             }
@@ -497,6 +495,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                         (vtTray["setting_id"].as<String>() != "" && vtTray["setting_id"].as<String>() != ams_data[i].trays[0].setting_id) ||
                         (vtTray["tray_type"].as<String>() != "" && vtTray["cali_idx"].as<String>() != ams_data[i].trays[0].cali_idx)) {
                         hasChanges = true;
+
+                        if (autoSendToBambu && autoSetToBambuSpoolId > 0 && hasChanges)
+                        {
+                            autoSetSpool(autoSetToBambuSpoolId, 254);
+                        }
                     }
                     break;
                 }
