@@ -197,6 +197,11 @@ void loop() {
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       weightSend = 1;
       autoSetToBambuSpoolId = spoolId.toInt();
+
+      if (octoEnabled) 
+      {
+        updateSpoolOcto(autoSetToBambuSpoolId);
+      }
     }
     else
     {

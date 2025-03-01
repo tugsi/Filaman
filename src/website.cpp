@@ -239,7 +239,10 @@ void setupWebserver(AsyncWebServer &server) {
     server.on("/spoolman", HTTP_GET, [](AsyncWebServerRequest *request){
         Serial.println("Anfrage für /spoolman erhalten");
         String html = loadHtmlWithHeader("/spoolman.html");
-        html.replace("{{spoolmanUrl}}", spoolmanUrl);
+        html.replace("{{spoolmanUrl}}", (spoolmanUrl != "") ? spoolmanUrl : "");
+        html.replace("{{spoolmanOctoEnabled}}", octoEnabled ? "checked" : "");
+        html.replace("{{spoolmanOctoUrl}}", (octoUrl != "") ? octoUrl : "");
+        html.replace("{{spoolmanOctoToken}}", (octoToken != "") ? octoToken : "");
 
         JsonDocument doc;
         if (loadJsonValue("/bambu_credentials.json", doc) && doc["bambu_ip"].is<String>()) 
@@ -277,10 +280,21 @@ void setupWebserver(AsyncWebServer &server) {
             return;
         }
 
+        if (request->getParam("octoEnabled")->value() == "true" && (!request->hasParam("octoUrl") || !request->hasParam("octoToken"))) {
+            request->send(400, "application/json", "{\"success\": false, \"error\": \"Missing OctoPrint URL or Token parameter\"}");
+            return;
+        }
+
         String url = request->getParam("url")->value();
+        bool octoEnabled = (request->getParam("octoEnabled")->value() == "true") ? true : false;
+        String octoUrl = request->getParam("octoUrl")->value();
+        String octoToken = (request->getParam("octoToken")->value() != "") ? request->getParam("octoToken")->value() : "";
+
         url.trim();
+        octoUrl.trim();
+        octoToken.trim();
         
-        bool healthy = saveSpoolmanUrl(url);
+        bool healthy = saveSpoolmanUrl(url, octoEnabled, octoUrl, octoToken);
         String jsonResponse = "{\"healthy\": " + String(healthy ? "true" : "false") + "}";
 
         request->send(200, "application/json", jsonResponse);

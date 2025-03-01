@@ -52,11 +52,18 @@
             if (spoolmanUrl && spoolmanUrl.trim() !== "") {
                 document.getElementById('spoolmanUrl').value = spoolmanUrl;
             }
+            
+            // Initialize OctoPrint fields visibility
+            toggleOctoFields();
         };
 
         function checkSpoolmanInstance() {
             const url = document.getElementById('spoolmanUrl').value;
-            fetch(`/api/checkSpoolman?url=${encodeURIComponent(url)}`)
+            const spoolmanOctoEnabled = document.getElementById('spoolmanOctoEnabled').checked;
+            const spoolmanOctoUrl = document.getElementById('spoolmanOctoUrl').value;
+            const spoolmanOctoToken = document.getElementById('spoolmanOctoToken').value;
+            
+            fetch(`/api/checkSpoolman?url=${encodeURIComponent(url)}&octoEnabled=${spoolmanOctoEnabled}&octoUrl=${spoolmanOctoUrl}&octoToken=${spoolmanOctoToken}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.healthy) {
@@ -90,6 +97,15 @@
                     document.getElementById('bambuStatusMessage').innerText = 'Error while saving: ' + error.message;
                 });
         }
+
+        /**
+         * Controls visibility of OctoPrint configuration fields based on checkbox state
+         * Called on page load and when checkbox changes
+         */
+        function toggleOctoFields() {
+            const octoEnabled = document.getElementById('spoolmanOctoEnabled').checked;
+            document.getElementById('octoFields').style.display = octoEnabled ? 'block' : 'none';
+        }
     </script>
     <script>
         var spoolmanUrl = "{{spoolmanUrl}}";
@@ -102,6 +118,17 @@
             <div class="card-body">
                 <h5 class="card-title">Set URL/IP to your Spoolman-Instanz</h5>
                 <input type="text" id="spoolmanUrl" placeholder="http://ip-or-url-of-your-spoolman-instanz:port">
+                <h5 class="card-title">If you want to enable sending Spool to Spoolman Octoprint Plugin:</h5>
+                <p>
+                    <input type="checkbox" id="spoolmanOctoEnabled" {{spoolmanOctoEnabled}} onchange="toggleOctoFields()"> Send to Octo-Plugin
+                </p>
+                <div id="octoFields" style="display: none;">
+                    <p>
+                        <input type="text" id="spoolmanOctoUrl" placeholder="http://ip-or-url-of-your-octoprint-instanz:port" value="{{spoolmanOctoUrl}}">
+                        <input type="text" id="spoolmanOctoToken" placeholder="Your Octoprint Token" value="{{spoolmanOctoToken}}">
+                    </p>
+                </div>
+                
                 <button onclick="checkSpoolmanInstance()">Save Spoolman URL</button>
                 <p id="statusMessage"></p>
             </div>
