@@ -154,11 +154,11 @@
                     <p>If activated, FilaMan will automatically update the next filled tray with the last scanned and weighed spool.</p>
                     <div class="input-group" style="display: flex; margin-bottom: 0;">
                         <label for="autoSend" style="width: 250px; margin-right: 5px;">Auto Send to Bambu:</label>
-                        <label for="autoSendTime" style="width: 250px; margin-right: 5px;">Wait time in Seconds:</label>
+                        <label for="autoSendTime" style="width: 250px; margin-right: 5px;">Wait for Spool in Sec:</label>
                     </div>
                     <div class="input-group" style="display: flex;">
                         <input type="checkbox" id="autoSend" {{autoSendToBambu}} style="width: 190px; margin-right: 10px;">
-                        <input type="text" id="autoSendTime" placeholder="Time to wait for new Spool" value="{{autoSendTime}}" style="width: 100px;">
+                        <input type="number" min="60" id="autoSendTime" placeholder="Time to wait" value="{{autoSendTime}}" style="width: 100px;">
                     </div>
 
                     <button style="margin: 0;" onclick="saveBambuCredentials()">Save Bambu Credentials</button>

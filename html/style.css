@@ -188,14 +188,18 @@ label {
     font-weight: bold; 
 }
 
-input[type="text"], input[type="submit"] { 
+input[type="text"], input[type="submit"], input[type="number"] { 
     padding: 10px; 
     border: 1px solid #ccc; 
     border-radius: 5px; 
     font-size: 16px; 
 }
 
-input[type="text"]:focus { 
+input[type="number"] { 
+    width: 108px !important; 
+}
+
+input[type="text"]:focus, input[type="number"]:focus { 
     border-color: #007bff; 
     outline: none; 
 }
