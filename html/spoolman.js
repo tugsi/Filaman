@@ -97,13 +97,15 @@ function populateVendorDropdown(data, selectedSmId = null) {
         ? (weightInKg / 1000).toFixed(2) + " t" 
         : weightInKg.toFixed(2) + " kg";
 
-    // Dropdown mit gefilterten Herstellern befüllen
-    Object.entries(filteredVendors).forEach(([id, name]) => {
-        const option = document.createElement("option");
-        option.value = id;
-        option.textContent = name;
-        vendorSelect.appendChild(option);
-    });
+    // Dropdown mit gefilterten Herstellern befüllen - alphabetisch sortiert
+    Object.entries(filteredVendors)
+        .sort(([, nameA], [, nameB]) => nameA.localeCompare(nameB)) // Sort vendors alphabetically by name
+        .forEach(([id, name]) => {
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = name;
+            vendorSelect.appendChild(option);
+        });
 
     document.getElementById("totalSpools").textContent = totalSpools;
     document.getElementById("spoolsWithoutTag").textContent = spoolsWithoutTag;
