@@ -93,8 +93,16 @@ bool formatNdefTag() {
     return success;
   }
 
+uint16_t readTagSize()
+{
+  uint8_t buffer[4];
+  memset(buffer, 0, 4);
+  nfc.ntag2xx_ReadPage(3, buffer);
+  return buffer[2]*8;
+}
+
 uint8_t ntag2xx_WriteNDEF(const char *payload) {
-  uint8_t tagSize = 240; // 144 bytes is maximum for NTAG213
+  uint16_t tagSize = readTagSize();
   Serial.print("Tag Size: ");Serial.println(tagSize);
 
   uint8_t pageBuffer[4] = {0, 0, 0, 0};
@@ -369,46 +377,51 @@ void scanRfidTask(void * parameter) {
 
         if (uidLength == 7)
         {
-          uint8_t data[256];
-
-          // We probably have an NTAG2xx card (though it could be Ultralight as well)
-          Serial.println("Seems to be an NTAG2xx tag (7 byte UID)");
-          
-          for (uint8_t i = 0; i < 45; i++) {
-            /*
-            if (i < uidLength) {
-              uidString += String(uid[i], HEX);
-              if (i < uidLength - 1) {
-                  uidString += ":"; // Optional: Trennzeichen hinzufügen
-              }
-            }
-            */
-            if (!nfc.mifareclassic_ReadDataBlock(i, data + (i - 4) * 4)) 
-            {
-              break; // Stop if reading fails
-            }
-            // Check for NDEF message end
-            if (data[(i - 4) * 4] == 0xFE) 
-            {
-              break; // End of NDEF message
-            }
-
-            yield();
-            esp_task_wdt_reset();
-            vTaskDelay(pdMS_TO_TICKS(1));
-          }
-
-          if (!decodeNdefAndReturnJson(data)) 
+          uint16_t tagSize = readTagSize();
+          if(tagSize > 0)
           {
-            oledShowMessage("NFC-Tag unknown");
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            // Create a buffer depending on the size of the tag
+            uint8_t* data = (uint8_t*)malloc(tagSize);
+            memset(data, 0, tagSize);
+
+            // We probably have an NTAG2xx card (though it could be Ultralight as well)
+            Serial.println("Seems to be an NTAG2xx tag (7 byte UID)");
+            
+            uint8_t numPages = readTagSize()/4;
+            for (uint8_t i = 4; i < 4+numPages; i++) {
+              if (!nfc.ntag2xx_ReadPage(i, data+(i-4) * 4))
+              {
+                break; // Stop if reading fails
+              }
+              // Check for NDEF message end
+              if (data[(i - 4) * 4] == 0xFE) 
+              {
+                break; // End of NDEF message
+              }
+
+              yield();
+              esp_task_wdt_reset();
+              vTaskDelay(pdMS_TO_TICKS(1));
+            }
+
+            if (!decodeNdefAndReturnJson(data)) 
+            {
+              oledShowMessage("NFC-Tag unknown");
+              vTaskDelay(2000 / portTICK_PERIOD_MS);
+              hasReadRfidTag = 2;
+            }
+            else 
+            {
+              hasReadRfidTag = 1;
+            }
+
+            free(data);
+          }
+          else
+          {
+            oledShowMessage("NFC-Tag read error");
             hasReadRfidTag = 2;
           }
-          else 
-          {
-            hasReadRfidTag = 1;
-          }
-         
         }
         else
         {
