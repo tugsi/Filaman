@@ -21,7 +21,7 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
 - **OLED Display:** Shows current weight, connection status (WiFi, Bambu Lab, Spoolman).
 - **WiFi Connectivity:** WiFiManager for easy network configuration.
 - **MQTT Integration:** Connects to Bambu Lab printer for AMS control.
-- **NFC-Tag NTAG215:** Use NTAG215 because of enaught space on the Tag
+- **NFC-Tag NTAG213 NTAG215:** Use NTAG213, better NTAG215 because of enaught space on the Tag
 
 ### Web Interface Features
 - **Real-time Updates:** WebSocket connection for live data updates.
@@ -65,7 +65,7 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
 [Amazon Link](https://amzn.eu/d/0AuBp2c)
 - **PN532 NFC NXP RFID-Modul V3:** For NFC tag operations.
 [Amazon Link](https://amzn.eu/d/jfIuQXb)
-- **NFC Tags Ntag215:** RFID Tag
+- **NFC Tags NTAG213 NTAG215:** RFID Tag
 [Amazon Link](https://amzn.eu/d/9Z6mXc1)
 
 
