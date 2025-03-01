@@ -44,8 +44,6 @@ void payloadToJson(uint8_t *data) {
       DeserializationError error = deserializeJson(doc, jsonString);
   
       if (!error) {
-        const char* version = doc["version"];
-        const char* protocol = doc["protocol"];
         const char* color_hex = doc["color_hex"];
         const char* type = doc["type"];
         int min_temp = doc["min_temp"];
@@ -55,8 +53,6 @@ void payloadToJson(uint8_t *data) {
         Serial.println();
         Serial.println("-----------------");
         Serial.println("JSON-Parsed Data:");
-        Serial.println(version);
-        Serial.println(protocol);
         Serial.println(color_hex);
         Serial.println(type);
         Serial.println(min_temp);
@@ -144,6 +140,8 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
   if (combinedData == NULL) 
   {
     Serial.println("Fehler: Nicht genug Speicher vorhanden.");
+    oledShowMessage("Tag too small");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
     return 0;
   }
 
