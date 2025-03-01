@@ -38,6 +38,7 @@ german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62z
   - Filter and select filaments.
   - Update spool weights automatically.
   - Track NFC tag assignments.
+  - Supports Spoolman Octoprint Plugin
 
 ### If you want to support my work, i would be happy to get a coffe
 <a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>

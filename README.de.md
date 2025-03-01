@@ -35,6 +35,7 @@ Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaO
   - Filtern und Auswählen von Filamenten.
   - Automatische Aktualisierung der Spulengewichte.
   - Verfolgung von NFC-Tag-Zuweisungen.
+  - Unterstützt das Spoolman Octoprint Plugin
 
 ### Wenn Sie meine Arbeit unterstützen möchten, freue ich mich über einen Kaffee
 <a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
