@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.0] - 2025-03-01
+### Added
+- add support for Spoolman Octoprint Plugin in README files
+- add OctoPrint integration with configurable fields and update functionality
+- add version comparison function and check for outdated versions before updates
+- remove unused version and protocol fields from JSON output; add error message for insufficient memory
+
+### Changed
+- update NFC tag references to include NTAG213 and clarify storage capacity
+- bump version to 1.4.0
+- remove unused version and protocol fields from NFC data packet
+- sort vendors alphabetically in the dropdown list
+- Merge pull request #10 from janecker/nfc-improvements
+- Improves NFC Tag handling
+
+
 ## [1.3.99] - 2025-02-28
 ### Changed
 - update platformio.ini for version v1.3.99
