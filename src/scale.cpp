@@ -110,6 +110,7 @@ uint8_t calibrate_scale() {
 
   //vTaskSuspend(RfidReaderTask);
   vTaskDelete(RfidReaderTask);
+  vTaskDelete(ScaleTask);
   pauseBambuMqttTask = true;
   pauseMainTask = 1;
 
@@ -168,12 +169,6 @@ uint8_t calibrate_scale() {
         yield();
         vTaskDelay(pdMS_TO_TICKS(1));
         esp_task_wdt_reset();
-      }
-
-      if (scale.wait_ready_timeout(1000))
-      {
-        scale.set_scale(verifyValue); // this value is obtained by calibrating the scale with known weights; see the README for details
-        scale.tare();
       }
 
       oledShowMessage("Calibration done");
