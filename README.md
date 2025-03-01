@@ -6,12 +6,14 @@ FilaMan is a filament management system for 3D printing. It uses ESP32 hardware 
 Users can manage filament spools, monitor the status of the Automatic Material System (AMS) and make settings via a web interface. 
 The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D printers and [Spoolman](https://github.com/Donkie/Spoolman) filament management as well as the [Openspool](https://github.com/spuder/OpenSpool) NFC-TAG format.
 
+
 ![Scale](./img/scale_trans.png)
 
 
 More Images can be found in the [img Folder](/img/)  
-or my website:[FilaMan Website](https://www.filaman.app)  
-german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)
+or my website: [FilaMan Website](https://www.filaman.app)  
+german explanatory video: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)  
+Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
 
 ### Now more detailed informations about the usage: [Wiki](https://github.com/ManuelW77/Filaman/wiki)
 

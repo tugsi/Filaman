@@ -8,7 +8,8 @@ Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/
 
 Weitere Bilder finden Sie im [img Ordner](/img/)
 oder auf meiner Website: [FilaMan Website](https://www.filaman.app)  
-Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)
+Deutsches Erklärvideo: [Youtube](https://youtu.be/uNDe2wh9SS8?si=b-jYx4I1w62zaOHU)  
+Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
 
 ### Es gibt jetzt auch ein Wiki, dort sind nochmal alle Funktionen beschrieben: [Wiki](https://github.com/ManuelW77/Filaman/wiki)
 
