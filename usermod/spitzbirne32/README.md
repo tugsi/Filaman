@@ -36,10 +36,10 @@ List of parts that were used:
 ## Assembly Instructions
 
 1. **Component Preparation:**
-   - Drill the display's mounting holes to 3mm to fit M3 screws.
+   - Carefully drill the display's mounting holes to 3mm to fit M3 screws.
 
 2. **Heat Insert Installation:**
-   - install VORON M3 heat inserts into the designated holes in the 3D-printed housing/case for the ESP32 and Scale top.
+   - install VORON M3 heat inserts into the designated holes in the 3D-printed housing/case for the ESP32 and Scale top &#8594; heat insert location pictures
 
 3. **Component Mounting:**
    - Attach the display, scale, and NFC reader to their respective mounts using M3 screws.
