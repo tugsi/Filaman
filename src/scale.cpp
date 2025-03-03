@@ -14,7 +14,7 @@ TaskHandle_t ScaleTask;
 int16_t weight = 0;
 
 uint8_t weigthCouterToApi = 0;
-uint8_t scale_tare_counter = 0;
+bool scaleTareRequest = false;
 uint8_t pauseMainTask = 0;
 uint8_t scaleCalibrated = 1;
 
@@ -34,14 +34,16 @@ void scale_loop(void * parameter) {
   Serial.println("++++++++++++++++++++++++++++++");
   Serial.println("Scale Loop started");
   Serial.println("++++++++++++++++++++++++++++++");
+
   for(;;) {
     if (scale.is_ready()) 
     {
       // Waage nochmal Taren, wenn zu lange Abweichung
-      if (scale_tare_counter >= 5) 
+      if (scaleTareRequest == true) 
       {
+        Serial.println("Re-Tare scale");
         scale.tare();
-        scale_tare_counter = 0;
+        scaleTareRequest = false;
       }
 
       weight = round(scale.get_units());
@@ -51,13 +53,13 @@ void scale_loop(void * parameter) {
   }
 }
 
-uint8_t start_scale() {
+void start_scale() {
   Serial.println("Prüfe Calibration Value");
-  long calibrationValue;
+  float calibrationValue;
 
   // NVS lesen
   preferences.begin(NVS_NAMESPACE, true); // true = readonly
-  calibrationValue = preferences.getLong(NVS_KEY_CALIBRATION, defaultScaleCalibrationValue);
+  calibrationValue = preferences.getFloat(NVS_KEY_CALIBRATION, defaultScaleCalibrationValue);
   preferences.end();
 
   Serial.print("Read Scale Calibration Value ");
@@ -68,6 +70,13 @@ uint8_t start_scale() {
   if (isnan(calibrationValue) || calibrationValue < 1) {
     calibrationValue = defaultScaleCalibrationValue;
     scaleCalibrated = 0;
+
+    oledShowMessage("Scale not calibrated!");
+    for (uint16_t i = 0; i < 50000; i++) {
+      yield();
+      vTaskDelay(pdMS_TO_TICKS(1));
+      esp_task_wdt_reset();
+    }
   }
 
   oledShowMessage("Scale Tare Please remove all");
@@ -101,21 +110,21 @@ uint8_t start_scale() {
   } else {
       Serial.println("ScaleLoop-Task erfolgreich erstellt");
   }
-
-  return (scaleCalibrated == 1) ? 1 : 3;
 }
 
 uint8_t calibrate_scale() {
-  long newCalibrationValue;
+  uint8_t returnState = 0;
+  float newCalibrationValue;
 
-  //vTaskSuspend(RfidReaderTask);
-  vTaskDelete(RfidReaderTask);
-  vTaskDelete(ScaleTask);
+  vTaskSuspend(RfidReaderTask);
+  vTaskSuspend(ScaleTask);
+
   pauseBambuMqttTask = true;
   pauseMainTask = 1;
-
+  
   if (scale.wait_ready_timeout(1000))
   {
+    
     scale.set_scale();
     oledShowMessage("Step 1 empty Scale");
 
@@ -137,7 +146,7 @@ uint8_t calibrate_scale() {
       esp_task_wdt_reset();
     }
     
-    long newCalibrationValue = scale.get_units(10);
+    float newCalibrationValue = scale.get_units(10);
     Serial.print("Result: ");
     Serial.println(newCalibrationValue);
 
@@ -150,35 +159,43 @@ uint8_t calibrate_scale() {
 
       // Speichern mit NVS
       preferences.begin(NVS_NAMESPACE, false); // false = readwrite
-      preferences.putLong(NVS_KEY_CALIBRATION, newCalibrationValue);
+      preferences.putFloat(NVS_KEY_CALIBRATION, newCalibrationValue);
       preferences.end();
 
       // Verifizieren
       preferences.begin(NVS_NAMESPACE, true);
-      long verifyValue = preferences.getLong(NVS_KEY_CALIBRATION, 0);
+      float verifyValue = preferences.getFloat(NVS_KEY_CALIBRATION, 0);
       preferences.end();
 
       Serial.print("Verified stored value: ");
       Serial.println(verifyValue);
 
-      Serial.println("End calibration, revome weight");
+      Serial.println("End calibration, remove weight");
 
       oledShowMessage("Remove weight");
 
+      scale.set_scale(newCalibrationValue);
+      for (uint16_t i = 0; i < 2000; i++) {
+        yield();
+        vTaskDelay(pdMS_TO_TICKS(1));
+        esp_task_wdt_reset();
+      }
+      
+      oledShowMessage("Scale calibrated");
+
+      // For some reason it is not possible to re-tare the scale here, it will result in a wdt timeout. Instead let the scale loop do the taring
+      //scale.tare();
+      scaleTareRequest = true;
+
       for (uint16_t i = 0; i < 2000; i++) {
         yield();
         vTaskDelay(pdMS_TO_TICKS(1));
         esp_task_wdt_reset();
       }
 
-      oledShowMessage("Calibration done");
-
-      for (uint16_t i = 0; i < 2000; i++) {
-        yield();
-        vTaskDelay(pdMS_TO_TICKS(1));
-        esp_task_wdt_reset();
-      }
+      returnState = 1;
     }
+   
     else
     {
       {
@@ -191,10 +208,10 @@ uint8_t calibrate_scale() {
           vTaskDelay(pdMS_TO_TICKS(1));
           esp_task_wdt_reset();
         }
-        return 0;
+        returnState = 0;
       }
-    }
-  } 
+    } 
+  }
   else 
   {
     Serial.println("HX711 not found.");
@@ -206,16 +223,13 @@ uint8_t calibrate_scale() {
       vTaskDelay(pdMS_TO_TICKS(1));
       esp_task_wdt_reset();
     }
-    return 0;
+    returnState = 0;
   }
 
-  oledShowMessage("Scale Ready");
-  
-  Serial.println("restart Scale Task");
-  start_scale();
-
+  vTaskResume(RfidReaderTask);
+  vTaskResume(ScaleTask);
   pauseBambuMqttTask = false;
   pauseMainTask = 0;
 
-  return 1;
+  return returnState;
 }
