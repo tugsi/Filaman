@@ -13,6 +13,9 @@
 #include "esp_task_wdt.h"
 #include "commonFS.h"
 
+bool mainTaskWasPaused = 0;
+uint8_t scaleTareCounter = 0;
+
 // ##### SETUP #####
 void setup() {
   Serial.begin(115200);
@@ -45,32 +48,14 @@ void setup() {
   // NFC Reader
   startNfc();
 
-  uint8_t scaleCalibrated = start_scale();
-  if (scaleCalibrated == 3) {
-    oledShowMessage("Scale not calibrated!");
-    for (uint16_t i = 0; i < 50000; i++) {
-      yield();
-      vTaskDelay(pdMS_TO_TICKS(1));
-      esp_task_wdt_reset();
-    }
-  } else if (scaleCalibrated == 0) {
-    oledShowMessage("HX711 not found");
-    for (uint16_t i = 0; i < 50000; i++) {
-      yield();
-      vTaskDelay(pdMS_TO_TICKS(1));
-      esp_task_wdt_reset();
-    }
-  }
-  
+  start_scale();
+
   // WDT initialisieren mit 10 Sekunden Timeout
   bool panic = true; // Wenn true, löst ein WDT-Timeout einen System-Panik aus
-  esp_task_wdt_init(10, panic); 
+  esp_task_wdt_init(10, panic);
 
   // Aktuellen Task (loopTask) zum Watchdog hinzufügen
   esp_task_wdt_add(NULL);
-
-  // Optional: Andere Tasks zum Watchdog hinzufügen, falls nötig
-  // esp_task_wdt_add(task_handle);
 }
 
 
@@ -147,9 +132,17 @@ void loop() {
   } 
 
   // Ausgabe der Waage auf Display
-  if (pauseMainTask == 0 && weight != lastWeight && hasReadRfidTag == 0 && (!autoSendToBambu || autoSetToBambuSpoolId == 0))
+  if(pauseMainTask == 0)
   {
-    (weight < 2) ? ((weight < -2) ? oledShowMessage("!! -0") : oledShowWeight(0)) : oledShowWeight(weight);
+    if (mainTaskWasPaused || (weight != lastWeight && hasReadRfidTag == 0 && (!autoSendToBambu || autoSetToBambuSpoolId == 0)))
+    {
+      (weight < 2) ? ((weight < -2) ? oledShowMessage("!! -0") : oledShowWeight(0)) : oledShowWeight(weight);
+    }
+    mainTaskWasPaused = false;
+  }
+  else
+  {
+    mainTaskWasPaused = true;
   }
 
 
@@ -161,11 +154,20 @@ void loop() {
     // Prüfen ob die Waage korrekt genullt ist
     if ((weight > 0 && weight < 5) || weight < 0)
     {
-      scale_tare_counter++;
+      if(scaleTareCounter < 5)
+      {
+        scaleTareCounter++;
+      }
+      else
+      {
+        scaleTareRequest = true;
+        scaleTareCounter = 0;
+      }
+      
     }
     else
     {
-      scale_tare_counter = 0;
+      scaleTareCounter = 0;
     }
 
     // Prüfen ob das Gewicht gleich bleibt und dann senden
@@ -209,7 +211,6 @@ void loop() {
       vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
   }
-
-  yield();
+  
   esp_task_wdt_reset();
 }
