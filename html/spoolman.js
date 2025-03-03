@@ -86,7 +86,7 @@ function populateVendorDropdown(data, selectedSmId = null) {
     });
 
     // Nach der Schleife: Formatierung der Gesamtlänge
-    console.log("Total Lenght: ", totalLength);
+    console.log("Total Length: ", totalLength);
     const formattedLength = totalLength > 1000 
         ? (totalLength / 1000).toFixed(2) + " km" 
         : totalLength.toFixed(2) + " m";

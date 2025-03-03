@@ -603,7 +603,6 @@ void mqtt_loop(void * parameter) {
 bool setupMqtt() {
     // Wenn Bambu Daten vorhanden
     bool success = loadBambuCredentials();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     if (!success) {
         Serial.println("Failed to load Bambu credentials");
@@ -667,6 +666,7 @@ bool setupMqtt() {
 void bambu_restart() {
     if (BambuMqttTask) {
         vTaskDelete(BambuMqttTask);
+        delay(10);
     }
     setupMqtt();
 }
