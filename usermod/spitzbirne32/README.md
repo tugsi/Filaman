@@ -13,7 +13,7 @@ List of parts that were used:
 
 ---
 
-- **Parts are designed to be printed in ABS/ASA. Shrinking compensation not needed.
+- **Parts are designed to be printed in ABS/ASA.** Shrinking compensation not needed.
 
 - **Display and Scale Adjustments:** The AliExpress-sourced display and scale had different dimensions and hole spacings compared to the Amazon versions. The 3D models were modified to accommodate these differences, ensuring proper fit and functionality.
 
