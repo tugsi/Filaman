@@ -16,6 +16,7 @@ List of parts that were used:
 - **Parts are designed to be printed in ABS/ASA.** Shrinking compensation not needed.
 
 - **Display and Scale Adjustments:** The AliExpress-sourced display and scale had different dimensions and hole spacings compared to the Amazon versions. The 3D models were modified to accommodate these differences, ensuring proper fit and functionality.
+   -  measurement of my Display & Scale to check if your parts will fit can be found in the images folder
 
 - **Screw Size and Heat Inserts:** All holes originally designed for M4 screws were resized to fit M3 screws. Standard VORON heat inserts were incorporated to provide durable threading. This change standardizes the hardware and simplifies assembly.
 
