@@ -56,3 +56,14 @@ For detailed assembly guides and additional resources, refer to the [original Fi
 ## Conclusion
 
 These modifications to the FilaMan project provide a cost-effective and standardized approach to building a filament management system. By sourcing components from AliExpress and adjusting the 3D models accordingly, users can achieve the same functionality at a reduced cost, with the added benefit of using uniform hardware throughout the assembly.
+
+## Changelog
+
+### Version 1.0 - 2025-03-04
+- Initial release of modifications for AliExpress-sourced components.
+- Adjusted 3D models to fit different display and scale dimensions.
+- Replaced M4 screws with M3 screws and integrated VORON heat inserts.
+- Modified display mounting, requiring drilling to 3mm for M3 screws.
+- Adjusted scale top surface for flush screw placement.
+- Standardized NFC reader mounting with M3 screws and VORON heat inserts.
+- Retained M4 screws only for metal scale attachment.
