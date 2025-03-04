@@ -7,7 +7,7 @@ To reduce costs, components were sourced from AliExpress instead of Amazon. Howe
 List of parts that were used:
 - Display: https://aliexpress.com/item/1005007389730469.html
 - Scale(5KG with HX711): https://aliexpress.com/item/1005006827930173.html
-- NFC Reader: https://daliexpress.com/item/1005005973913526.html
+- NFC Reader: https://aliexpress.com/item/1005005973913526.html
 - NFC Chips: https://aliexpress.com/item/1005006332360160.html
 - [VORON](https://vorondesign.com/) Heat Inserts M3 OD5mm L4mm: https://aliexpress.com/item/1005003582355741.html  - make sure to select the correct size
 
