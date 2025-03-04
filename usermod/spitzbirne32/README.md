@@ -1,7 +1,7 @@
 ## Modifications
 
-To reduce costs, components were sourced from AliExpress instead of Amazon. However, differences in dimensions and mounting hole spacing necessitated adjustments to the 3D-printed parts:
-
+To reduce costs, components were sourced from AliExpress instead of Amazon. However, differences in dimensions and mounting hole spacing necessitated adjustments to the 3D-printed parts. Additionally M3 heat inserts were used to limit M4 screws to a minimum.
+![](./Images/Showcase_usermod_spitzbirne32.gif)
 ---
 
 List of parts that were used:
@@ -9,7 +9,7 @@ List of parts that were used:
 - Scale(5KG with HX711): https://aliexpress.com/item/1005006827930173.html
 - NFC Reader: https://daliexpress.com/item/1005005973913526.html
 - NFC Chips: https://aliexpress.com/item/1005006332360160.html
-- [VORON](https://vorondesign.com/) Heat Inserts M3 OD5mm L4mm
+- [VORON](https://vorondesign.com/) Heat Inserts M3 OD5mm L4mm: https://aliexpress.com/item/1005003582355741.html  - make sure to select the correct size
 
 ---
 
