@@ -2,7 +2,7 @@
 
 FilaMan ist ein Filament-Managementsystem für den 3D-Druck. Es verwendet ESP32-Hardware für Gewichtsmessungen und NFC-Tag-Management. 
 Benutzer können Filamentspulen verwalten, den Status des Automatic Material System (AMS) von Bambu Lab Druckern überwachen und Einstellungen über eine Weboberfläche vornehmen. 
-Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/Spoolman) Filamentverwaltung, zusätzlich mit [Bambu Lab](https://bambulab.com/en-us) 3D-Druckern und sowie dem [OpenSpool](https://github.com/spuder/OpenSpool) NFC-TAG Format.
+Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/Spoolman) Filamentverwaltung, zusätzlich mit [Bambu Lab](https://bambulab.com/en-us) 3D-Druckern.
 
 ![Scale](./img/scale_trans.png)
 
@@ -25,7 +25,6 @@ Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
 - **Echtzeit-Updates:** WebSocket-Verbindung für Live-Daten-Updates.
 - **NFC-Tag-Verwaltung:** 
     - Filamentdaten auf NFC-Tags schreiben.
-    - Verwendet das NFC-Tag-Format von [OpenSpool](https://github.com/spuder/OpenSpool).
     - Ermöglicht automatische Spulenerkennung im AMS.
 - **Bambu Lab AMS-Integration:** 
   - Anzeige der aktuellen AMS-Fachbelegung.
