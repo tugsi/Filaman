@@ -1,8 +1,8 @@
 # FilaMan - Filament Management System
 
 FilaMan ist ein Filament-Managementsystem für den 3D-Druck. Es verwendet ESP32-Hardware für Gewichtsmessungen und NFC-Tag-Management. 
-Benutzer können Filamentspulen verwalten, den Status des Automatic Material System (AMS) von Bablulab Druckern überwachen und Einstellungen über eine Weboberfläche vornehmen. 
-Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/Spoolman) Filamentverwaltung, zusätzlich mit [Bambulab](https://bambulab.com/en-us) 3D-Druckern und sowie dem [Openspool](https://github.com/spuder/OpenSpool) NFC-TAG Format.
+Benutzer können Filamentspulen verwalten, den Status des Automatic Material System (AMS) von Bambu Lab Druckern überwachen und Einstellungen über eine Weboberfläche vornehmen. 
+Das System integriert sich nahtlos mit der [Spoolman](https://github.com/Donkie/Spoolman) Filamentverwaltung, zusätzlich mit [Bambu Lab](https://bambulab.com/en-us) 3D-Druckern.
 
 ![Scale](./img/scale_trans.png)
 
@@ -16,18 +16,17 @@ Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
 ### ESP32 Hardware-Funktionen
 - **Gewichtsmessung:** Verwendung einer Wägezelle mit HX711-Verstärker für präzise Gewichtsverfolgung.
 - **NFC-Tag Lesen/Schreiben:** PN532-Modul zum Lesen und Schreiben von Filamentdaten auf NFC-Tags.
-- **OLED-Display:** Zeigt aktuelles Gewicht, Verbindungsstatus (WiFi, Bambu Lab, Spoolman).
+- **OLED-Display:** Zeigt aktuelles Gewicht, Verbindungsstatus (WiFi, BambuLab, Spoolman).
 - **WLAN-Konnektivität:** WiFiManager für einfache Netzwerkkonfiguration.
 - **MQTT-Integration:** Verbindet sich mit Bambu Lab Drucker für AMS-Steuerung.
-- **NFC-Tag NTAG213 NTAG215:** Verwendung von NTAG213, besser NTAG215 wegen ausreichendem Speicherplatz auf dem Tag
+- **NFC-Tag NTAG213 NTAG215:** Verwendung von NTAG213 (144 Bytes - Kapazität), besser NTAG215 (540 Bytes - Kapazität) wegen ausreichendem Speicherplatz auf dem Tag
 
 ### Weboberflächen-Funktionen
 - **Echtzeit-Updates:** WebSocket-Verbindung für Live-Daten-Updates.
 - **NFC-Tag-Verwaltung:** 
     - Filamentdaten auf NFC-Tags schreiben.
-    - Verwendet das NFC-Tag-Format von [Openspool](https://github.com/spuder/OpenSpool)
-    - Ermöglicht automatische Spulenerkennung im AMS
-- **Bambulab AMS-Integration:** 
+    - Ermöglicht automatische Spulenerkennung im AMS.
+- **Bambu Lab AMS-Integration:** 
   - Anzeige der aktuellen AMS-Fachbelegung.
   - Zuordnung von Filamenten zu AMS-Slots.
   - Unterstützung für externe Spulenhalter.
@@ -36,7 +35,7 @@ Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
   - Filtern und Auswählen von Filamenten.
   - Automatische Aktualisierung der Spulengewichte.
   - Verfolgung von NFC-Tag-Zuweisungen.
-  - Unterstützt das Spoolman Octoprint Plugin
+  - Unterstützt das Spoolman Octoprint Plugin.
 
 ### Wenn Sie meine Arbeit unterstützen möchten, freue ich mich über einen Kaffee
 <a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
@@ -122,7 +121,7 @@ Du musst Spoolman auf DEBUG Modus setzten, da man bisher in Spoolman keine CORS 
 ```
 
 ## Schritt-für-Schritt Installation
-### Einfache Installation
+### Einfache Installation (Google Chrome oder Microsoft Edge)
 1. **Gehe auf [FilaMan Installer](https://www.filaman.app/installer.html)**
 
 2. **Stecke dein ESP an den Rechner und klicke Connect**

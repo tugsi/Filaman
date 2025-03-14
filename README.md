@@ -4,7 +4,7 @@
 
 FilaMan is a filament management system for 3D printing. It uses ESP32 hardware for weight measurement and NFC tag management. 
 Users can manage filament spools, monitor the status of the Automatic Material System (AMS) and make settings via a web interface. 
-The system integrates seamlessly with [Bambulab](https://bambulab.com/en-us) 3D printers and [Spoolman](https://github.com/Donkie/Spoolman) filament management as well as the [Openspool](https://github.com/spuder/OpenSpool) NFC-TAG format.
+The system integrates seamlessly with [Bambu Lab](https://bambulab.com/en-us) 3D printers and [Spoolman](https://github.com/Donkie/Spoolman) filament management.
 
 
 ![Scale](./img/scale_trans.png)
@@ -23,13 +23,12 @@ Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
 - **OLED Display:** Shows current weight, connection status (WiFi, Bambu Lab, Spoolman).
 - **WiFi Connectivity:** WiFiManager for easy network configuration.
 - **MQTT Integration:** Connects to Bambu Lab printer for AMS control.
-- **NFC-Tag NTAG213 NTAG215:** Use NTAG213, better NTAG215 because of enaught space on the Tag
+- **NFC-Tag NTAG213 NTAG215:** Use NTAG213 (Capacity of 144 bytes), better NTAG215 (Capacity of 540 bytes) because of enaught space on the Tag.
 
 ### Web Interface Features
 - **Real-time Updates:** WebSocket connection for live data updates.
 - **NFC Tag Management:** 
 	- Write filament data to NFC tags.
-	- uses NFC-Tag Format of [Openspool](https://github.com/spuder/OpenSpool)
 	- so you can use it with automatic Spool detection in AMS
 - **Bambulab AMS Integration:** 
   - Display current AMS tray contents.
@@ -40,7 +39,7 @@ Discord Server: [https://discord.gg/vMAx2gf5](https://discord.gg/vMAx2gf5)
   - Filter and select filaments.
   - Update spool weights automatically.
   - Track NFC tag assignments.
-  - Supports Spoolman Octoprint Plugin
+  - Supports Spoolman Octoprint Plugin.
 
 ### If you want to support my work, i would be happy to get a coffe
 <a href="https://www.buymeacoffee.com/manuelw" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
@@ -128,7 +127,7 @@ You have to activate Spoolman in debug mode, because you are not able to set COR
 
 
 ## Step-by-Step Installation
-### Easy Installation
+### Easy Installation (Google Chrome or Microsoft Edge)
 1. **Go to [FilaMan Installer](https://www.filaman.app/installer.html)**
 
 2. **Plug you device in and push Connect button**
