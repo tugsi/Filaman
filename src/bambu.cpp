@@ -18,7 +18,7 @@ PubSubClient client(sslClient);
 TaskHandle_t BambuMqttTask;
 
 String report_topic = "";
-//String request_topic = "";
+String request_topic = "";
 const char* bambu_username = "bblp";
 const char* bambu_ip = nullptr;
 const char* bambu_accesscode = nullptr;
@@ -92,7 +92,7 @@ bool loadBambuCredentials() {
         bambu_serialnr = g_bambu_serialnr.c_str();
 
         report_topic = "device/" + String(bambu_serialnr) + "/report";
-        //request_topic = "device/" + String(bambu_serialnr) + "/request";
+        request_topic = "device/" + String(bambu_serialnr) + "/request";
         return true;
     }
     Serial.println("Keine gültigen Bambu-Credentials gefunden.");
@@ -197,18 +197,69 @@ FilamentResult findFilamentIdx(String brand, String type) {
 }
 
 bool sendMqttMessage(const String& payload) {
-    Serial.println("Sending MQTT message");
-    Serial.println(payload);
-    if (client.publish(report_topic.c_str(), payload.c_str())) 
-    {
-        return true;
+    // Check MQTT client state first
+    if (!client.connected()) {
+        Serial.println("Error: MQTT client not connected when trying to send message");
+        Serial.print("MQTT client state: ");
+        Serial.println(client.state());
+        return false;
     }
+
+    // Check if request_topic is empty
+    if (request_topic.isEmpty()) {
+        Serial.println("Error: request_topic is empty!");
+        return false;
+    }
+
+    // Check payload
+    if (payload.isEmpty()) {
+        Serial.println("Error: Empty payload!");
+        return false;
+    }
+
+    Serial.println("Attempting to send MQTT message:");
+    Serial.println("Topic: " + request_topic);
+    Serial.println("Payload: " + payload);
+    Serial.println("Payload length: " + String(payload.length()));
     
-    return false;
+    // Try to publish with QoS 1 and retain flag false
+    bool published = client.publish(request_topic.c_str(), payload.c_str(), false);
+    
+    if (published) {
+        Serial.println("MQTT message published successfully");
+        return true;
+    } else {
+        Serial.println("Failed to publish MQTT message");
+        Serial.print("MQTT client state after publish attempt: ");
+        Serial.println(client.state());
+        
+        // Additional error information
+        switch(client.state()) {
+            case -4:
+                Serial.println("Reason: Connection timeout");
+                break;
+            case -3:
+                Serial.println("Reason: Connection lost");
+                break;
+            case -2:
+                Serial.println("Reason: Connect failed");
+                break;
+            case -1:
+                Serial.println("Reason: Disconnected");
+                break;
+            case 0:
+                Serial.println("Reason: Connected but publish failed");
+                break;
+            default:
+                Serial.println("Reason: Unknown error");
+                break;
+        }
+        return false;
+    }
 }
 
 bool setBambuSpool(String payload) {
-    Serial.println("Spool settings in");
+    Serial.println("Spool settings received from WebSocket");
     Serial.println(payload);
 
     // Parse the JSON
@@ -220,21 +271,28 @@ bool setBambuSpool(String payload) {
         return false;
     }
 
-    int amsId = doc["amsId"];
-    int trayId = doc["trayId"];
+    // Check if we have all required fields
+    if (!doc["amsId"].is<int>() || !doc["trayId"].is<int>()) {
+        Serial.println("Error: Missing or invalid required fields in payload");
+        return false;
+    }
+
+    int amsId = doc["amsId"].as<int>();
+    int trayId = doc["trayId"].as<int>();
     String color = doc["color"].as<String>();
     color.toUpperCase();
-    int minTemp = doc["nozzle_temp_min"];
-    int maxTemp = doc["nozzle_temp_max"];
-    String type = doc["type"].as<String>();
+    int minTemp = doc["nozzle_temp_min"] | 0;  // Default to 0 if not present
+    int maxTemp = doc["nozzle_temp_max"] | 0;  // Default to 0 if not present
+    String type = doc["type"] | "";  // Default to empty string if not present
     (type == "PLA+") ? type = "PLA" : type;
-    String brand = doc["brand"].as<String>();
+    String brand = doc["brand"] | "";  // Default to empty string if not present
     String tray_info_idx = (doc["tray_info_idx"].as<String>() != "-1") ? doc["tray_info_idx"].as<String>() : "";
     if (tray_info_idx == "") {
         if (brand != "" && type != "") {
             FilamentResult result = findFilamentIdx(brand, type);
             tray_info_idx = result.key;
             type = result.type;  // Aktualisiere den type mit dem gefundenen Basistyp
+            Serial.println("Found filament idx: " + tray_info_idx + " for type: " + type);
         }
     }
     String setting_id = doc["bambu_setting_id"].as<String>();
@@ -242,6 +300,7 @@ bool setBambuSpool(String payload) {
 
     doc.clear();
 
+    // Create MQTT message
     doc["print"]["sequence_id"] = "0";
     doc["print"]["command"] = "ams_filament_setting";
     doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
@@ -250,26 +309,25 @@ bool setBambuSpool(String payload) {
     doc["print"]["nozzle_temp_min"] = minTemp;
     doc["print"]["nozzle_temp_max"] = maxTemp;
     doc["print"]["tray_type"] = type;
-    //doc["print"]["cali_idx"] = (cali_idx != "") ? cali_idx : "";
     doc["print"]["tray_info_idx"] = tray_info_idx;
     doc["print"]["setting_id"] = setting_id;
     
-    // Serialize the JSON
+    // Serialize and send MQTT message
     String output;
     serializeJson(doc, output);
+    Serial.println("Sending to Bambu printer:");
+    Serial.println(output);
 
-    if (sendMqttMessage(output)) {
-        Serial.println("Spool successfully set");
-    }
-    else
-    {
-        Serial.println("Failed to set spool");
+    if (!sendMqttMessage(output)) {
+        Serial.println("Failed to send filament settings to printer");
         return false;
     }
     
+    Serial.println("Filament settings sent successfully");
     doc.clear();
     yield();
 
+    // Send calibration if available
     if (cali_idx != "") {
         yield();
         doc["print"]["sequence_id"] = "0";
@@ -278,21 +336,18 @@ bool setBambuSpool(String payload) {
         doc["print"]["nozzle_diameter"] = "0.4";
         doc["print"]["cali_idx"] = cali_idx.toInt();
         doc["print"]["tray_id"] = trayId < 200 ? trayId : 254;
-        //doc["print"]["ams_id"] = amsId < 200 ? amsId : 255;
 
-        // Serialize the JSON
         String output;
         serializeJson(doc, output);
+        Serial.println("Sending calibration to printer:");
+        Serial.println(output);
 
-        if (sendMqttMessage(output)) {
-            Serial.println("Extrusion calibration successfully set");
-        }
-        else
-        {
-            Serial.println("Failed to set extrusion calibration");
+        if (!sendMqttMessage(output)) {
+            Serial.println("Failed to send calibration settings to printer");
             return false;
         }
 
+        Serial.println("Calibration settings sent successfully");
         doc.clear();
         yield();
     }
@@ -661,8 +716,8 @@ bool setupMqtt() {
         String clientId = String(bambu_serialnr) + "_" + String(random(0xffff), HEX);
         
         // MQTT Connection Options
-       // client.setKeepAlive(60);
-       // client.setSocketTimeout(60);  // Increase socket timeout
+        client.setKeepAlive(60);
+        client.setSocketTimeout(60);  // Increase socket timeout
         
         Serial.print("Connecting with client ID: ");
         Serial.println(clientId);
