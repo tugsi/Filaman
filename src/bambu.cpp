@@ -623,7 +623,6 @@ bool setupMqtt() {
         {
             client.setCallback(mqtt_callback);
             client.setBufferSize(5120);
-            // Optional: Topic abonnieren
             client.subscribe(report_topic.c_str());
             //client.subscribe(request_topic.c_str());
             Serial.println("MQTT-Client initialisiert");
