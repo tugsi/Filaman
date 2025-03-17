@@ -490,7 +490,7 @@ function handleSpoolIn(amsId, trayId) {
             nozzle_temp_max: parseInt(maxTemp),
             type: selectedSpool.filament.material,
             brand: selectedSpool.filament.vendor.name,
-            tray_info_idx: selectedSpool.filament.extra.bambu_idx.replace(/['"]+/g, '').trim(),
+            tray_info_idx: selectedSpool.filament.extra.bambu_idx?.replace(/['"]+/g, '').trim() || '',
             cali_idx: "-1"  // Default-Wert setzen
         }
     };
