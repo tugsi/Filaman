@@ -16,3 +16,7 @@ extern String nfcJsonData;
 extern String spoolId;
 extern volatile uint8_t hasReadRfidTag;
 extern volatile bool pauseBambuMqttTask;
+
+// Function declarations
+uint16_t readTagSize(Adafruit_PN532 &pn532);
+String createTagId(uint8_t *uid, uint8_t uidLength);

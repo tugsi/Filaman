@@ -135,24 +135,49 @@ void loopNfc() {
 }
 
 void processTag(uint8_t *uid, uint8_t uidLength, uint8_t readerNumber) {
-    // Create a unique identifier for this tag
-    String tagId = "";
-    for (uint8_t i = 0; i < uidLength; i++) {
-        if (uid[i] < 0x10) {
-            tagId += "0";
-        }
-        tagId += String(uid[i], HEX);
-        tagId += " ";
-    }
-    tagId.trim();
-    
-    // Select the appropriate PN532 based on reader number
     Adafruit_PN532 &pn532 = (readerNumber == 1) ? nfc1 : nfc2;
     
-    // Read the tag data
-    if (pn532.mifareclassic_AuthenticateBlock(uid, uidLength, 4, 1, keyA)) {
-        if (pn532.mifareclassic_ReadDataBlock(4, data)) {
-            processNfcData(data, tagId);
+    Serial.print("Reader "); Serial.print(readerNumber); Serial.println(" found tag:");
+    Serial.print("UID Length: "); Serial.println(uidLength);
+    Serial.print("UID Value: ");
+    for (uint8_t i = 0; i < uidLength; i++) {
+        Serial.print(" 0x"); Serial.print(uid[i], HEX);
+    }
+    Serial.println("");
+
+    if (uidLength == 7) {
+        uint16_t tagSize = readTagSize(pn532);
+        if(tagSize > 0) {
+            Serial.print("Tag size: "); Serial.println(tagSize);
+            uint8_t* data = (uint8_t*)malloc(tagSize);
+            memset(data, 0, tagSize);
+            
+            // Mehrere Leseversuche
+            bool readSuccess = false;
+            for(int attempt = 0; attempt < 3 && !readSuccess; attempt++) {
+                readSuccess = true;
+                uint8_t numPages = tagSize / 4;
+                for (uint8_t i = 4; i < 4 + numPages; i++) {
+                    if (!pn532.ntag2xx_ReadPage(i, data + (i - 4) * 4)) {
+                        Serial.print("Failed to read page "); Serial.println(i);
+                        readSuccess = false;
+                        break;
+                    }
+                    delay(5);  // Kleine Pause zwischen den Seiten
+                }
+                if (!readSuccess) {
+                    delay(50);  // Pause vor erneutem Versuch
+                }
+            }
+
+            if (readSuccess) {
+                Serial.println("Successfully read tag data.");
+                processNfcData(data, createTagId(uid, uidLength));
+            } else {
+                Serial.println("Failed to read tag data after 3 attempts");
+                oledShowMessage("Read Error");
+            }
+            free(data);
         }
     }
 }
@@ -238,10 +263,10 @@ bool formatNdefTag() {
   }
 
 uint16_t readTagSize(Adafruit_PN532 &pn532) {
-  uint8_t buffer[4];
-  memset(buffer, 0, 4);
-  pn532.ntag2xx_ReadPage(3, buffer);
-  return buffer[2]*8;
+    uint8_t buffer[4];
+    memset(buffer, 0, 4);
+    pn532.ntag2xx_ReadPage(3, buffer);
+    return buffer[2] * 8;
 }
 
 uint8_t ntag2xx_WriteNDEF(const char *payload, Adafruit_PN532 &pn532) {
@@ -492,88 +517,90 @@ void startWriteJsonToTag(const char* payload) {
 }
 
 void scanRfidTask(void * parameter) {
-  Serial.println("RFID Task gestartet");
-  for(;;) {
-    if (hasReadRfidTag != 3) {
-      yield();
+    Serial.println("RFID Task gestartet");
+    for(;;) {
+        if (hasReadRfidTag != 3) {
+            yield();
 
-      uint8_t success = 0;
-      uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
-      uint8_t uidLength;
-      Adafruit_PN532* activeReader = nullptr;
+            uint8_t success = 0;
+            uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
+            uint8_t uidLength;
+            Adafruit_PN532* activeReader = nullptr;
 
-      // Try first reader
-      success = nfc1.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
-      if (success) {
-        activeReader = &nfc1;
-      } else {
-        // Try second reader
-        success = nfc2.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
-        if (success) {
-          activeReader = &nfc2;
-        }
-      }
-
-      foundNfcTag(nullptr, success);
-      
-      if (success && hasReadRfidTag != 1 && activeReader != nullptr) {
-        Serial.println("Found an ISO14443A card");
-
-        hasReadRfidTag = 6;
-        oledShowIcon("transfer");
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-
-        if (uidLength == 7) {
-          uint16_t tagSize = readTagSize(*activeReader);
-          if(tagSize > 0) {
-            uint8_t* data = (uint8_t*)malloc(tagSize);
-            memset(data, 0, tagSize);
-
-            Serial.println("Seems to be an NTAG2xx tag (7 byte UID)");
-            
-            uint8_t numPages = readTagSize(*activeReader)/4;
-            for (uint8_t i = 4; i < 4+numPages; i++) {
-              if (!activeReader->ntag2xx_ReadPage(i, data+(i-4) * 4)) {
-                break;
-              }
-              if (data[(i - 4) * 4] == 0xFE) {
-                break;
-              }
-
-              yield();
-              esp_task_wdt_reset();
-              vTaskDelay(pdMS_TO_TICKS(1));
-            }
-
-            if (!decodeNdefAndReturnJson(data)) {
-              oledShowMessage("NFC-Tag unknown");
-              vTaskDelay(2000 / portTICK_PERIOD_MS);
-              hasReadRfidTag = 2;
+            // Try first reader with increased timeout
+            success = nfc1.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 150);
+            if (success) {
+                activeReader = &nfc1;
             } else {
-              hasReadRfidTag = 1;
+                delay(50); // Small delay between readers
+                // Try second reader with increased timeout
+                success = nfc2.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 150);
+                if (success) {
+                    activeReader = &nfc2;
+                }
             }
 
-            free(data);
-          } else {
-            oledShowMessage("NFC-Tag read error");
-            hasReadRfidTag = 2;
-          }
-        } else {
-          Serial.println("This doesn't seem to be an NTAG2xx tag (UUID length != 7 bytes)!");
+            foundNfcTag(nullptr, success);
+            
+            if (success && hasReadRfidTag != 1 && activeReader != nullptr) {
+                Serial.println("Found an ISO14443A card");
+
+                hasReadRfidTag = 6;
+                oledShowIcon("transfer");
+                vTaskDelay(500 / portTICK_PERIOD_MS);
+
+                if (uidLength == 7) {
+                    uint16_t tagSize = readTagSize(*activeReader);
+                    if(tagSize > 0) {
+                        uint8_t* data = (uint8_t*)malloc(tagSize);
+                        memset(data, 0, tagSize);
+
+                        Serial.println("Seems to be an NTAG2xx tag (7 byte UID)");
+                        
+                        uint8_t numPages = readTagSize(*activeReader)/4;
+                        for (uint8_t i = 4; i < 4+numPages; i++) {
+                            if (!activeReader->ntag2xx_ReadPage(i, data+(i-4) * 4)) {
+                                break;
+                            }
+                            if (data[(i - 4) * 4] == 0xFE) {
+                                break;
+                            }
+
+                            yield();
+                            esp_task_wdt_reset();
+                            vTaskDelay(pdMS_TO_TICKS(5)); // Increased delay between page reads
+                        }
+
+                        if (!decodeNdefAndReturnJson(data)) {
+                            oledShowMessage("NFC-Tag unknown");
+                            vTaskDelay(2000 / portTICK_PERIOD_MS);
+                            hasReadRfidTag = 2;
+                        } else {
+                            hasReadRfidTag = 1;
+                        }
+
+                        free(data);
+                    } else {
+                        oledShowMessage("NFC-Tag read error");
+                        hasReadRfidTag = 2;
+                    }
+                } else {
+                    Serial.println("This doesn't seem to be an NTAG2xx tag (UUID length != 7 bytes)!");
+                }
+            }
+
+            if (!success && hasReadRfidTag > 0) {
+                hasReadRfidTag = 0;
+                nfcJsonData = "";
+                Serial.println("Tag entfernt");
+                if (!autoSendToBambu) oledShowWeight(weight);
+            }
+
+            sendNfcData(nullptr);
+            delay(100); // Add small delay at end of loop
         }
-      }
-
-      if (!success && hasReadRfidTag > 0) {
-        hasReadRfidTag = 0;
-        nfcJsonData = "";
-        Serial.println("Tag entfernt");
-        if (!autoSendToBambu) oledShowWeight(weight);
-      }
-
-      sendNfcData(nullptr);
+        yield();
     }
-    yield();
-  }
 }
 
 void startNfc() {
@@ -592,4 +619,8 @@ void startNfc() {
   } else {
     Serial.println("RFID Task erfolgreich erstellt");
   }
+}
+
+String createTagId(uint8_t *uid, uint8_t uidLength) {
+    // Implementierung der Funktion
 }
