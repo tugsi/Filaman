@@ -7,9 +7,23 @@
 #include "api.h"
 #include "esp_task_wdt.h"
 #include "scale.h"
+#include <SPI.h>
 
-//Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
-Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
+// Pin definitions for both PN532 chips
+#define PN532_SCK  (18)  // SPI SCK
+#define PN532_MISO (19)  // SPI MISO
+#define PN532_MOSI (23)  // SPI MOSI
+
+// CS pins for each PN532
+#define PN532_CS1  (5)   // CS for first PN532
+#define PN532_CS2  (4)   // CS for second PN532
+
+// Mifare authentication key
+uint8_t keyA[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+// Create two PN532 instances
+Adafruit_PN532 nfc1(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_CS1);
+Adafruit_PN532 nfc2(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_CS2);
 
 TaskHandle_t RfidReaderTask;
 
@@ -28,6 +42,140 @@ volatile uint8_t hasReadRfidTag = 0;
 // 6 = reading
 // ***** PN532
 
+// Buffer for reading data
+uint8_t data[32];
+
+// Function to initialize a specific PN532
+bool initPN532(Adafruit_PN532 &pn532) {
+    pn532.begin();
+    uint32_t versiondata = pn532.getFirmwareVersion();
+    if (!versiondata) {
+        Serial.println("Didn't find PN532 board");
+        return false;
+    }
+    
+    // Got valid data, print it out!
+    Serial.print("Found chip PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
+    Serial.print("Firmware ver. "); Serial.print((versiondata >> 16) & 0xFF, DEC);
+    Serial.print('.'); Serial.println((versiondata >> 8) & 0xFF, DEC);
+    
+    // Configure board to read RFID tags
+    pn532.SAMConfig();
+    Serial.println("Waiting for an ISO14443A Card ...");
+    return true;
+}
+
+void initNfc() {
+    // Configure CS pins as outputs
+    pinMode(PN532_CS1, OUTPUT);
+    pinMode(PN532_CS2, OUTPUT);
+    digitalWrite(PN532_CS1, HIGH);  // Deselect both chips initially
+    digitalWrite(PN532_CS2, HIGH);
+
+    // Initialize SPI
+    SPI.begin(PN532_SCK, PN532_MISO, PN532_MOSI);
+    SPI.setFrequency(1000000); // 1MHz SPI clock
+    
+    // Initialize both PN532 chips
+    if (!initPN532(nfc1)) {
+        Serial.println("Failed to initialize PN532 #1");
+        return;
+    }
+    if (!initPN532(nfc2)) {
+        Serial.println("Failed to initialize PN532 #2");
+        return;
+    }
+    
+    Serial.println("Both PN532 chips initialized successfully");
+}
+
+// Function to read a specific PN532
+bool readPN532(Adafruit_PN532 &pn532, uint8_t *uid, uint8_t *uidLength) {
+    uint8_t success;
+    success = pn532.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, uidLength);
+    return success;
+}
+
+// Function to write to a specific PN532
+bool writePN532(Adafruit_PN532 &pn532, uint8_t *uid, uint8_t uidLength, uint8_t *data, uint8_t dataLen) {
+    if (!pn532.mifareclassic_AuthenticateBlock(uid, uidLength, 4, 1, keyA)) {
+        Serial.println("Failed to authenticate block");
+        return false;
+    }
+    
+    if (!pn532.mifareclassic_WriteDataBlock(4, data)) {
+        Serial.println("Failed to write block");
+        return false;
+    }
+    
+    return true;
+}
+
+void loopNfc() {
+    uint8_t uid1[] = {0, 0, 0, 0, 0, 0, 0};
+    uint8_t uid2[] = {0, 0, 0, 0, 0, 0, 0};
+    uint8_t uidLength1 = 0;
+    uint8_t uidLength2 = 0;
+    
+    // Try to read from both PN532 chips
+    bool success1 = readPN532(nfc1, uid1, &uidLength1);
+    bool success2 = readPN532(nfc2, uid2, &uidLength2);
+    
+    if (success1 || success2) {
+        // Process the first tag if found
+        if (success1) {
+            processTag(uid1, uidLength1, 1);
+        }
+        
+        // Process the second tag if found
+        if (success2) {
+            processTag(uid2, uidLength2, 2);
+        }
+    }
+}
+
+void processTag(uint8_t *uid, uint8_t uidLength, uint8_t readerNumber) {
+    // Create a unique identifier for this tag
+    String tagId = "";
+    for (uint8_t i = 0; i < uidLength; i++) {
+        if (uid[i] < 0x10) {
+            tagId += "0";
+        }
+        tagId += String(uid[i], HEX);
+        tagId += " ";
+    }
+    tagId.trim();
+    
+    // Select the appropriate PN532 based on reader number
+    Adafruit_PN532 &pn532 = (readerNumber == 1) ? nfc1 : nfc2;
+    
+    // Read the tag data
+    if (pn532.mifareclassic_AuthenticateBlock(uid, uidLength, 4, 1, keyA)) {
+        if (pn532.mifareclassic_ReadDataBlock(4, data)) {
+            processNfcData(data, tagId);
+        }
+    }
+}
+
+void processNfcData(uint8_t *data, String tagId) {
+    // Process the data and send it via WebSocket
+    if (decodeNdefAndReturnJson(data)) {
+        hasReadRfidTag = 1;
+        sendNfcData(nullptr);
+    } else {
+        hasReadRfidTag = 2;
+        oledShowMessage("NFC-Tag unknown");
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+}
+
+// Function to write to a specific tag
+bool writeNfcTag(uint8_t *uid, uint8_t uidLength, uint8_t *data, uint8_t dataLen, uint8_t readerNumber) {
+    // Select the appropriate PN532 based on reader number
+    Adafruit_PN532 &pn532 = (readerNumber == 1) ? nfc1 : nfc2;
+    
+    return writePN532(pn532, uid, uidLength, data, dataLen);
+}
 
 // ##### Funktionen für RFID #####
 void payloadToJson(uint8_t *data) {
@@ -80,7 +228,7 @@ bool formatNdefTag() {
   
     // Schreibe die Initialisierungsnachricht auf die ersten Seiten
     for (int i = 0; i < sizeof(ndefInit); i += 4) {
-      if (!nfc.ntag2xx_WritePage(pageOffset + (i / 4), &ndefInit[i])) {
+      if (!nfc1.ntag2xx_WritePage(pageOffset + (i / 4), &ndefInit[i])) {
           success = false;
           break;
       }
@@ -89,16 +237,15 @@ bool formatNdefTag() {
     return success;
   }
 
-uint16_t readTagSize()
-{
+uint16_t readTagSize(Adafruit_PN532 &pn532) {
   uint8_t buffer[4];
   memset(buffer, 0, 4);
-  nfc.ntag2xx_ReadPage(3, buffer);
+  pn532.ntag2xx_ReadPage(3, buffer);
   return buffer[2]*8;
 }
 
-uint8_t ntag2xx_WriteNDEF(const char *payload) {
-  uint16_t tagSize = readTagSize();
+uint8_t ntag2xx_WriteNDEF(const char *payload, Adafruit_PN532 &pn532) {
+  uint16_t tagSize = readTagSize(pn532);
   Serial.print("Tag Size: ");Serial.println(tagSize);
 
   uint8_t pageBuffer[4] = {0, 0, 0, 0};
@@ -157,11 +304,7 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
     int bytesToWrite = (totalSize < 4) ? totalSize : 4;
     memcpy(pageBuffer, combinedData + a, bytesToWrite);
 
-    //uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-    //uint8_t uidLength;
-    //nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
-
-    if (!(nfc.ntag2xx_WritePage(4+i, pageBuffer))) 
+    if (!(pn532.ntag2xx_WritePage(4+i, pageBuffer))) 
     {
       Serial.println("Fehler beim Schreiben der Seite.");
       free(combinedData);
@@ -169,8 +312,6 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
     }
 
     yield();
-    //esp_task_wdt_reset();
-
     i++;
     a += 4;
     totalSize -= bytesToWrite;
@@ -179,7 +320,7 @@ uint8_t ntag2xx_WriteNDEF(const char *payload) {
   // Ensure the NDEF message is properly terminated
   memset(pageBuffer, 0, 4);
   pageBuffer[0] = 0xFE; // NDEF record footer
-  if (!(nfc.ntag2xx_WritePage(4+i, pageBuffer))) 
+  if (!(pn532.ntag2xx_WritePage(4+i, pageBuffer))) 
   {
     Serial.println("Fehler beim Schreiben des End-Bits.");
     free(combinedData);
@@ -238,7 +379,6 @@ bool decodeNdefAndReturnJson(const byte* encodedMessage) {
 void writeJsonToTag(void *parameter) {
   const char* payload = (const char*)parameter;
 
-  // Gib die erstellte NDEF-Message aus
   Serial.println("Erstelle NDEF-Message...");
   Serial.println(payload);
 
@@ -246,24 +386,36 @@ void writeJsonToTag(void *parameter) {
   vTaskSuspend(RfidReaderTask);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 
-  //pauseBambuMqttTask = true;
-  // aktualisieren der Website wenn sich der Status ändert
   sendNfcData(nullptr);
   vTaskDelay(100 / portTICK_PERIOD_MS);
   oledShowMessage("Waiting for NFC-Tag");
   
-  // Wait 10sec for tag
+  // Try both readers
   uint8_t success = 0;
   String uidString = "";
+  Adafruit_PN532* activeReader = nullptr;
+  
   for (uint16_t i = 0; i < 20; i++) {
-    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+    // Try first reader
+    uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
     uint8_t uidLength;
-    success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
+    success = nfc1.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 250);
+    
+    if (!success) {
+      // Try second reader
+      success = nfc2.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 250);
+      if (success) {
+        activeReader = &nfc2;
+      }
+    } else {
+      activeReader = &nfc1;
+    }
+
     if (success) {
       for (uint8_t i = 0; i < uidLength; i++) {
         uidString += String(uid[i], HEX);
         if (i < uidLength - 1) {
-            uidString += ":"; // Optional: Trennzeichen hinzufügen
+            uidString += ":";
         }
       }
       foundNfcTag(nullptr, success);
@@ -277,44 +429,36 @@ void writeJsonToTag(void *parameter) {
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 
-  if (success)
-  {
+  if (success && activeReader != nullptr) {
     oledShowIcon("transfer");
     // Schreibe die NDEF-Message auf den Tag
-    success = ntag2xx_WriteNDEF(payload);
-    if (success) 
-    {
+    success = ntag2xx_WriteNDEF(payload, *activeReader);
+    if (success) {
         Serial.println("NDEF-Message erfolgreich auf den Tag geschrieben");
-        //oledShowMessage("NFC-Tag written");
         oledShowIcon("success");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         hasReadRfidTag = 5;
-        // aktualisieren der Website wenn sich der Status ändert
         sendNfcData(nullptr);
         pauseBambuMqttTask = false;
         
         if (updateSpoolTagId(uidString, payload)) {
-          uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+          uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
           uint8_t uidLength;
           oledShowIcon("success");
-          while (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500)) {
+          while (activeReader->readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500)) {
             yield();
           }
         }
           
         vTaskResume(RfidReaderTask);
         vTaskDelay(500 / portTICK_PERIOD_MS);        
-    } 
-    else 
-    {
+    } else {
         Serial.println("Fehler beim Schreiben der NDEF-Message auf den Tag");
         oledShowIcon("failed");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         hasReadRfidTag = 4;
     }
-  }
-  else
-  {
+  } else {
     Serial.println("Fehler: Kein Tag zu schreiben gefunden.");
     oledShowMessage("No NFC-Tag found");
     vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -350,51 +494,50 @@ void startWriteJsonToTag(const char* payload) {
 void scanRfidTask(void * parameter) {
   Serial.println("RFID Task gestartet");
   for(;;) {
-    // Wenn geschrieben wird Schleife aussetzen
-    if (hasReadRfidTag != 3)
-    {
+    if (hasReadRfidTag != 3) {
       yield();
 
-      uint8_t success;
-      uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+      uint8_t success = 0;
+      uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
       uint8_t uidLength;
+      Adafruit_PN532* activeReader = nullptr;
 
-      success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 1000);
+      // Try first reader
+      success = nfc1.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
+      if (success) {
+        activeReader = &nfc1;
+      } else {
+        // Try second reader
+        success = nfc2.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 500);
+        if (success) {
+          activeReader = &nfc2;
+        }
+      }
 
       foundNfcTag(nullptr, success);
       
-      if (success && hasReadRfidTag != 1)
-      {
-        // Display some basic information about the card
+      if (success && hasReadRfidTag != 1 && activeReader != nullptr) {
         Serial.println("Found an ISO14443A card");
 
         hasReadRfidTag = 6;
-
         oledShowIcon("transfer");
         vTaskDelay(500 / portTICK_PERIOD_MS);
 
-        if (uidLength == 7)
-        {
-          uint16_t tagSize = readTagSize();
-          if(tagSize > 0)
-          {
-            // Create a buffer depending on the size of the tag
+        if (uidLength == 7) {
+          uint16_t tagSize = readTagSize(*activeReader);
+          if(tagSize > 0) {
             uint8_t* data = (uint8_t*)malloc(tagSize);
             memset(data, 0, tagSize);
 
-            // We probably have an NTAG2xx card (though it could be Ultralight as well)
             Serial.println("Seems to be an NTAG2xx tag (7 byte UID)");
             
-            uint8_t numPages = readTagSize()/4;
+            uint8_t numPages = readTagSize(*activeReader)/4;
             for (uint8_t i = 4; i < 4+numPages; i++) {
-              if (!nfc.ntag2xx_ReadPage(i, data+(i-4) * 4))
-              {
-                break; // Stop if reading fails
+              if (!activeReader->ntag2xx_ReadPage(i, data+(i-4) * 4)) {
+                break;
               }
-              // Check for NDEF message end
-              if (data[(i - 4) * 4] == 0xFE) 
-              {
-                break; // End of NDEF message
+              if (data[(i - 4) * 4] == 0xFE) {
+                break;
               }
 
               yield();
@@ -402,41 +545,31 @@ void scanRfidTask(void * parameter) {
               vTaskDelay(pdMS_TO_TICKS(1));
             }
 
-            if (!decodeNdefAndReturnJson(data)) 
-            {
+            if (!decodeNdefAndReturnJson(data)) {
               oledShowMessage("NFC-Tag unknown");
               vTaskDelay(2000 / portTICK_PERIOD_MS);
               hasReadRfidTag = 2;
-            }
-            else 
-            {
+            } else {
               hasReadRfidTag = 1;
             }
 
             free(data);
-          }
-          else
-          {
+          } else {
             oledShowMessage("NFC-Tag read error");
             hasReadRfidTag = 2;
           }
-        }
-        else
-        {
+        } else {
           Serial.println("This doesn't seem to be an NTAG2xx tag (UUID length != 7 bytes)!");
         }
       }
 
-      if (!success && hasReadRfidTag > 0)
-      {
+      if (!success && hasReadRfidTag > 0) {
         hasReadRfidTag = 0;
-        //uidString = "";
         nfcJsonData = "";
         Serial.println("Tag entfernt");
         if (!autoSendToBambu) oledShowWeight(weight);
       }
 
-      // aktualisieren der Website wenn sich der Status ändert
       sendNfcData(nullptr);
     }
     yield();
@@ -444,41 +577,19 @@ void scanRfidTask(void * parameter) {
 }
 
 void startNfc() {
-  nfc.begin();                                           // Beginne Kommunikation mit RFID Leser
-  delay(1000);
-  unsigned long versiondata = nfc.getFirmwareVersion();  // Lese Versionsnummer der Firmware aus
-  if (! versiondata) {                                   // Wenn keine Antwort kommt
-    Serial.println("Kann kein RFID Board finden !");            // Sende Text "Kann kein..." an seriellen Monitor
-    //delay(5000);
-    //ESP.restart();
-    oledShowMessage("No RFID Board found");
-    delay(2000);
-  }
-  else {
-    Serial.print("Chip PN5 gefunden"); Serial.println((versiondata >> 24) & 0xFF, HEX); // Sende Text und Versionsinfos an seriellen
-    Serial.print("Firmware ver. "); Serial.print((versiondata >> 16) & 0xFF, DEC);      // Monitor, wenn Antwort vom Board kommt
-    Serial.print('.'); Serial.println((versiondata >> 8) & 0xFF, DEC);                  // 
+  initNfc();
+  BaseType_t result = xTaskCreatePinnedToCore(
+    scanRfidTask, /* Function to implement the task */
+    "RfidReader", /* Name of the task */
+    5115,  /* Stack size in words */
+    NULL,  /* Task input parameter */
+    rfidTaskPrio,  /* Priority of the task */
+    &RfidReaderTask,  /* Task handle. */
+    rfidTaskCore); /* Core where the task should run */
 
-    nfc.SAMConfig();
-    // Set the max number of retry attempts to read from a card
-    // This prevents us from waiting forever for a card, which is
-    // the default behaviour of the PN532.
-    //nfc.setPassiveActivationRetries(0x7F);
-    //nfc.setPassiveActivationRetries(0xFF);
-
-    BaseType_t result = xTaskCreatePinnedToCore(
-      scanRfidTask, /* Function to implement the task */
-      "RfidReader", /* Name of the task */
-      5115,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      rfidTaskPrio,  /* Priority of the task */
-      &RfidReaderTask,  /* Task handle. */
-      rfidTaskCore); /* Core where the task should run */
-
-      if (result != pdPASS) {
-        Serial.println("Fehler beim Erstellen des RFID Tasks");
-    } else {
-        Serial.println("RFID Task erfolgreich erstellt");
-    }
+  if (result != pdPASS) {
+    Serial.println("Fehler beim Erstellen des RFID Tasks");
+  } else {
+    Serial.println("RFID Task erfolgreich erstellt");
   }
 }

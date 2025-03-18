@@ -6,8 +6,6 @@
 //#define PN532_MOSI  23
 //#define PN532_SS    5
 //#define PN532_MISO  19
-const uint8_t PN532_IRQ = 32;
-const uint8_t PN532_RESET = 33;
 // ***** PN532
 
 // ***** HX711 (Waage)

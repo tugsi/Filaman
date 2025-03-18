@@ -1,10 +1,13 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <Arduino.h>
 
-extern const uint8_t PN532_IRQ;
-extern const uint8_t PN532_RESET;
+// ***** PN532 (RFID)
+//#define PN532_SCK   18
+//#define PN532_MOSI  23
+//#define PN532_SS    5
+//#define PN532_MISO  19
+// ***** PN532
 
 extern const uint8_t LOADCELL_DOUT_PIN;
 extern const uint8_t LOADCELL_SCK_PIN;
@@ -47,4 +50,9 @@ extern uint8_t scaleTaskCore;
 extern uint8_t scaleTaskPrio;
 
 extern uint16_t defaultScaleCalibrationValue;
-#endif
+
+#define PN532_SCK  (18)
+#define PN532_MISO (19)
+#define PN532_MOSI (23)
+#define PN532_CS1  (5)
+#define PN532_CS2  (4)
