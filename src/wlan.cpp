@@ -59,7 +59,7 @@ void initWiFi() {
   if(wm_nonblocking) wm.setConfigPortalBlocking(false);
   //wm.setConfigPortalTimeout(320); // Portal nach 5min schließen
   wm.setWiFiAutoReconnect(true);
-  wm.setConnectTimeout(5);
+  wm.setConnectTimeout(10);
 
   oledShowTopRow();
   oledShowMessage("WiFi Setup");
